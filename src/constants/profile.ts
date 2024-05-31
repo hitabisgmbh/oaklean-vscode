@@ -1,0 +1,1 @@
+export const PROFILE_PERCENT_PRECISION = 2

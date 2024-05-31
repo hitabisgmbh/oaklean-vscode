@@ -1,0 +1,12 @@
+# Ignore everything
+**
+
+# Whitelist
+!LICENSE
+!README.md
+!CHANGELOG.md
+!package.json
+!package-lock.json
+!vsc-extension-quickstart.md
+!dist/**/*
+!media/**/*

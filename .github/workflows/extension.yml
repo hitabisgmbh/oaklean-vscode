@@ -1,0 +1,81 @@
+name: oaklean/nodejs/vs-code-extension
+
+on:
+  push:
+  workflow_dispatch:
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:20.11.1
+      options: --user 1001
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 20
+    - uses: actions/cache@v4
+      with:
+        path: node_modules/
+        key: default
+    - run: npm ci
+    - run: npm run build
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: node:20.11.1
+      options: --user 1001
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 20
+    - uses: actions/cache@v4
+      with:
+        path: node_modules/
+        key: default
+    - run: npm ci
+    - run: npm run lint
+  test:
+    needs:
+      - build
+      - lint
+    runs-on: ubuntu-latest
+    container:
+      image: node:20.11.1
+      options: --user 1001
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: 'recursive'
+    - uses: actions/cache@v4
+      with:
+        path: node_modules/
+        key: default
+    - run: npm ci
+    - run: npm run test
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    container:
+      image: node:20.11.1
+    if: github.event_name == 'workflow_dispatch' 
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 20
+    - uses: actions/cache@v4
+      with:
+        path: node_modules/
+        key: default
+    - run: npm ci
+    - env:
+        VSCODE_MARKETPLACE_PUBLISH_TOKEN: ${{ secrets.VSCODE_MARKETPLACE_PUBLISH_TOKEN }}
+      run: npm run publish -- -p $VSCODE_MARKETPLACE_PUBLISH_TOKEN

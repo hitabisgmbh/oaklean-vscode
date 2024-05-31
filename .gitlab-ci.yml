@@ -1,0 +1,42 @@
+
+cache:
+  paths:
+    - node_modules/
+  
+default: 
+  image: node:20.11.1
+  before_script:
+    - npm ci
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - npm run build
+
+lint:
+  stage: build
+  script:
+    - npm run lint
+
+test:
+  stage: test
+  script:
+    - npm run test
+  coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
+
+deploy:
+  when: manual
+  stage: deploy
+  only: 
+    - /^release.*$/
+  script:
+    - NODE_ENV=production npm run package
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - ./*.vsix
