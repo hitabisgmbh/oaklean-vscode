@@ -5,7 +5,7 @@ export type QuickPickOptions = Map<string, {
 }>
 
 export default class QuickPick {
-	vsCodeComponent: vscode.QuickPick<vscode.QuickPickItem>
+	vsCodeComponent: vscode.QuickPick<vscode.QuickPickItem> | undefined
 	optionsWithCallBacks: QuickPickOptions
 
 	constructor(options: QuickPickOptions) {
@@ -18,7 +18,13 @@ export default class QuickPick {
 				label: label
 			})
 		}
+		if (labels.length === 0) {
+			quickPick.hide()
+
+			return
+		}
 		quickPick.items = labels
+		quickPick.placeholder = `Select Project Report (${labels.length} Report${labels.length > 1 ? 's' : ''} Available)`
 		quickPick.onDidChangeSelection(selection => {
 			if (selection[0] && this.optionsWithCallBacks.has(selection[0].label)) {
 				this.optionsWithCallBacks.get(selection[0].label)?.selectionCallback()
@@ -30,6 +36,9 @@ export default class QuickPick {
 	}
 
 	show() {
+		if (!this.vsCodeComponent) {
+			return
+		}
 		this.vsCodeComponent.show()
 	}
 }
