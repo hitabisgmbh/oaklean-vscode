@@ -5,7 +5,7 @@ export type QuickPickOptions = Map<string, {
 }>
 
 export default class QuickPick {
-	vsCodeComponent: vscode.QuickPick<vscode.QuickPickItem> | undefined
+	vsCodeComponent: vscode.QuickPick<vscode.QuickPickItem>
 	optionsWithCallBacks: QuickPickOptions
 
 	constructor(options: QuickPickOptions, placeholder?: string) {
@@ -31,9 +31,6 @@ export default class QuickPick {
 	}
 
 	show() {
-		if (!this.vsCodeComponent) {
-			return
-		}
 		this.vsCodeComponent.show()
 	}
 }
