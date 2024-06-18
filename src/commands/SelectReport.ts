@@ -1,3 +1,5 @@
+import vscode from 'vscode'
+
 import BaseCommand from './BaseCommand'
 
 import { Container } from '../container'
@@ -10,7 +12,7 @@ export enum CommandIdentifiers {
 
 export default class SelectReport extends BaseCommand {
 	container: Container
-	
+
 	constructor(container: Container) {
 		super()
 		this.container = container
@@ -34,7 +36,12 @@ export default class SelectReport extends BaseCommand {
 				}
 			})
 		}
-		const quickPick = new QuickPick(quickPickOptions)
+		const placeholder = `Select Project Report (${quickPickOptions.size} Report${quickPickOptions.size > 1 ? 's' : ''} Available)`
+		const quickPick = new QuickPick(quickPickOptions, placeholder)
+		if (quickPickOptions.size === 0) {
+			vscode.window.showInformationMessage('Oaklean: No Project Reports Available')
+			return
+		}
 		quickPick.show()
 	}
 }

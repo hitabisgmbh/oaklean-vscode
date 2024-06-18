@@ -8,7 +8,7 @@ export default class QuickPick {
 	vsCodeComponent: vscode.QuickPick<vscode.QuickPickItem> | undefined
 	optionsWithCallBacks: QuickPickOptions
 
-	constructor(options: QuickPickOptions) {
+	constructor(options: QuickPickOptions, placeholder?: string) {
 		this.optionsWithCallBacks = options
 
 		const quickPick = vscode.window.createQuickPick()
@@ -18,13 +18,8 @@ export default class QuickPick {
 				label: label
 			})
 		}
-		if (labels.length === 0) {
-			quickPick.hide()
-			vscode.window.showInformationMessage('Oaklean: No Project Reports Available')
-			return
-		}
 		quickPick.items = labels
-		quickPick.placeholder = `Select Project Report (${labels.length} Report${labels.length > 1 ? 's' : ''} Available)`
+		quickPick.placeholder = placeholder
 		quickPick.onDidChangeSelection(selection => {
 			if (selection[0] && this.optionsWithCallBacks.has(selection[0].label)) {
 				this.optionsWithCallBacks.get(selection[0].label)?.selectionCallback()
