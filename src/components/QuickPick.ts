@@ -20,7 +20,7 @@ export default class QuickPick {
 		}
 		if (labels.length === 0) {
 			quickPick.hide()
-
+			vscode.window.showInformationMessage('Oaklean: No Project Reports Available')
 			return
 		}
 		quickPick.items = labels
