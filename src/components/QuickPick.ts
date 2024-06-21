@@ -8,7 +8,7 @@ export default class QuickPick {
 	vsCodeComponent: vscode.QuickPick<vscode.QuickPickItem>
 	optionsWithCallBacks: QuickPickOptions
 
-	constructor(options: QuickPickOptions) {
+	constructor(options: QuickPickOptions, placeholder?: string) {
 		this.optionsWithCallBacks = options
 
 		const quickPick = vscode.window.createQuickPick()
@@ -19,6 +19,7 @@ export default class QuickPick {
 			})
 		}
 		quickPick.items = labels
+		quickPick.placeholder = placeholder
 		quickPick.onDidChangeSelection(selection => {
 			if (selection[0] && this.optionsWithCallBacks.has(selection[0].label)) {
 				this.optionsWithCallBacks.get(selection[0].label)?.selectionCallback()
