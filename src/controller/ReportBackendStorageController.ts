@@ -15,6 +15,7 @@ export default class ReportBackendStorageController implements Disposable {
 		console.debug('ReportBackendStorageController created!')
 		// sends every minute a request to the registry to check if the reports are already uploaded
 		// and if not uploads them
+		this.checkAndUploadReports()
 		setInterval(() => this.checkAndUploadReports(), 60000)
 	}
 	dispose() {
@@ -28,26 +29,47 @@ export default class ReportBackendStorageController implements Disposable {
 		}
 		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
 		const url = config.registryOptions.url
-		const profilesHistoryPath = config.getOutHistoryDir().join('**', '*.oak').toString()
-		const projectReportHistoryPaths = glob.sync(profilesHistoryPath)
+		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak').toString()
+		if (!workSpaceDir) {
+			return
+		}
+		const projectReportPaths = glob.sync(workSpaceDir, { ignore: ['**/node_modules/**', '**/dist/**'] })
 			.map((profilePath) => workspaceDir.pathTo(profilePath).toString())
 		const batchSize = 99
-		for (let i = 0; i < projectReportHistoryPaths.length; i += batchSize) {
-			const batchFiles = projectReportHistoryPaths.slice(i, i + batchSize)
-			const hashes = batchFiles.map(filePath => {
+		for (let i = 0; i < projectReportPaths.length; i += batchSize) {
+			const batchFiles = projectReportPaths.slice(i, i + batchSize)
+			const hashes = (await Promise.all(batchFiles.map(async (filePath) => {
 				const unifiedFilePath = new UnifiedPath(filePath)
 				const reportPath = WorkspaceUtils.getWorkspaceDir()?.join(unifiedFilePath)
 				if (!reportPath) {
-					return undefined
+					return
 				}
-				return ProjectReport.hashFromBinFile(reportPath)
-			})
-			const uncheckedHashes = hashes.filter(hash => !this.isHashChecked(hash, url))
-			if (uncheckedHashes.length === 0) {
+
+				const hash = ProjectReport.hashFromBinFile(reportPath)
+				if (this.isHashChecked(hash, url)) {
+					return
+				}
+				let projectReport
+				try {
+					projectReport = ProjectReport.loadFromFile(reportPath, 'bin')
+				} catch (e) {
+					return
+				}
+				const shouldBeStored = await projectReport?.shouldBeStoredInRegistry()
+				if (projectReport === undefined || !shouldBeStored) {
+					return
+				}
+
+				return hash
+
+			}))).filter(hash => hash !== undefined)
+
+			if (hashes.length === 0) {
 				continue
 			}
 
-			const urlWithHashes = `http:/${url}/check-existence?` + uncheckedHashes.map(hash => `hashes[]=${hash}`).join('&')
+
+			const urlWithHashes = `http:/${url}/check-existence?` + hashes.map(hash => `hashes[]=${hash}`).join('&')
 			const response = await fetch(urlWithHashes)
 			if (!response.ok) {
 				console.debug('check-existence Failed!', response.status)
@@ -55,7 +77,7 @@ export default class ReportBackendStorageController implements Disposable {
 			}
 
 			const data = await response.json()
-			for (const hash of uncheckedHashes) {
+			for (const hash of hashes) {
 				if (hash && !data[hash]) {
 					const filePath = batchFiles[hashes.indexOf(hash)]
 					const unifiedFilePath = new UnifiedPath(filePath)

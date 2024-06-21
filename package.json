@@ -316,7 +316,7 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
-    "@oaklean/profiler-core": "^0.1.2",
+    "@oaklean/profiler-core": "^0.1.3",
     "@vscode/codicons": "^0.0.35",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "glob": "^10.3.12",
