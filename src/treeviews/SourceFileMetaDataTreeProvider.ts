@@ -85,8 +85,8 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 			} else {
 				proportion = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 					.total.sensorValues,
-					this.sensorValueRepresentation.selectedSensorValueType,
-					this.sensorValueRepresentation.formula)
+				this.sensorValueRepresentation.selectedSensorValueType,
+				this.sensorValueRepresentation.formula)
 			}
 			this.displayedSensorValue = proportion
 			this.description = proportion + ' ' + UnitPerSensorValue[this.sensorValueRepresentation.selectedSensorValueType]
@@ -98,7 +98,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
 				internTotal = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 					.total.sensorValues,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
 
 				proportion = modulesTotalValue / (internTotal + modulesTotalValue) * 100
 			} else {
@@ -109,12 +109,12 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 				if (metaDataNode.type !== SourceFileMetaDataTreeType.Module) {
 					total += calcOrReturnSensorValue(parentNode.aggregatedInternSourceMetaData
 						.total.sensorValues,
-						this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
 				}
 
 				result = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 					.total.sensorValues,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
 				proportion = result / total * 100
 			}
 			this.displayedSensorValue = proportion
@@ -129,7 +129,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 			} else {
 				const result = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 					.total.sensorValues,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
 				proportion = result / (modulesTotalValue + internalTotalValue) * 100
 			}
 			this.displayedSensorValue = proportion
@@ -270,7 +270,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 	}
 
 	createDirectoryTree(element?: SourceFileMetaDataTreeNode | undefined):
-		vscode.ProviderResult<SourceFileMetaDataTreeNode[]> {
+	vscode.ProviderResult<SourceFileMetaDataTreeNode[]> {
 		if (!this.sourceFileMetaDataTree) {
 			return
 		}
