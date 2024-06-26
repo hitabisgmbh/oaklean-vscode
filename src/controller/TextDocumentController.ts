@@ -133,7 +133,7 @@ export default class TextDocumentController implements Disposable {
 		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
 		this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', config)
 		if (this.projectReport) {
-			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport)
+			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport, 'original')
 		}
 		vscode.window.showInformationMessage(INFO_PROJECT_REPORT + this.reportPath.basename())
 		this.container.eventHandler.fireReportLoaded('ProjectReport')
