@@ -19,23 +19,23 @@ type SensorValueToNameMap = {
 export const SensorValueTypeNames: SensorValueToNameMap = {
 	profilerHits: 'profilerHits',
 
-	selfCPUTime: 'selfCPUTime',
-	aggregatedCPUTime: 'aggregatedCPUTime',
-	internCPUTime: 'internCPUTime',
-	externCPUTime: 'externCPUTime',
-	langInternalCPUTime: 'langInternalCPUTime',
+	selfCPUTime: 'CPU Time (self)',
+	aggregatedCPUTime: 'CPU Time (summed up)',
+	internCPUTime: 'CPU Time (own code)',
+	externCPUTime: 'CPU Time (libraries)',
+	langInternalCPUTime: 'CPU Time (node internal)',
 
-	selfCPUEnergyConsumption: 'selfCPUEnergyConsumption',
-	aggregatedCPUEnergyConsumption: 'aggregatedCPUEnergyConsumption',
-	internCPUEnergyConsumption: 'internCPUEnergyConsumption',
-	externCPUEnergyConsumption: 'externCPUEnergyConsumption',
-	langInternalCPUEnergyConsumption: 'langInternalCPUEnergyConsumption',
+	selfCPUEnergyConsumption: 'Energy Consumption (self)',
+	aggregatedCPUEnergyConsumption: 'Energy Consumption (summed up)',
+	internCPUEnergyConsumption: 'Energy Consumption (own code)',
+	externCPUEnergyConsumption: 'Energy Consumption (libraries)',
+	langInternalCPUEnergyConsumption: 'Energy Consumption (node internal)',
 
-	selfRAMEnergyConsumption: 'selfRAMEnergyConsumption',
-	aggregatedRAMEnergyConsumption: 'aggregatedRAMEnergyConsumption',
-	internRAMEnergyConsumption: 'interRAMEnergyConsumption',
-	externRAMEnergyConsumption: 'externRAMEnergyConsumption',
-	langInternalRAMEnergyConsumption: 'langInternalRAMEnergyConsumption',
+	selfRAMEnergyConsumption: 'RAM Energy Consumption (self)',
+	aggregatedRAMEnergyConsumption: 'RAM Energy Consumption (summed up)',
+	internRAMEnergyConsumption: 'RAM Energy Consumption (own code)',
+	externRAMEnergyConsumption: 'RAM Energy Consumption (libraries)',
+	langInternalRAMEnergyConsumption: 'RAM Energy Consumption (node internal)',
 
 	customFormula: 'customFormula'
 }

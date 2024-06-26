@@ -12,6 +12,7 @@ import {
 import {
 	ExtendedSensorValueType,
 	ExtendedSensorValueTypeNames,
+	SensorValueTypeNames,
 	UnitPerSensorValue
 } from '../types/sensorValues'
 
@@ -104,9 +105,10 @@ export class SettingsWebViewPanel {
 		}
 
 		let sensorValueOptions = ''
-		for (const sensorValueTypeName of Object.values(ExtendedSensorValueTypeNames)) {
-			const unit = UnitPerSensorValue[sensorValueTypeName as ExtendedSensorValueType]
-			sensorValueOptions += `<vscode-option value="${sensorValueTypeName}">${sensorValueTypeName}${unit ? ` (${unit})` : ''}</vscode-option>`
+		for (const sensorValueType of Object.keys(SensorValueTypeNames)) {
+			const unit = UnitPerSensorValue[sensorValueType as ExtendedSensorValueType]
+			const name = SensorValueTypeNames[sensorValueType as ExtendedSensorValueType]
+			sensorValueOptions += `<vscode-option value="${sensorValueType}">${name}${unit ? ` (${unit})` : ''}</vscode-option>`
 		}
 
 		// Tip: Install the es6-string-html VS Code extension to enable code highlighting below
