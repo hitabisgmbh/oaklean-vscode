@@ -5,7 +5,6 @@ import {
 	PathIndex,
 	ProjectReport,
 	SourceFileMetaData,
-	SourceFileMetaDataTree,
 	SourceNodeIdentifier_string,
 	UnifiedPath
 } from '@oaklean/profiler-core'
@@ -14,11 +13,18 @@ import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
-import { FilterPathChangeEvent, SelectedSensorValueRepresentationChangeEvent, SortDirectionChangeEvent } from '../helper/EventHandler'
+import {
+	FilterPathChangeEvent,
+	SelectedSensorValueRepresentationChangeEvent,
+	SortDirectionChangeEvent
+} from '../helper/EventHandler'
 import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
 import { MethodViewCommands } from '../types/methodViewCommands'
 import { SortDirection } from '../types/sortDirection'
-import { MethodViewProtocol_ChildToParent, MethodViewProtocol_ParentToChild } from '../protocols/methodViewProtocol'
+import {
+	MethodViewProtocol_ChildToParent,
+	MethodViewProtocol_ParentToChild
+} from '../protocols/methodViewProtocol'
 import { MethodList } from '../model/MethodList'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
@@ -71,23 +77,14 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		const methodLists: MethodList[] = []
 		if (this.report !== undefined) {
 			internMeasurements = this.report.intern
-			const internMapping = this.report.internMapping
-			let originalPathIndex: PathIndex | undefined
-			for (const sourceFileMetaData of internMeasurements.values()) {
+			const reversedInternMapping = this.report.reversedInternMapping
+			for (const [pathID, sourceFileMetaData] of internMeasurements.entries()) {
 				if (sourceFileMetaData && sourceFileMetaData.pathIndex.file) {
-					const valueToFind = sourceFileMetaData.pathIndex.id
-					let foundKey = null
+					const foundKey = reversedInternMapping.get(pathID)
 
-					for (const [key, value] of internMapping.entries()) {
-						if (value === valueToFind) {
-							foundKey = key
-							break
-						}
-					}
-
-					if (foundKey !== null) {
-						originalPathIndex = this.report.getPathIndexByID(foundKey)
-					}
+					const originalPathIndex = foundKey === undefined ?
+						undefined :
+						this.report.getPathIndexByID(foundKey)
 
 					let lastCnt = 0
 					if (methodLists.length > 0) {

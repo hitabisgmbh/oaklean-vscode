@@ -42,7 +42,7 @@ export class MethodList {
 		}
 
 		if (sourceFileMetaData.pathIndex.file !== undefined) {
-			for (const [index, sourceNodeIndex] of sourceFileMetaData.pathIndex.file.entries()) {
+			for (const sourceNodeIndex of sourceFileMetaData.pathIndex.file.values()) {
 				this.createMethodElement(sourceNodeIndex, sourceFileMetaData)
 			}
 		}
