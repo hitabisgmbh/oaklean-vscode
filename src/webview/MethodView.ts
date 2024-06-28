@@ -13,7 +13,7 @@ import { ExtendedSensorValueType, UnitPerSensorValue } from '../types/sensorValu
 import { SortDirection } from '../types/sortDirection'
 import { MethodList } from '../model/MethodList'
 import { FilterPaths } from '../types/FilterPaths'
-import { SensorValueTypeNames } from '../types/sensorValues' 
+import { SensorValueTypeNames } from '../types/sensorValues'
 import { MethodViewProtocol_ChildToParent } from '../protocols/methodViewProtocol'
 import { MethodIdentifierHelper } from '../helper/MethodIdentifierHelper'
 
@@ -38,9 +38,9 @@ window.addEventListener('DOMContentLoaded', () => {
 	initMethods()
 })
 
-export function initMethods(){
+export function initMethods() {
 	window.addEventListener('message', handleExtensionMessages)
-	postToProvider({command: MethodViewCommands.initMethods})
+	postToProvider({ command: MethodViewCommands.initMethods })
 }
 
 const postToProvider = (message: MethodViewProtocol_ChildToParent) => {
@@ -49,13 +49,13 @@ const postToProvider = (message: MethodViewProtocol_ChildToParent) => {
 
 const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 	const { methodList, sensorValueRepresentation, type, filterPaths,
-		sortDirection, fileSensorValues} = message.data
+		sortDirection, fileSensorValues } = message.data
 
-	let path : string
-	let parts : string[]
-	let filename : string
-	let methods : Method[]
-	let selectedSensorValueType  = ''
+	let path: string
+	let parts: string[]
+	let filename: string
+	let methods: Method[]
+	let selectedSensorValueType = ''
 	const contentDiv = document.getElementById('content')
 	const fileAndMethods = document.createElement('div')
 	const fileDiv = document.createElement('div')
@@ -79,7 +79,7 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 			fileAndMethods.setAttribute('data-filename', filename)
 			fileAndMethods.setAttribute('data-fileSensorValues', JSON.stringify(fileSensorValues))
 			fileAndMethods.setAttribute('data-path', path)
-			fileName.textContent = filename + ' (' + methods.length + ')' 
+			fileName.textContent = filename + ' (' + methods.length + ')'
 			fileDiv.className = 'files hoverable clickable'
 			fileDiv.setAttribute('data-path', path)
 			fileDiv.title = path
@@ -87,20 +87,20 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 			fileDiv.appendChild(fileName)
 			fileDiv.prepend(icon)
 			methodContainer.className = 'methodContainer methods' + firstFunctionCounter
-			if (contentDiv !== null){
+			if (contentDiv !== null) {
 				contentDiv.appendChild(fileAndMethods)
 				fileAndMethods.appendChild(fileDiv)
 				fileAndMethods.appendChild(methodContainer)
 				fileAndMethods.appendChild(fileDiv)
 				fileAndMethods.appendChild(methodContainer)
 			}
-			if (sensorValueRepresentation !== undefined){
+			if (sensorValueRepresentation !== undefined) {
 				selectedSensorValueType = sensorValueRepresentation.selectedSensorValueType
 			}
-			
-			fileDiv.addEventListener('click', function() {
+
+			fileDiv.addEventListener('click', function () {
 				const methodElements = document.getElementsByClassName('methods' + firstFunctionCounter) as HTMLCollectionOf<HTMLElement>
-				if (methodElements.length !== 0){
+				if (methodElements.length !== 0) {
 					if (methodElements[0].style.display === 'none') {
 						methodElements[0].style.display = 'block'
 						icon.classList.remove('codicon-chevron-right')
@@ -116,22 +116,23 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 			methods.forEach((method) => {
 				const methodElement = document.createElement('p')
 				let sensorValue
-				if (selectedSensorValueType === SensorValueTypeNames.customFormula){
+				if (selectedSensorValueType === SensorValueTypeNames.customFormula) {
 					const formula = sensorValueRepresentation.formula
 					sensorValue = calcOrReturnSensorValue(method.sensorValues, selectedSensorValueType, formula)
 				} else {
 					sensorValue = method.sensorValues[selectedSensorValueType] ? method.sensorValues[selectedSensorValueType] : '0'
 				}
 				filesTotalSensorValue += parseFloat(sensorValue)
+				const shortenedFuntionName =
+					MethodIdentifierHelper.getShortenedIdentifier(method.functionName as SourceNodeIdentifier_string)
 				methodElement.className = 'hoverable methods methodElement clickable ' + filename
-				methodElement.setAttribute('data-functionName', method.functionName)
+				methodElement.setAttribute('data-functionName', shortenedFuntionName)
 				methodElement.setAttribute('data-functionCounter', String(method.functionCounter))
 				methodElement.setAttribute('data-sensorvalues', JSON.stringify(method.sensorValues))
 				methodElement.setAttribute('data-selected-sensorvalue', sensorValue)
 				methodElement.setAttribute('data-identifier', method.identifier)
 				const functionNameSpan = document.createElement('span')
-				functionNameSpan.innerHTML = 
-					MethodIdentifierHelper.getShortenedIdentifier(method.functionName as SourceNodeIdentifier_string)
+				functionNameSpan.innerHTML = shortenedFuntionName
 				functionNameSpan.className = 'functionName'
 
 				sensorValue = parseFloat(parseFloat(sensorValue).toFixed(8)).toString()
@@ -147,28 +148,30 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 				methodElement.appendChild(sensorValueSpan)
 				methodElement.appendChild(functionCounterSpan)
 
-				if (methodContainer !== null){
+				if (methodContainer !== null) {
 					methodContainer.appendChild(methodElement)
-					methodElement.addEventListener('click', function() {
+					methodElement.addEventListener('click', function () {
 						const identifier = methodElement.getAttribute('data-identifier')
 						const filePath = fileDiv.getAttribute('data-path')
-						if (identifier !== null && filePath !== null){
-							postToProvider({command: MethodViewCommands.openMethod, 
-								identifier, filePath})
+						if (identifier !== null && filePath !== null) {
+							postToProvider({
+								command: MethodViewCommands.openMethod,
+								identifier, filePath
+							})
 						}
 					})
-						
+
 				}
 			})
 			fileAndMethods.setAttribute('data-total-selected-sensorvalue', filesTotalSensorValue.toString())
-			if (selectedSensorValueType && selectedSensorValueType === SensorValueTypeNames.customFormula){
+			if (selectedSensorValueType && selectedSensorValueType === SensorValueTypeNames.customFormula) {
 				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue
 			} else {
 				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
 			}
 			totalSensorValueSpan.className = 'sensorValue'
 			fileDiv.appendChild(totalSensorValueSpan)
-			if (filterPaths !== undefined){
+			if (filterPaths !== undefined) {
 				filterMethod(fileAndMethods, filterPaths)
 			}
 
@@ -178,16 +181,16 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 				sensorValueRepresentation.formula)
 			break
 		case MethodViewMessageTypes.filterPathChange:
-			if (filterPaths !== undefined){
+			if (filterPaths !== undefined) {
 				filterHTMLELements(filterPaths)
 			}
-			
+
 			break
 		case MethodViewMessageTypes.sortDirectionChange:
 			changeSortDirection(sortDirection)
 			break
 		case MethodViewMessageTypes.clear:
-			if (contentDiv !== null){
+			if (contentDiv !== null) {
 				contentDiv.innerHTML = ''
 			}
 			break
@@ -205,12 +208,12 @@ function changeSortDirection(sortDirection: SortDirection) {
 			return bSelectedSensorValue - aSelectedSensorValue
 		} else if (sortDirection === SortDirection.default) {
 			const aFirstMethodNumber = Number(a.getAttribute('data-firstFunctionCounter') || '0')
-			const bFirstMethodNumber =  Number(b.getAttribute('data-firstFunctionCounter') || '0')
+			const bFirstMethodNumber = Number(b.getAttribute('data-firstFunctionCounter') || '0')
 			return aFirstMethodNumber - bFirstMethodNumber
 		} else {
 			return 0
 		}
-			
+
 	})
 
 	const contentDiv = document.getElementById('content')
@@ -240,7 +243,7 @@ function changeSortDirection(sortDirection: SortDirection) {
 		})
 	}
 
-	
+
 }
 
 function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, formula: string | undefined) {
@@ -250,14 +253,15 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 		let filesTotalSensorValue = 0
 		methods.forEach((method) => {
 			const functionNameSpan = document.createElement('span')
-			functionNameSpan.textContent = method.getAttribute('data-functionName')
+			const functionName = method.getAttribute('data-functionName') || ''
+			functionNameSpan.innerHTML = functionName
 			functionNameSpan.className = 'functionName'
 
 			const sensorValues = JSON.parse(method.getAttribute('data-sensorvalues') || '{}')
 			const sensorValueSpan = document.createElement('span')
 			sensorValueSpan.className = 'sensorValue'
-			let sensorValue 
-			if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula){
+			let sensorValue
+			if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
 				sensorValue = calcOrReturnSensorValue(sensorValues, selectedSensorValueType, formula)
 				sensorValueSpan.textContent = ' ' + sensorValue
 			} else {
@@ -276,11 +280,11 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 
 		})
 		const fileDiv = fileAndMethod.getElementsByClassName('files')[0] as HTMLElement
-	
+
 		fileAndMethod.setAttribute('data-total-selected-sensorvalue', filesTotalSensorValue.toString())
 		const fileDivSensoorValueSpan = fileDiv.getElementsByClassName('sensorValue')[0]
 
-		if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula){
+		if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
 			fileDivSensoorValueSpan.textContent = ' ' + filesTotalSensorValue
 		} else {
 			fileDivSensoorValueSpan.textContent = ' ' + filesTotalSensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
@@ -308,7 +312,7 @@ function filterMethod(
 			file.style.display = 'none'
 			isIncluded = 'false'
 			return
-		} else if (isExcluded !== 'true'){
+		} else if (isExcluded !== 'true') {
 			file.setAttribute('included', 'true')
 			isIncluded = 'true'
 			file.style.display = 'block'
@@ -318,7 +322,7 @@ function filterMethod(
 		isIncluded = 'true'
 		file.style.display = 'block'
 	}
-	
+
 	if (excludedFilterPath !== undefined && excludedFilterPath !== '') {
 		if (checkPath(path, excludedFilterPath)) {
 			file.setAttribute('excluded', 'true')
@@ -331,7 +335,7 @@ function filterMethod(
 		} else {
 			file.style.display = 'none'
 		}
-			
+
 	}
 
 }
