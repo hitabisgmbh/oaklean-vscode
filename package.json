@@ -284,7 +284,7 @@
     "bundle": "npm run clean && npx cross-env NODE_ENV=production node esbuild-extension.js && npm run build-webview",
     "watch": "npx tsc -watch -p ./",
     "lint": "npx eslint --fix .",
-    "test": "npx jest",
+    "test": "npx jest --coverage",
     "package": "npx vsce package",
     "publish": "npx vsce publish"
   },

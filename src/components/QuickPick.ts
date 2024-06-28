@@ -10,7 +10,6 @@ export default class QuickPick {
 
 	constructor(options: QuickPickOptions, placeholder?: string) {
 		this.optionsWithCallBacks = options
-
 		const quickPick = vscode.window.createQuickPick()
 		const labels: vscode.QuickPickItem[] = []
 		for (const label of this.optionsWithCallBacks.keys()) {
@@ -18,6 +17,7 @@ export default class QuickPick {
 				label: label
 			})
 		}
+
 		quickPick.items = labels
 		quickPick.placeholder = placeholder
 		quickPick.onDidChangeSelection(selection => {
