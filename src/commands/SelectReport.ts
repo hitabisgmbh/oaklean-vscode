@@ -25,7 +25,6 @@ export default class SelectReport extends BaseCommand {
 	execute() {
 		const reportFilePaths = WorkspaceUtils.getProjectReportFromWorkspace()
 		const quickPickOptions: QuickPickOptions = new Map()
-
 		for (const reportFilePath of reportFilePaths) {
 			quickPickOptions.set(reportFilePath, {
 				selectionCallback: () => {

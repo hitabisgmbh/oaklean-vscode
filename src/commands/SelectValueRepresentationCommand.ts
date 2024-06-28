@@ -37,10 +37,11 @@ const QuickPickOptions_ValueRepresentation: {
 
 function changeRepresentation(container: Container, selectedValueRepresentationID: ValueRepresentationType) {
 	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-	container.storage.storeWorkspace('sensorValueRepresentation', { 
-		selectedSensorValueType: sensorValueRepresentation.selectedSensorValueType, 
-		selectedValueRepresentation: selectedValueRepresentationID, 
-		formula: sensorValueRepresentation.formula})
+	container.storage.storeWorkspace('sensorValueRepresentation', {
+		selectedSensorValueType: sensorValueRepresentation.selectedSensorValueType,
+		selectedValueRepresentation: selectedValueRepresentationID,
+		formula: sensorValueRepresentation.formula
+	})
 }
 
 export enum CommandIdentifiers {
@@ -53,7 +54,7 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 	container: Container
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 
-	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider ) {
+	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider) {
 		super()
 		this.container = container
 		this._treeDataProvider = treeDataProvider

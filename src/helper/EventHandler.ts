@@ -69,7 +69,7 @@ export default class EventHandler implements Disposable {
 	container: Container
 
 	private _reportPathChange = new EventEmitter<ReportPathChangeEvent>()
-	private _selectedSensorValueRepresentationChangeEvent = 
+	private _selectedSensorValueRepresentationChangeEvent =
 		new EventEmitter<SelectedSensorValueRepresentationChangeEvent>()
 	private _toggleLineAnnotationsChangeEvent = new EventEmitter<ToggleLineAnnotationsChangeEvent>()
 	private _reportLoaded = new EventEmitter<ReportLoadedEvent>()
@@ -84,7 +84,6 @@ export default class EventHandler implements Disposable {
 
 	constructor(container: Container) {
 		this.container = container
-
 		this._disposable = Disposable.from(
 			this.container.storage.onDidChange(this.storeChanged.bind(this)),
 			vscode.workspace.onDidOpenTextDocument(this.fireTextDocumentOpen.bind(this)),
@@ -118,7 +117,6 @@ export default class EventHandler implements Disposable {
 		if (!workspace) {
 			return
 		}
-
 		switch (key) {
 			case 'reportPath': {
 				const reportPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
@@ -129,7 +127,7 @@ export default class EventHandler implements Disposable {
 				break
 			case 'sensorValueRepresentation': {
 				const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-				if (sensorValueRepresentation.selectedSensorValueType 
+				if (sensorValueRepresentation.selectedSensorValueType
 					&& sensorValueRepresentation.selectedValueRepresentation) {
 					this.fireSelectedSensorValueTypeChange(sensorValueRepresentation)
 				}
@@ -188,7 +186,7 @@ export default class EventHandler implements Disposable {
 			selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation,
 			formula: sensorValueRepresentation.formula
 		})
-		this._selectedSensorValueRepresentationChangeEvent.fire({sensorValueRepresentation})
+		this._selectedSensorValueRepresentationChangeEvent.fire({ sensorValueRepresentation })
 	}
 
 	get onToggleLineAnnotationsChange(): Event<ToggleLineAnnotationsChangeEvent> {
