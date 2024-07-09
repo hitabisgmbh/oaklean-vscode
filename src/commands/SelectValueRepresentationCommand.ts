@@ -1,11 +1,10 @@
-import vscode from 'vscode'
-
 import BaseCommand from './BaseCommand'
 
 import { Container } from '../container'
 import { SourceFileMetaDataTreeProvider } from '../treeviews/SourceFileMetaDataTreeProvider'
 import { ValueRepresentationType } from '../types/valueRepresentationTypes'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import QuickPick, { QuickPickOptions } from '../components/QuickPick'
 
 type ValueRepresentationMetaData = {
 	[key in ValueRepresentationType]: {
@@ -25,15 +24,11 @@ const ValueRepresentations: ValueRepresentationMetaData = {
 	}
 }
 
-const QuickPickOptions_ValueRepresentation: {
-	id: ValueRepresentationType,
-	label: string
-}[] = (Object.keys(ValueRepresentationType) as ValueRepresentationType[]).map((id: ValueRepresentationType) => {
-	return {
-		id,
-		label: ValueRepresentations[id as keyof ValueRepresentationMetaData].label
-	}
-})
+const QuickPickOptions_ValueRepresentation: Map<ValueRepresentationType, string> = new Map(
+	(Object.keys(ValueRepresentationType) as ValueRepresentationType[]).map((id: ValueRepresentationType) => {
+		return [id, ValueRepresentations[id as keyof ValueRepresentationMetaData].label]
+	})
+)
 
 function changeRepresentation(container: Container, selectedValueRepresentationID: ValueRepresentationType) {
 	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
@@ -66,11 +61,26 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 	}
 
 	execute() {
-		vscode.window.showQuickPick(QuickPickOptions_ValueRepresentation)
-			.then((selectedRepresentation: { id: ValueRepresentationType, label: string } | undefined) => {
-				if (selectedRepresentation) {
-					changeRepresentation(this.container, selectedRepresentation.id)
+		const quickPickOptions: QuickPickOptions = new Map()
+		for (const option of QuickPickOptions_ValueRepresentation) {
+			quickPickOptions.set(option[1], {
+				selectionCallback: () => {
+					if (option[0]) {
+						changeRepresentation(this.container, option[0])
+					}
 				}
 			})
+		}
+
+		const currentSensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+		const currentlySelectedLabel = QuickPickOptions_ValueRepresentation.get(
+			currentSensorValueRepresentation.selectedValueRepresentation)
+		const quickPick = new QuickPick(quickPickOptions)
+		const currentItem = quickPick.vsCodeComponent.items.find(item => item.label === currentlySelectedLabel)
+
+		if (currentItem) {
+			quickPick.vsCodeComponent.activeItems = [currentItem]
+		}
+		quickPick.show()
 	}
 }
