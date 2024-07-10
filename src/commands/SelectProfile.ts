@@ -65,13 +65,8 @@ export default class SelectProfileCommand extends BaseCommand {
 
 		const currentProfile = this.container.storage.getWorkspace('profile') as Profile
 		const quickPick = new QuickPick(quickPickOptions)
-		console.log('items', quickPick.vsCodeComponent.items)
-		const currentItem = quickPick.vsCodeComponent.items.find(item => item.label === currentProfile.name)
-		console.log('currentProfile', currentProfile)
-		console.log('currentItem', currentItem)
-		if (currentItem) {
-			quickPick.vsCodeComponent.activeItems = [currentItem]
-		}
+		quickPick.setCurrentItem(currentProfile.name)
+
 		quickPick.show()
 	}
 }

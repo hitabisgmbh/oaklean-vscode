@@ -76,11 +76,10 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 		const currentlySelectedLabel = QuickPickOptions_ValueRepresentation.get(
 			currentSensorValueRepresentation.selectedValueRepresentation)
 		const quickPick = new QuickPick(quickPickOptions)
-		const currentItem = quickPick.vsCodeComponent.items.find(item => item.label === currentlySelectedLabel)
-
-		if (currentItem) {
-			quickPick.vsCodeComponent.activeItems = [currentItem]
+		if (currentlySelectedLabel) {
+			quickPick.setCurrentItem(currentlySelectedLabel)
 		}
+
 		quickPick.show()
 	}
 }

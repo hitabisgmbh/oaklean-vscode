@@ -33,4 +33,11 @@ export default class QuickPick {
 	show() {
 		this.vsCodeComponent.show()
 	}
+
+	setCurrentItem(label: string) {
+		const currentItem = this.vsCodeComponent.items.find(item => item.label === label)
+		if (currentItem) {
+			this.vsCodeComponent.activeItems = [currentItem]
+		}
+	}
 }
