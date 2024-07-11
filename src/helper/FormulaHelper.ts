@@ -78,7 +78,6 @@ export function checkFomulaValidity(formula: string | undefined): boolean{
 		console.debug('No variables found.')
 	}
 	
-    
 	if (undefindedValues.length > 0) {
 		const trimmedundefindedValues = undefindedValues.slice(0, undefindedValues.length - 1)
 		if (typeof process !== 'undefined' && process !== undefined && process.env.RUNNING_IN_EXTENSION) {

@@ -9,10 +9,6 @@ export default class StorageAndContainerMock {
 	listeners: Array<(event: StorageChangeEvent) => void> = []
 	mockOnDidChange: any
 	mockStore: Record<string, any>
-	mockProfiles = [
-		{ name: 'Profile 1', color: Color.Red, measurement: 'profilerHits' },
-		{ name: 'Profile 2', color: Color.Blue, measurement: 'profilerHits' }
-	]
 	constructor() {
 		this.mockOnDidChange = this.createOnDidChangeMock(this.listeners)
 		this.mockStore = this.createMockStore(this.mockOnDidChange)
@@ -79,6 +75,7 @@ export default class StorageAndContainerMock {
 			{ name: 'Profile 1', color: 'Red', measurement: 'profilerHits' },
 			{ name: 'Profile 2', color: 'Blue', measurement: 'profilerHits' }
 		]
+
 		const mockContainer = {
 			textDocumentController: {
 				projectReport: {},

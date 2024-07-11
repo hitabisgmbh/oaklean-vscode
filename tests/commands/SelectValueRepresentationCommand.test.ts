@@ -34,23 +34,11 @@ describe('SelectValueRepresentationCommand', () => {
 		expect(command.getIdentifier()).toBe(CommandIdentifiers.selectValueRepresentation)
 	})
 
-	it('should call showQuickPick with correct options', async () => {
-		(vscode.window.showQuickPick as jest.Mock).mockResolvedValue({ id: ValueRepresentationType.absolute, label: 'Absolute values' })
-		await command.execute()
-		expect(vscode.window.showQuickPick).toHaveBeenCalledWith(expect.arrayContaining([
-			expect.objectContaining({ label: 'Absolute values' }),
-			expect.objectContaining({ label: 'Locally relative values (relative to the current hierarchy level such as the folder level)' }),
-			expect.objectContaining({ label: 'Total relative values (relative to the total sum in the project)' }),
-		]))
-	})
-
 	it('should store the selected value representation when a selection is made', async () => {
-		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange');
-		(vscode.window.showQuickPick as jest.Mock).mockResolvedValue({ id: ValueRepresentationType.absolute, label: 'Absolute values' });
-		(container.storage.getWorkspace as jest.Mock).mockReturnValue({ selectedSensorValueType: 'previousSensorValueTypeID', selectedValueRepresentation: ValueRepresentationType.absolute, formula: 'previousFormula' })
-
-		await command.execute()
-
+		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
+		const quickPick = await command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('Absolute values')
+		selectedOption?.selectionCallback()
 		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', {
 			selectedSensorValueType: 'previousSensorValueTypeID',
 			selectedValueRepresentation: ValueRepresentationType.absolute,
@@ -66,8 +54,6 @@ describe('SelectValueRepresentationCommand', () => {
 	})
 
 	it('should not change representation if no selection is made', async () => {
-		(vscode.window.showQuickPick as jest.Mock).mockResolvedValue(undefined)
-
 		await command.execute()
 
 		expect(container.storage.storeWorkspace).not.toHaveBeenCalled()

@@ -11,7 +11,7 @@ import SelectValueRepresentationCommand, { CommandIdentifiers } from '../../src/
 import { SourceFileMetaDataTreeProvider } from '../../src/treeviews/SourceFileMetaDataTreeProvider'
 import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
 
-describe('SelectProfileCommand', () => {
+describe('SelectSensorValueTypeCommand', () => {
 	let container: Container
 	let command: SelectValueRepresentationCommand
 	let eventHandler: EventHandler
@@ -38,48 +38,48 @@ describe('SelectProfileCommand', () => {
 		expect(command.getIdentifier()).toBe(CommandIdentifiers.selectedSensorValueType)
 	})
 
-	it('should execute and change sensor value type to a predefined one', async () => {
+	it('should execute and change sensor value type to a predefined one', () => {
 		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
 		type ValidSensorValueTypeKey = keyof typeof SensorValueTypeNames;
 		const mockSensorValueType: { id: ValidSensorValueTypeKey; label: ValidSensorValueTypeKey } =
 			{ id: 'profilerHits', label: 'profilerHits' }
-			; (vscode.window.showQuickPick as jest.Mock).mockResolvedValue(mockSensorValueType)
 
-		await command.execute()
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('profilerHits')
+		selectedOption?.selectionCallback()
 		expect(fireSelectedSensorValueTypeChangeSpy).toHaveBeenCalledWith(
 			{
 				selectedSensorValueType: 'profilerHits',
 				selectedValueRepresentation: 'absolut',
 				formula: undefined
 			})
-		expect(vscode.window.showQuickPick).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({
-			label: SensorValueTypeNames[mockSensorValueType.label]
-		})]))
-		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', { selectedSensorValueType: SensorValueTypeNames[mockSensorValueType.label], selectedValueRepresentation: 'absolut', formula: undefined }
+
+		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', { 
+			selectedSensorValueType: SensorValueTypeNames[mockSensorValueType.label], selectedValueRepresentation: 'absolut', formula: undefined }
+			
 		)
 	})
 
 	it('should change formula if custom formula is selected', async () => {
 		type ValidSensorValueTypeKey = keyof typeof SensorValueTypeNames;
 		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
-		const mockSensorValueType: { id: ValidSensorValueTypeKey; label: string } = { id: 'customFormula', label: 'Add custom formula' }
-		const mockFormula = 'aggregatedCPUTime/profilerHits';
-		(vscode.window.showQuickPick as jest.Mock).mockResolvedValue(mockSensorValueType);
-		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(mockFormula);
+		const formulaSensorValueType: { id: ValidSensorValueTypeKey; label: string } = { id: 'customFormula', label: 'Add custom formula' }
+		const formula = 'aggregatedCPUTime/profilerHits';
+		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(formula);
 		(checkFomulaValidity as jest.Mock).mockReturnValue(true)
-		await command.execute()
-		await expect(vscode.window.showQuickPick).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({
-			label: 'Add custom formula'
-		})]))
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get(formulaSensorValueType.label)
+		selectedOption?.selectionCallback()
 		await expect(vscode.window.showInputBox).toHaveBeenCalledWith(expect.objectContaining({
 			prompt: 'Enter a formula'
 		}))
-		expect(checkFomulaValidity).toHaveBeenCalledWith(mockFormula)
-		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', { selectedSensorValueType: SensorValueTypeNames[mockSensorValueType.id], selectedValueRepresentation: 'absolut', formula: mockFormula })
+		expect(checkFomulaValidity).toHaveBeenCalledWith(formula)
+		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', 
+			{ selectedSensorValueType: SensorValueTypeNames[formulaSensorValueType.id], selectedValueRepresentation: 'absolut', formula: formula })
 		expect(fireSelectedSensorValueTypeChangeSpy).toHaveBeenCalledWith(
 			{
-				selectedSensorValueType: SensorValueTypeNames[mockSensorValueType.id],
-				selectedValueRepresentation: 'absolut', formula: mockFormula
+				selectedSensorValueType: SensorValueTypeNames[formulaSensorValueType.id],
+				selectedValueRepresentation: 'absolut', formula: formula
 			})
 	})
 
@@ -92,25 +92,20 @@ describe('SelectProfileCommand', () => {
 	})
 
 	it('should not change sensor value type if invalid formula is entered', async () => {
-		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
 		type ValidSensorValueTypeKey = keyof typeof SensorValueTypeNames;
-		const mockSensorValueType: { id: ValidSensorValueTypeKey; label: string } = { id: 'customFormula', label: 'Add custom formula' }
-		const mockFormula = 'invalidFormula';
-		(vscode.window.showQuickPick as jest.Mock).mockResolvedValue(mockSensorValueType);
-		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(mockFormula);
+		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
+		const formulaSensorValueType: { id: ValidSensorValueTypeKey; label: string } = { id: 'customFormula', label: 'Add custom formula' }
+		const formula = 'aggregatedCPUTime/WRONG_VAR';
+		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(formula);
 		(checkFomulaValidity as jest.Mock).mockReturnValue(false)
-
-
-		await command.execute()
-
-		await expect(vscode.window.showQuickPick).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({
-			label: 'Add custom formula'
-		})]))
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get(formulaSensorValueType.label)
+		selectedOption?.selectionCallback()
 		await expect(vscode.window.showInputBox).toHaveBeenCalledWith(expect.objectContaining({
 			prompt: 'Enter a formula'
 		}))
 		expect(fireSelectedSensorValueTypeChangeSpy).not.toHaveBeenCalled()
-		expect(checkFomulaValidity).toHaveBeenCalledWith(mockFormula)
+		expect(checkFomulaValidity).toHaveBeenCalledWith(formula)
 		expect(container.storage.storeWorkspace).not.toHaveBeenCalled()
 	})
 })

@@ -22,6 +22,7 @@ const QuickPickOptions_SensorValueTypes = new Map<ExtendedSensorValueType, strin
 function changeSensorValueType(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider, 
 	selectedSensorValueTypeID: ExtendedSensorValueType,
 	formula: string | undefined) {
+	
 	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 	container.storage.storeWorkspace('sensorValueRepresentation', { 
 		selectedSensorValueType: selectedSensorValueTypeID, 
@@ -87,5 +88,6 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 		}
 
 		quickPick.show()
+		return quickPick
 	}
 }

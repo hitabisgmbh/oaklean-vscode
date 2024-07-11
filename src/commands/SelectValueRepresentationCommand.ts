@@ -81,5 +81,6 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 		}
 
 		quickPick.show()
+		return quickPick
 	}
 }
