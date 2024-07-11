@@ -51,14 +51,20 @@ describe('SelectProfileCommand', () => {
 		const selectedOption = quickPick.optionsWithCallBacks.get('Profile 1')
 		selectedOption?.selectionCallback()
 
-		await command.execute()
-
 		expect(fireProfileChangeSpy).toHaveBeenCalledWith(
 			{
 				'color': 'Red',
 				'measurement': 'profilerHits',
 				'name': 'Profile 1',
 			} as Profile)
+	})
+
+	it('should have activeItems', async () => {
+		const quickPick = await command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('Profile 1')
+		selectedOption?.selectionCallback()
+		const quickPick2 = await command.execute()
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: 'Profile 1' }])
 	})
 
 })

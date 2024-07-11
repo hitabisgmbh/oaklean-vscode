@@ -68,8 +68,6 @@ export default class SelectProfileCommand extends BaseCommand {
 		if (currentProfile){
 			quickPick.setCurrentItem(currentProfile.name)
 		}
-		
-
 		quickPick.show()
 		return quickPick
 	}

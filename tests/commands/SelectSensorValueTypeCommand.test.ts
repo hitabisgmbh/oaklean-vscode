@@ -108,4 +108,12 @@ describe('SelectSensorValueTypeCommand', () => {
 		expect(checkFomulaValidity).toHaveBeenCalledWith(formula)
 		expect(container.storage.storeWorkspace).not.toHaveBeenCalled()
 	})
+
+	it('should have activeItems', async () => {
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('profilerHits')
+		selectedOption?.selectionCallback()
+		const quickPick2 = await command.execute()
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: 'profilerHits' }])
+	})
 })

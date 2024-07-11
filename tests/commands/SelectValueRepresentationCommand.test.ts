@@ -59,4 +59,12 @@ describe('SelectValueRepresentationCommand', () => {
 		expect(container.storage.storeWorkspace).not.toHaveBeenCalled()
 	})
 
+	it('should have activeItems', async () => {
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('Absolute values')
+		selectedOption?.selectionCallback()
+		const quickPick2 = await command.execute()
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: 'Absolute values' }])
+	})
+
 })
