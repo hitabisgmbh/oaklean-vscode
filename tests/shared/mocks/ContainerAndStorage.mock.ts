@@ -1,7 +1,5 @@
 import { Container } from '../../../src/container'
-import { StorageChangeEvent } from '../../../src/storage'
-import { Color } from '../../../src/types/color'
-
+import { StorageChangeEvent, WorkspaceStorage } from '../../../src/storage'
 
 export default class StorageAndContainerMock {
 
@@ -25,7 +23,7 @@ export default class StorageAndContainerMock {
 		}))
 	}
 
-	setMockStore = (key: string, value: any) => {
+	setMockStore = (key: keyof WorkspaceStorage, value: any) => {
 		this.mockStore[key] = value
 	}
 

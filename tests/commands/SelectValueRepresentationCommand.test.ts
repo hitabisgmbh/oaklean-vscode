@@ -25,7 +25,7 @@ describe('SelectValueRepresentationCommand', () => {
 		command = new SelectValueRepresentationCommand(container, treeDataProvider)
 		containerAndStorageMock.setMockStore('sensorValueRepresentation', {
 			selectedSensorValueType: 'previousSensorValueTypeID',
-			selectedValueRepresentation: 'absolut',
+			selectedValueRepresentation: ValueRepresentationType.absolute,
 			formula: 'previousFormula'
 		})
 	})

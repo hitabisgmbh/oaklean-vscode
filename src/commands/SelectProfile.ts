@@ -26,42 +26,19 @@ export default class SelectProfileCommand extends BaseCommand {
 	}
 
 	async execute() {
-		const profiles = this.container.profileHelper.profiles
-		const quickPickItems: {
-			label: string
-		}[] = (profiles ? profiles.map(profile => {
-			const label = profile.name
-			return { label }
-		}) : []) || []
-		quickPickItems.push({ label: REQUEST_ADD_NEW_PROFILE })
-
 		const quickPickOptions: QuickPickOptions = new Map()
-		for (const selectedProfile of quickPickItems) {
-			quickPickOptions.set(selectedProfile.label, {
+		for (const profile of this.container.profileHelper.profiles) {
+			quickPickOptions.set(profile.name, {
 				selectionCallback: () => {
-					if (selectedProfile !== undefined && selectedProfile !== null) {
-						if (selectedProfile.label === REQUEST_ADD_NEW_PROFILE) {
-							vscode.commands.executeCommand(APP_IDENTIFIER + DOT + COMMAND_OPEN_SETTINGS)
-						} else {
-							let profileFound = profiles ?
-								profiles.find((p: Profile) => p.name === selectedProfile?.label) : undefined
-
-							if (profileFound !== undefined && profileFound !== null) {
-								profileFound = {
-									name: profileFound.name,
-									color: profileFound.color,
-									measurement: profileFound.measurement,
-									formula: profileFound.formula
-								}
-							} else {
-								throw new Error(ERROR_NO_PROFILE_FOUND)
-							}
-							this.container.storage.storeWorkspace('profile', profileFound)
-						}
-					}
+					this.container.storage.storeWorkspace('profile', profile)
 				}
 			})
 		}
+		quickPickOptions.set(REQUEST_ADD_NEW_PROFILE, {
+			selectionCallback: () => {
+				vscode.commands.executeCommand(APP_IDENTIFIER + DOT + COMMAND_OPEN_SETTINGS)
+			}
+		})
 
 		const currentProfile = this.container.storage.getWorkspace('profile') as Profile
 		const quickPick = new QuickPick(quickPickOptions)

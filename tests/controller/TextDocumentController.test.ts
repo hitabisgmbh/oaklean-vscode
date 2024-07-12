@@ -10,19 +10,11 @@ import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
 describe('TextDocumentController', () => {
 	let container: Container
 	let textDocumentController: TextDocumentController
-	let mockEvent: any
-	let mockEditor: vscode.TextEditor
 
 	beforeEach(() => {
 		const containerAndStorageMock = new ContainerAndStorageMock()
 		container = containerAndStorageMock.container
 		textDocumentController = new TextDocumentController(container)
-		mockEvent = {
-			enabled: true,
-			sensorValueRepresentation: { selectedSensorValueType: 'profilerHits', formula: 'profilerHits * 2' },
-			editor: mockEditor,
-			fileName: '/path/to/workspace/file.ts'
-		}
 	})
 	stub_getWorkspaceDirStub()
 	it('should handle reportPathChanged event correctly', () => {

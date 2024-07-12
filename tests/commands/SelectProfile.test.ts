@@ -7,6 +7,7 @@ import EventHandler from '../../src/helper/EventHandler'
 import { REQUEST_ADD_NEW_PROFILE } from '../../src/constants/webview'
 import { Profile } from '../../src/types/profile'
 import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
+import { Color } from '../../src/types/color'
 
 describe('SelectProfileCommand', () => {
 	let container: Container
@@ -33,9 +34,9 @@ describe('SelectProfileCommand', () => {
 		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('profile',
 			{
 				name: 'Profile 1',
-				color: 'Red',
+				color: Color.Red,
 				measurement: 'profilerHits'
-			})
+			} satisfies Profile)
 	})
 
 	it('should open settings to add a new profile', async () => {
@@ -53,10 +54,10 @@ describe('SelectProfileCommand', () => {
 
 		expect(fireProfileChangeSpy).toHaveBeenCalledWith(
 			{
-				'color': 'Red',
+				'color': Color.Red,
 				'measurement': 'profilerHits',
 				'name': 'Profile 1',
-			} as Profile)
+			} satisfies Profile)
 	})
 
 	it('should have activeItems', async () => {

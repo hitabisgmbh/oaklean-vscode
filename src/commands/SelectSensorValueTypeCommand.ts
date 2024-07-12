@@ -6,7 +6,7 @@ import { Container } from '../container'
 import { SensorValueTypeNames } from '../types/sensorValues'
 import { SourceFileMetaDataTreeProvider } from '../treeviews/SourceFileMetaDataTreeProvider'
 import { ExtendedSensorValueType } from '../types/sensorValues'
-import { checkFomulaValidity } from '../helper/FormulaHelper'
+import { checkFormulaValidity } from '../helper/FormulaHelper'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import QuickPick, { QuickPickOptions } from '../components/QuickPick'
 
@@ -65,7 +65,7 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 							value: formula
 						}).then((formula: string | undefined) => {
 							if (formula) {
-								if (!checkFomulaValidity(formula)) {
+								if (!checkFormulaValidity(formula)) {
 									return
 								}
 								changeSensorValueType(this.container, this._treeDataProvider,

@@ -24,12 +24,6 @@ const ValueRepresentations: ValueRepresentationMetaData = {
 	}
 }
 
-const QuickPickOptions_ValueRepresentation: Map<ValueRepresentationType, string> = new Map(
-	(Object.keys(ValueRepresentationType) as ValueRepresentationType[]).map((id: ValueRepresentationType) => {
-		return [id, ValueRepresentations[id as keyof ValueRepresentationMetaData].label]
-	})
-)
-
 function changeRepresentation(container: Container, selectedValueRepresentationID: ValueRepresentationType) {
 	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 	container.storage.storeWorkspace('sensorValueRepresentation', {
@@ -62,19 +56,25 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 
 	execute() {
 		const quickPickOptions: QuickPickOptions = new Map()
-		for (const option of QuickPickOptions_ValueRepresentation) {
-			quickPickOptions.set(option[1], {
-				selectionCallback: () => {
-					if (option[0]) {
-						changeRepresentation(this.container, option[0])
-					}
-				}
-			})
-		}
+		quickPickOptions.set(ValueRepresentations.absolute.label, {
+			selectionCallback: () => {
+				changeRepresentation(this.container, ValueRepresentationType.absolute)
+			}
+		})
+		quickPickOptions.set(ValueRepresentations.locallyRelative.label, {
+			selectionCallback: () => {
+				changeRepresentation(this.container, ValueRepresentationType.locallyRelative)
+			}
+		})
+		quickPickOptions.set(ValueRepresentations.totalRelative.label, {
+			selectionCallback: () => {
+				changeRepresentation(this.container, ValueRepresentationType.totalRelative)
+			}
+		})
 
 		const currentSensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-		const currentlySelectedLabel = QuickPickOptions_ValueRepresentation.get(
-			currentSensorValueRepresentation.selectedValueRepresentation)
+		const currentlySelectedLabel =
+			ValueRepresentations[currentSensorValueRepresentation.selectedValueRepresentation].label
 		const quickPick = new QuickPick(quickPickOptions)
 		if (currentlySelectedLabel) {
 			quickPick.setCurrentItem(currentlySelectedLabel)

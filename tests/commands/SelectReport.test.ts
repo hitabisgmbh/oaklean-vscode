@@ -13,8 +13,6 @@ import {
 } from '../shared/constants/profiles'
 import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
 
-
-
 stub_globSync()
 stub_getWorkspaceDirStub()
 stub_getProjectReportFromWorkspaceStub()

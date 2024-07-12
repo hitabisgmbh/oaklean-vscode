@@ -1,4 +1,4 @@
-import { calcOrReturnSensorValue, checkFomulaValidity } from '../../src/helper/FormulaHelper'
+import { calcOrReturnSensorValue, checkFormulaValidity } from '../../src/helper/FormulaHelper'
 
 describe('FormulaHelper', () => {
 	let sensorValues: Record<string, any>
@@ -27,19 +27,19 @@ describe('FormulaHelper', () => {
 		})
 	})
 
-	describe('checkFomulaValidity', () => {
+	describe('checkFormulaValidity', () => {
 		it('should return false if formula is undefined', () => {
-			const result = checkFomulaValidity(undefined)
+			const result = checkFormulaValidity(undefined)
 			expect(result).toBe(false)
 		})
 
 		it('should return false if formula contains undefined variables', () => {
-			const result = checkFomulaValidity('undefinedVariable + 1')
+			const result = checkFormulaValidity('undefinedVariable + 1')
 			expect(result).toBe(false)
 		})
 
 		it('should return true if formula is valid', () => {
-			const result = checkFomulaValidity('profilerHits + 1')
+			const result = checkFormulaValidity('profilerHits + 1')
 			expect(result).toBe(true)
 		})
 	})
