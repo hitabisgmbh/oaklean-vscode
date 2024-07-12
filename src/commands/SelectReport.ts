@@ -39,8 +39,9 @@ export default class SelectReport extends BaseCommand {
 		const quickPick = new QuickPick(quickPickOptions, placeholder)
 		if (quickPickOptions.size === 0) {
 			vscode.window.showInformationMessage('Oaklean: No Project Reports Available')
-			return
+			return quickPick
 		}
 		quickPick.show()
+		return quickPick
 	}
 }
