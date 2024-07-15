@@ -6,12 +6,14 @@ import * as vscode from 'vscode'
 import { Container } from '../../src/container'
 import EventHandler from '../../src/helper/EventHandler'
 import { SensorValueTypeNames } from '../../src/types/sensorValues'
-import { checkFomulaValidity } from '../../src/helper/FormulaHelper'
+import { checkFormulaValidity } from '../../src/helper/FormulaHelper'
 import SelectValueRepresentationCommand, { CommandIdentifiers } from '../../src/commands/SelectSensorValueTypeCommand'
 import { SourceFileMetaDataTreeProvider } from '../../src/treeviews/SourceFileMetaDataTreeProvider'
 import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
+import { ValueRepresentationType } from '../../src/types/valueRepresentationTypes'
+import { SensorValueRepresentation } from '../../src/types/sensorValueRepresentation'
 
-describe('SelectProfileCommand', () => {
+describe('SelectSensorValueTypeCommand', () => {
 	let container: Container
 	let command: SelectValueRepresentationCommand
 	let eventHandler: EventHandler
@@ -24,10 +26,10 @@ describe('SelectProfileCommand', () => {
 		treeDataProvider = new SourceFileMetaDataTreeProvider(container)
 		command = new SelectValueRepresentationCommand(container, treeDataProvider)
 		containerAndStorageMock.setMockStore('sensorValueRepresentation', {
-			selectedSensorValueType: 'previousSensorValueTypeID',
-			selectedValueRepresentation: 'absolut',
+			selectedSensorValueType: 'profilerHits',
+			selectedValueRepresentation: ValueRepresentationType.absolute,
 			formula: 'previousFormula'
-		})
+		} satisfies SensorValueRepresentation)
 	})
 
 	afterEach(() => {
@@ -38,49 +40,43 @@ describe('SelectProfileCommand', () => {
 		expect(command.getIdentifier()).toBe(CommandIdentifiers.selectedSensorValueType)
 	})
 
-	it('should execute and change sensor value type to a predefined one', async () => {
-		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
-		type ValidSensorValueTypeKey = keyof typeof SensorValueTypeNames;
-		const mockSensorValueType: { id: ValidSensorValueTypeKey; label: ValidSensorValueTypeKey } =
-			{ id: 'profilerHits', label: 'profilerHits' }
-			; (vscode.window.showQuickPick as jest.Mock).mockResolvedValue(mockSensorValueType)
+	it('should execute and change sensor value type to a predefined one', () => {
+		const expectedSensorValueRepresentation: SensorValueRepresentation = {
+			selectedSensorValueType: 'profilerHits',
+			selectedValueRepresentation: ValueRepresentationType.absolute,
+			formula: undefined
+		}
 
-		await command.execute()
-		expect(fireSelectedSensorValueTypeChangeSpy).toHaveBeenCalledWith(
-			{
-				selectedSensorValueType: 'profilerHits',
-				selectedValueRepresentation: 'absolut',
-				formula: undefined
-			})
-		expect(vscode.window.showQuickPick).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({
-			label: SensorValueTypeNames[mockSensorValueType.label]
-		})]))
-		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', { selectedSensorValueType: SensorValueTypeNames[mockSensorValueType.label], selectedValueRepresentation: 'absolut', formula: undefined }
-		)
+		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('profilerHits')
+		selectedOption?.selectionCallback()
+		expect(fireSelectedSensorValueTypeChangeSpy).toHaveBeenCalledWith(expectedSensorValueRepresentation)
+		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', expectedSensorValueRepresentation)
 	})
 
 	it('should change formula if custom formula is selected', async () => {
-		type ValidSensorValueTypeKey = keyof typeof SensorValueTypeNames;
-		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
-		const mockSensorValueType: { id: ValidSensorValueTypeKey; label: string } = { id: 'customFormula', label: 'Add custom formula' }
-		const mockFormula = 'aggregatedCPUTime/profilerHits';
-		(vscode.window.showQuickPick as jest.Mock).mockResolvedValue(mockSensorValueType);
-		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(mockFormula);
-		(checkFomulaValidity as jest.Mock).mockReturnValue(true)
-		await command.execute()
-		await expect(vscode.window.showQuickPick).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({
-			label: 'Add custom formula'
-		})]))
+		const formula = 'aggregatedCPUTime/profilerHits'
+		const expectedSensorValueRepresentation: SensorValueRepresentation = {
+			selectedSensorValueType: 'customFormula',
+			selectedValueRepresentation: ValueRepresentationType.absolute,
+			formula: formula
+		}
+		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange');
+		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(formula);
+		(checkFormulaValidity as jest.Mock).mockReturnValue(true)
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('Add custom formula')
+		selectedOption?.selectionCallback()
 		await expect(vscode.window.showInputBox).toHaveBeenCalledWith(expect.objectContaining({
 			prompt: 'Enter a formula'
 		}))
-		expect(checkFomulaValidity).toHaveBeenCalledWith(mockFormula)
-		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('sensorValueRepresentation', { selectedSensorValueType: SensorValueTypeNames[mockSensorValueType.id], selectedValueRepresentation: 'absolut', formula: mockFormula })
-		expect(fireSelectedSensorValueTypeChangeSpy).toHaveBeenCalledWith(
-			{
-				selectedSensorValueType: SensorValueTypeNames[mockSensorValueType.id],
-				selectedValueRepresentation: 'absolut', formula: mockFormula
-			})
+		expect(checkFormulaValidity).toHaveBeenCalledWith(formula)
+		expect(container.storage.storeWorkspace).toHaveBeenCalledWith(
+			'sensorValueRepresentation', 
+			expectedSensorValueRepresentation
+		)
+		expect(fireSelectedSensorValueTypeChangeSpy).toHaveBeenCalledWith(expectedSensorValueRepresentation)
 	})
 
 	it('should not change sensor value type if no selection is made', async () => {
@@ -93,24 +89,25 @@ describe('SelectProfileCommand', () => {
 
 	it('should not change sensor value type if invalid formula is entered', async () => {
 		const fireSelectedSensorValueTypeChangeSpy = jest.spyOn(eventHandler, 'fireSelectedSensorValueTypeChange')
-		type ValidSensorValueTypeKey = keyof typeof SensorValueTypeNames;
-		const mockSensorValueType: { id: ValidSensorValueTypeKey; label: string } = { id: 'customFormula', label: 'Add custom formula' }
-		const mockFormula = 'invalidFormula';
-		(vscode.window.showQuickPick as jest.Mock).mockResolvedValue(mockSensorValueType);
-		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(mockFormula);
-		(checkFomulaValidity as jest.Mock).mockReturnValue(false)
-
-
-		await command.execute()
-
-		await expect(vscode.window.showQuickPick).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({
-			label: 'Add custom formula'
-		})]))
+		const formula = 'aggregatedCPUTime/WRONG_VAR';
+		(vscode.window.showInputBox as jest.Mock).mockResolvedValue(formula);
+		(checkFormulaValidity as jest.Mock).mockReturnValue(false)
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('Add custom formula')
+		selectedOption?.selectionCallback()
 		await expect(vscode.window.showInputBox).toHaveBeenCalledWith(expect.objectContaining({
 			prompt: 'Enter a formula'
 		}))
 		expect(fireSelectedSensorValueTypeChangeSpy).not.toHaveBeenCalled()
-		expect(checkFomulaValidity).toHaveBeenCalledWith(mockFormula)
+		expect(checkFormulaValidity).toHaveBeenCalledWith(formula)
 		expect(container.storage.storeWorkspace).not.toHaveBeenCalled()
+	})
+
+	it('should have activeItems', async () => {
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get('profilerHits')
+		selectedOption?.selectionCallback()
+		const quickPick2 = await command.execute()
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: 'profilerHits' }])
 	})
 })

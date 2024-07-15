@@ -6,7 +6,7 @@ import { Profile } from '../types/profile'
 import { DOT, COMMAND_OPEN_SETTINGS } from '../constants/webview'
 import { APP_IDENTIFIER } from '../constants/app'
 import { Color } from '../types/color'
-import { checkFomulaValidity } from '../helper/FormulaHelper'
+import { checkFormulaValidity } from '../helper/FormulaHelper'
 import { ERROR_FAILED_TO_ADD_PROFILE, ERROR_FAILED_TO_DELETE_PROFILE, ERROR_FAILED_TO_SAVE_PROFILE, ERROR_FORMULA_NOT_VALID, ERROR_SAME_NAME, INFO_PROFILE_ADDED, INFO_PROFILE_ASK_DELETED, INFO_PROFILE_DELETED, INFO_PROFILE_SAVED, NO, YES } from '../constants/infoMessages'
 import { ProfileChangeEvent } from '../helper/EventHandler'
 
@@ -78,7 +78,7 @@ export default class SettingsWebviewController implements Disposable {
 
 	updateProfile(profile: Profile) {
 		try {
-			if (profile.measurement === 'customFormula' && !checkFomulaValidity(profile.formula)) {
+			if (profile.measurement === 'customFormula' && !checkFormulaValidity(profile.formula)) {
 				vscode.window.showErrorMessage(ERROR_FORMULA_NOT_VALID)
 				return
 			}
@@ -93,7 +93,7 @@ export default class SettingsWebviewController implements Disposable {
 
 	addProfile(profile: Profile) {
 		try {
-			if (profile.measurement === 'customFormula' && !checkFomulaValidity(profile.formula)) {
+			if (profile.measurement === 'customFormula' && !checkFormulaValidity(profile.formula)) {
 				vscode.window.showErrorMessage(ERROR_FORMULA_NOT_VALID)
 				return
 			}

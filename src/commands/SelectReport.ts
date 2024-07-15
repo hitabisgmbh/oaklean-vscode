@@ -1,4 +1,5 @@
 import vscode from 'vscode'
+import { PathUtils, UnifiedPath } from '@oaklean/profiler-core'
 
 import BaseCommand from './BaseCommand'
 
@@ -25,10 +26,11 @@ export default class SelectReport extends BaseCommand {
 	execute() {
 		const reportFilePaths = WorkspaceUtils.getProjectReportFromWorkspace()
 		const quickPickOptions: QuickPickOptions = new Map()
+		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		for (const reportFilePath of reportFilePaths) {
 			quickPickOptions.set(reportFilePath, {
 				selectionCallback: () => {
-					const reportPath = WorkspaceUtils.getWorkspaceDir()?.join(reportFilePath)
+					const reportPath = workspaceDir?.join(reportFilePath)
 					if (reportPath) {
 						this.container.storage.storeWorkspace('reportPath', reportPath)
 					}
@@ -39,8 +41,15 @@ export default class SelectReport extends BaseCommand {
 		const quickPick = new QuickPick(quickPickOptions, placeholder)
 		if (quickPickOptions.size === 0) {
 			vscode.window.showInformationMessage('Oaklean: No Project Reports Available')
-			return
+			return quickPick
+		}
+		
+		const currentReport = this.container.storage.getWorkspace('reportPath') as UnifiedPath
+		if (currentReport && workspaceDir){
+			const relativePath = workspaceDir.pathTo(currentReport).toPlatformString()
+			quickPick.setCurrentItem(relativePath)
 		}
 		quickPick.show()
+		return quickPick
 	}
 }

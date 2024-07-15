@@ -19,7 +19,7 @@ function deconstructFormula(sensorValues: LocalSensorValues, formula: string | u
 	if (!formula){
 		return ''
 	}
-	const valid = checkFomulaValidity(formula)
+	const valid = checkFormulaValidity(formula)
 	if (valid){
 		const variables = formula.match(variablePattern)
 		const values: Record<string, any> = {}
@@ -61,7 +61,7 @@ export function calcOrReturnSensorValue(sensorValues: LocalSensorValues,
 	return result
 }
 
-export function checkFomulaValidity(formula: string | undefined): boolean{
+export function checkFormulaValidity(formula: string | undefined): boolean{
 	const variablePattern = /[a-zA-Z]+/g
 	if (!formula){
 		return false
@@ -78,7 +78,6 @@ export function checkFomulaValidity(formula: string | undefined): boolean{
 		console.debug('No variables found.')
 	}
 	
-    
 	if (undefindedValues.length > 0) {
 		const trimmedundefindedValues = undefindedValues.slice(0, undefindedValues.length - 1)
 		if (typeof process !== 'undefined' && process !== undefined && process.env.RUNNING_IN_EXTENSION) {

@@ -1,11 +1,10 @@
-import vscode from 'vscode'
-
 import BaseCommand from './BaseCommand'
 
 import { Container } from '../container'
 import { SourceFileMetaDataTreeProvider } from '../treeviews/SourceFileMetaDataTreeProvider'
 import { ValueRepresentationType } from '../types/valueRepresentationTypes'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import QuickPick, { QuickPickOptions } from '../components/QuickPick'
 
 type ValueRepresentationMetaData = {
 	[key in ValueRepresentationType]: {
@@ -24,16 +23,6 @@ const ValueRepresentations: ValueRepresentationMetaData = {
 		label: 'Total relative values (relative to the total sum in the project)'
 	}
 }
-
-const QuickPickOptions_ValueRepresentation: {
-	id: ValueRepresentationType,
-	label: string
-}[] = (Object.keys(ValueRepresentationType) as ValueRepresentationType[]).map((id: ValueRepresentationType) => {
-	return {
-		id,
-		label: ValueRepresentations[id as keyof ValueRepresentationMetaData].label
-	}
-})
 
 function changeRepresentation(container: Container, selectedValueRepresentationID: ValueRepresentationType) {
 	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
@@ -66,11 +55,32 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 	}
 
 	execute() {
-		vscode.window.showQuickPick(QuickPickOptions_ValueRepresentation)
-			.then((selectedRepresentation: { id: ValueRepresentationType, label: string } | undefined) => {
-				if (selectedRepresentation) {
-					changeRepresentation(this.container, selectedRepresentation.id)
-				}
-			})
+		const quickPickOptions: QuickPickOptions = new Map()
+		quickPickOptions.set(ValueRepresentations.absolute.label, {
+			selectionCallback: () => {
+				changeRepresentation(this.container, ValueRepresentationType.absolute)
+			}
+		})
+		quickPickOptions.set(ValueRepresentations.locallyRelative.label, {
+			selectionCallback: () => {
+				changeRepresentation(this.container, ValueRepresentationType.locallyRelative)
+			}
+		})
+		quickPickOptions.set(ValueRepresentations.totalRelative.label, {
+			selectionCallback: () => {
+				changeRepresentation(this.container, ValueRepresentationType.totalRelative)
+			}
+		})
+
+		const currentSensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+		const currentlySelectedLabel =
+			ValueRepresentations[currentSensorValueRepresentation.selectedValueRepresentation].label
+		const quickPick = new QuickPick(quickPickOptions)
+		if (currentlySelectedLabel) {
+			quickPick.setCurrentItem(currentlySelectedLabel)
+		}
+
+		quickPick.show()
+		return quickPick
 	}
 }
