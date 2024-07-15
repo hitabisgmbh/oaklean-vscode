@@ -70,10 +70,15 @@ export default class ReportBackendStorageController implements Disposable {
 
 
 			const urlWithHashes = `http:/${url}/check-existence?` + hashes.map(hash => `hashes[]=${hash}`).join('&')
-			const response = await fetch(urlWithHashes)
-			if (!response.ok) {
-				console.debug('check-existence Failed!', response.status)
-				continue
+			let response
+			try {
+				response = await fetch(urlWithHashes)
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+			} catch (error) {
+				console.error('Error fetching URL:', error)
+				return
 			}
 
 			const data = await response.json()
