@@ -34,6 +34,18 @@ describe('SelectReport', () => {
 		selectedOption?.selectionCallback()
 
 		expect(container.storage.storeWorkspace).toBeCalled()
+
+		const quickPick2 = await command.execute()
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: PROJECT_REPORT_PATH_001 }])
+	})
+
+	it('should have active item', async () => {
+		const quickPick = command.execute()
+		const selectedOption = quickPick.optionsWithCallBacks.get(PROJECT_REPORT_PATH_001)
+		selectedOption?.selectionCallback()
+
+		const quickPick2 = await command.execute()
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: PROJECT_REPORT_PATH_001 }])
 	})
 
 	it('should show a message when no reports are available', async () => {
@@ -42,4 +54,5 @@ describe('SelectReport', () => {
 		command.execute()
 		expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Oaklean: No Project Reports Available')
 	})
+
 })
