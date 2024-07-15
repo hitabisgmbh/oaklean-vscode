@@ -77,7 +77,7 @@ export default class ReportBackendStorageController implements Disposable {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 			} catch (error) {
-				console.error('Error fetching URL:', error)
+				console.debug('Error fetching URL:', error)
 				return
 			}
 
