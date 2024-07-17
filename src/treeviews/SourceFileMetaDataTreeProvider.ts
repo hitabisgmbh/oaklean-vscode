@@ -6,7 +6,8 @@ import {
 	SourceFileMetaDataTree,
 	SourceFileMetaDataTreeType,
 	UnifiedPathPart_string,
-	ModelMap
+	ModelMap,
+	UnifiedPath_string
 } from '@oaklean/profiler-core'
 
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -294,78 +295,63 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		const node = element ? element : this.sourceFileMetaDataTree
 		const internChildren = node.internChildren 
 		const externChildren = node.externChildren
-		let directory: UnifiedPath | undefined
-		const processChildren = (children: ModelMap<UnifiedPathPart_string | NodeModuleIdentifier_string, 
-		SourceFileMetaDataTree<SourceFileMetaDataTreeType>>, external?: boolean) => {
-			if (external) {
-				const nodeModulesPath = new UnifiedPath('./node_modules')
-				const directoryTreeNode = new DirectoryTreeNode(nodeModulesPath.toString(),
-					node.aggregatedExternSourceMetaData.total.sensorValues, 
-					SourceFileMetaDataTreeType.Directory)
-				this.directoryTree.push(directoryTreeNode)
-			}
-			for (const [filePathPart, childNode] of children.entries()) {
-				let nodeModuleName
-				if (childNode.type === 'Module'){
-					const nodeModule = NodeModule.fromIdentifier(filePathPart as NodeModuleIdentifier_string)
-					nodeModuleName = nodeModule.name
-				}
-
-				let nodeModulesPath
-				if (external){
-					nodeModulesPath = new UnifiedPath('./node_modules')
-					directory = nodeModuleName ? nodeModulesPath.join(nodeModuleName) 
-						: nodeModulesPath.join(filePathPart)
-				} else {
-					directory = parentDirectory
-						? parentDirectory.join(filePathPart)
-						: new UnifiedPath(filePathPart)
-				}
-				
-				if (directory) {
-					const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
-						childNode.aggregatedInternSourceMetaData.total.sensorValues,
-						childNode.type)
-					if ((element && element.filePath)) {
-						const parentPath = parentDirectory ? parentDirectory.toString() : element.filePath.toString()
-						const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
-							parentPath, this.directoryTree)
-						if (parentDirectoryTreeNode) {
-							parentDirectoryTreeNode.children.push(directoryTreeNode)
-						} else {
-							this.directoryTree.push(directoryTreeNode)
-						}
-
-					} else if (external && nodeModulesPath){
-						const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
-							nodeModulesPath.toString(), this.directoryTree)
-						if (parentDirectoryTreeNode) {
-							parentDirectoryTreeNode.children.push(directoryTreeNode)
-						} else {
-							this.directoryTree.push(directoryTreeNode)
-						}
-					} else if (parentDirectory) {
-						const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
-							parentDirectory.toString(), this.directoryTree)
-						if (parentDirectoryTreeNode) {
-							parentDirectoryTreeNode.children.push(directoryTreeNode)
-						} else {
-							this.directoryTree.push(directoryTreeNode)
-						}
-					} else {
-						this.directoryTree.push(directoryTreeNode)
-					}
-				}
-				this.createDirectoryTree(childNode, directory)
-			}
-		}
-		processChildren(internChildren)
+		this.processChildren(internChildren, parentDirectory)
 
 		if (!element) {
-			processChildren(externChildren, true)
+			const nodeModulesPath = new UnifiedPath('./node_modules')
+			const directoryTreeNode = new DirectoryTreeNode(nodeModulesPath.toString(),
+				node.aggregatedExternSourceMetaData.total.sensorValues, 
+				SourceFileMetaDataTreeType.Directory, true)
+			this.directoryTree.push(directoryTreeNode)
+
+			this.processChildren(externChildren, parentDirectory, true)
 		}
 	}
 
+	processChildren(children: ModelMap<UnifiedPathPart_string | NodeModuleIdentifier_string,
+		SourceFileMetaDataTree<SourceFileMetaDataTreeType>>,
+		parentDirectory?: UnifiedPath, external?: boolean) {
+		for (const [filePathPart, childNode] of children.entries()) {
+			const directory = this.determineDirectory(filePathPart, childNode, parentDirectory, external)
+			if (directory) {
+				this.addDirectoryTreeNode(directory, childNode, parentDirectory, external)
+				this.createDirectoryTree(childNode, directory)
+			}
+		}
+	}
+
+	addDirectoryTreeNode(directory: UnifiedPath, childNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
+		parentDirectory?: UnifiedPath, external = false) {
+		const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
+			childNode.aggregatedInternSourceMetaData.total.sensorValues, childNode.type, external)
+		let parentPath = parentDirectory ? parentDirectory.toString() : '' as UnifiedPath_string
+		if (external) {
+			parentPath = new UnifiedPath('./node_modules').toString()
+		}
+		if (parentPath === '') {
+			this.directoryTree.push(directoryTreeNode)
+		} else {
+			const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(parentPath, this.directoryTree)
+			if (parentDirectoryTreeNode) {
+				parentDirectoryTreeNode.children.push(directoryTreeNode)
+			} else {
+				this.directoryTree.push(directoryTreeNode)
+			}
+		}
+
+	}
+
+	determineDirectory(filePathPart: UnifiedPathPart_string | NodeModuleIdentifier_string,
+		childNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
+		parentDirectory?: UnifiedPath, external?: boolean): UnifiedPath | undefined {
+		if (external) {
+			const nodeModulesPath = new UnifiedPath('./node_modules')
+			return childNode.type === 'Module' ? nodeModulesPath.join(NodeModule.fromIdentifier(filePathPart as NodeModuleIdentifier_string).name)
+				: nodeModulesPath.join(filePathPart)
+		} else {
+			return parentDirectory ? parentDirectory.join(filePathPart) : new UnifiedPath(filePathPart)
+		}
+	}
 	rerender() {
 		this.changeEvent.fire()
 	}
@@ -394,9 +380,11 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 			if ((this.includedFilterPath && this.includedFilterPath.length > 0) || 
 				(this.excludedFilterPath && this.excludedFilterPath.length > 0)){
 				this.directoryTree.forEach(node => {
-					internalTotalValue += calcOrReturnSensorValue(node.measurement,
-						this.sensorValueRepresentation.selectedSensorValueType,
-						this.sensorValueRepresentation.formula)
+					if (!node.isModulesDirectory) {
+						internalTotalValue += calcOrReturnSensorValue(node.measurement,
+							this.sensorValueRepresentation.selectedSensorValueType,
+							this.sensorValueRepresentation.formula)
+					}
 				})
 			} else {
 				internalTotalValue = calcOrReturnSensorValue(

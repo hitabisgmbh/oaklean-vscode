@@ -10,10 +10,13 @@ export class DirectoryTreeNode {
 	measurement: SensorValues
 	type: SourceFileMetaDataTreeType
 	children: DirectoryTreeNode[]
-	constructor(directory: UnifiedPath_string, measurement: SensorValues, type: SourceFileMetaDataTreeType) {
+	isModulesDirectory: boolean
+	constructor(directory: UnifiedPath_string, measurement: SensorValues,
+		type: SourceFileMetaDataTreeType, isModulesDirectory: boolean) {
 		this.directory = directory
 		this.measurement = measurement
 		this.type = type
+		this.isModulesDirectory = isModulesDirectory
 		this.children = []
 	}
 
