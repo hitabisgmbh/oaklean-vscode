@@ -4,7 +4,10 @@ import {
 	NodeModuleIdentifier_string,
 	UnifiedPath,
 	SourceFileMetaDataTree,
-	SourceFileMetaDataTreeType
+	SourceFileMetaDataTreeType,
+	UnifiedPathPart_string,
+	ModelMap,
+	UnifiedPath_string
 } from '@oaklean/profiler-core'
 
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -22,7 +25,6 @@ enum DisplayType {
 	intern = 'intern',
 	extern = 'extern',
 }
-
 class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 	type: DisplayType
 	metaDataNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>
@@ -265,94 +267,87 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 			.map(node => node.filterTree(this.includedFilterPath, this.excludedFilterPath))
 			.filter(node => node !== null) as DirectoryTreeNode[]
 		for (let i = 0; i < this.directoryTree.length; i++) {
-			this.directoryTree[i] = this.directoryTree[i].updateAllNodesMeasurements()
+			this.directoryTree[i].updateAllNodesMeasurements()
 		}
 	}
 
-	createDirectoryTree(element?: SourceFileMetaDataTreeNode | undefined):
-	vscode.ProviderResult<SourceFileMetaDataTreeNode[]> {
+	createDirectoryTree(element?: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined, 
+		parentDirectory?: UnifiedPath) {
 		if (!this.sourceFileMetaDataTree) {
 			return
 		}
-		const node = element ? element.metaDataNode : this.sourceFileMetaDataTree
-		const result: vscode.ProviderResult<SourceFileMetaDataTreeNode[]>[] = []
-		const displayAsIntern = !element || element.type === DisplayType.intern
-		const children = displayAsIntern ? node.internChildren : node.externChildren
-		let directory
-		for (const [filePathPart, childNode] of children.entries()) {
-			const isEmpty =
-				childNode.internChildren.size + childNode.externChildren.size === 0
-			let workspaceFilePath
-			const nodeModule =
-				childNode.type === 'Module'
-					? NodeModule.fromIdentifier(filePathPart as NodeModuleIdentifier_string)
-					: undefined
-			directory = element
-				? element.directory?.join(nodeModule?.name || filePathPart)
-				: new UnifiedPath(filePathPart)
-			const sourceFileMetaDataTreeNode = new SourceFileMetaDataTreeNode(
-				filePathPart,
-				DisplayType.intern,
-				node,
-				childNode,
-				this.sensorValueRepresentation,
-				0,
-				this.modulesTotalValue,
-				this.includedFilterPath || '',
-				this.excludedFilterPath || '',
-				isEmpty
-					? vscode.TreeItemCollapsibleState.None
-					: vscode.TreeItemCollapsibleState.Collapsed,
-				directory,
-				workspaceFilePath
-			)
-			if (directory) {
-				const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
-					sourceFileMetaDataTreeNode.metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
-					sourceFileMetaDataTreeNode.metaDataNode.type)
-				if (element && element.directory) {
-					const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
-						element.directory.toString(), this.directoryTree)
-					if (parentDirectoryTreeNode) {
-						parentDirectoryTreeNode.children.push(directoryTreeNode)
-					}
-
-				} else {
-					this.directoryTree.push(directoryTreeNode)
-				}
-			}
-			result.push(this.createDirectoryTree(
-				sourceFileMetaDataTreeNode
-			))
-		}
-		if (displayAsIntern) {
-			directory = new UnifiedPath('./node_modules')
-			const nodeModules = DirectoryTreeNode.findInDirectoryTree(directory.toString(), this.directoryTree)
-			if (node.externChildren.size > 0 && !nodeModules) {
-				const sourceFileMetaDataTreeNode = new SourceFileMetaDataTreeNode(
-					'node_modules',
-					DisplayType.extern,
-					node,
-					node,
-					this.sensorValueRepresentation,
-					0,
-					this.modulesTotalValue,
-					this.includedFilterPath || '',
-					this.excludedFilterPath || '',
-					vscode.TreeItemCollapsibleState.Collapsed,
-					directory
-				)
-				const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
-					sourceFileMetaDataTreeNode.metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
-					sourceFileMetaDataTreeNode.metaDataNode.type)
+		const node = element ? element : this.sourceFileMetaDataTree
+		const internChildren = node.internChildren 
+		const externChildren = node.externChildren
+		let directory: UnifiedPath | undefined
+		const processChildren = (children: ModelMap<UnifiedPathPart_string | NodeModuleIdentifier_string, 
+		SourceFileMetaDataTree<SourceFileMetaDataTreeType>>, external?: boolean) => {
+			if (external) {
+				const nodeModulesPath = new UnifiedPath('./node_modules')
+				const directoryTreeNode = new DirectoryTreeNode(nodeModulesPath.toString(),
+					node.aggregatedExternSourceMetaData.total.sensorValues, 
+					SourceFileMetaDataTreeType.Directory)
 				this.directoryTree.push(directoryTreeNode)
-				result.push(this.createDirectoryTree(
-					sourceFileMetaDataTreeNode
-				))
+			}
+			for (const [filePathPart, childNode] of children.entries()) {
+				let nodeModuleName
+				if (childNode.type === 'Module'){
+					const nodeModule = NodeModule.fromIdentifier(filePathPart as NodeModuleIdentifier_string)
+					nodeModuleName = nodeModule.name
+				}
+
+				let nodeModulesPath
+				if (external){
+					nodeModulesPath = new UnifiedPath('./node_modules')
+					directory = nodeModuleName ? nodeModulesPath.join(nodeModuleName) 
+						: nodeModulesPath.join(filePathPart)
+				} else {
+					directory = parentDirectory
+						? parentDirectory.join(filePathPart)
+						: new UnifiedPath(filePathPart)
+				}
+				
+				if (directory) {
+					const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
+						childNode.aggregatedInternSourceMetaData.total.sensorValues,
+						childNode.type)
+					if ((element && element.filePath)) {
+						const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
+							element.filePath.toString(), this.directoryTree)
+						if (parentDirectoryTreeNode) {
+							parentDirectoryTreeNode.children.push(directoryTreeNode)
+						} else {
+							this.directoryTree.push(directoryTreeNode)
+						}
+
+					} else if (external && nodeModulesPath){
+						const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
+							nodeModulesPath.toString(), this.directoryTree)
+						if (parentDirectoryTreeNode) {
+							parentDirectoryTreeNode.children.push(directoryTreeNode)
+						} else {
+							this.directoryTree.push(directoryTreeNode)
+						}
+					} else if (parentDirectory) {
+						const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
+							parentDirectory.toString(), this.directoryTree)
+						if (parentDirectoryTreeNode) {
+							parentDirectoryTreeNode.children.push(directoryTreeNode)
+						} else {
+							this.directoryTree.push(directoryTreeNode)
+						}
+					} else {
+						this.directoryTree.push(directoryTreeNode)
+					}
+				}
+				this.createDirectoryTree(childNode, directory)
 			}
 		}
-		return Promise.resolve(result) as vscode.ProviderResult<SourceFileMetaDataTreeNode[]>
+		processChildren(internChildren)
 
+		if (!element) {
+			processChildren(externChildren, true)
+		}
 	}
 
 	rerender() {
