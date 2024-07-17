@@ -146,6 +146,9 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
 				proportion = result / (modulesTotalValue + internalTotalValue) * 100
 			}
+			if (isNaN(proportion)){
+				proportion = 0
+			}
 			this.displayedSensorValue = proportion
 			this.description = proportion.toFixed(1) + '%'
 		}
