@@ -6,8 +6,7 @@ import {
 	SourceFileMetaDataTree,
 	SourceFileMetaDataTreeType,
 	UnifiedPathPart_string,
-	ModelMap,
-	UnifiedPath_string
+	ModelMap
 } from '@oaklean/profiler-core'
 
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -36,6 +35,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 	includedFilterPath: string
 	excludedFilterPath: string
 	directoryTreeNode: DirectoryTreeNode | undefined
+	locallyTotalValue: number | undefined
 	constructor(
 		label: string,
 		type: DisplayType,
@@ -49,7 +49,8 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
 		directory: UnifiedPath | undefined,
 		public readonly file?: UnifiedPath,
-		directoryTreeNode?: DirectoryTreeNode | undefined
+		directoryTreeNode?: DirectoryTreeNode | undefined,
+		locallyTotalValue?: number | undefined
 	) {
 		super(label, collapsibleState)
 		this.type = type
@@ -64,6 +65,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		this.includedFilterPath = includedFilterPath
 		this.excludedFilterPath = excludedFilterPath
 		this.directoryTreeNode = directoryTreeNode
+		this.locallyTotalValue = locallyTotalValue
 		if (this.sensorValueRepresentation.selectedSensorValueType === undefined) {
 			this.sensorValueRepresentation.selectedSensorValueType = 'aggregatedCPUTime'
 		}
@@ -95,29 +97,39 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.locallyRelative) {
 			if (type === DisplayType.extern) {
-				let internTotal = 0
 				const modulesTotalValue = this.calculateModulesTotal(metaDataNode,
 					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				internTotal = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
-					.total.sensorValues,
-				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-
-				proportion = modulesTotalValue / (internTotal + modulesTotalValue) * 100
-			} else {
-				let total = this.calculateModulesTotal(parentNode,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				let result = 0
-
-				if (metaDataNode.type !== SourceFileMetaDataTreeType.Module) {
-					total += calcOrReturnSensorValue(parentNode.aggregatedInternSourceMetaData
+				if (locallyTotalValue){
+					proportion = modulesTotalValue / locallyTotalValue * 100
+				} else {
+					let internTotal = 0
+					internTotal = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 						.total.sensorValues,
 					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				}
 
-				result = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
+					proportion = modulesTotalValue / (internTotal + modulesTotalValue) * 100
+				}
+			} else {
+				let total = 0
+				if (locallyTotalValue) {
+					total = locallyTotalValue
+				} else {
+					total += this.calculateModulesTotal(parentNode,
+						this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+					if (metaDataNode.type !== SourceFileMetaDataTreeType.Module) {
+						total += calcOrReturnSensorValue(parentNode.aggregatedInternSourceMetaData
+							.total.sensorValues,
+						this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+					}
+				}
+				let internalTotalValue = 0
+				internalTotalValue = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 					.total.sensorValues,
 				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				proportion = result / total * 100
+				proportion = internalTotalValue / total * 100
+			}
+			if (isNaN(proportion)){
+				proportion = 0
 			}
 			this.displayedSensorValue = proportion
 			this.description = proportion.toFixed(1) + '%'
@@ -312,8 +324,9 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 						childNode.aggregatedInternSourceMetaData.total.sensorValues,
 						childNode.type)
 					if ((element && element.filePath)) {
+						const parentPath = parentDirectory ? parentDirectory.toString() : element.filePath.toString()
 						const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
-							element.filePath.toString(), this.directoryTree)
+							parentPath, this.directoryTree)
 						if (parentDirectoryTreeNode) {
 							parentDirectoryTreeNode.children.push(directoryTreeNode)
 						} else {
@@ -354,6 +367,16 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		this.changeEvent.fire()
 	}
 
+	calcuateLocallyTotalValue(childrenNodes: DirectoryTreeNode[]): number {
+		let total = 0
+		for (const child of childrenNodes) {
+			total += calcOrReturnSensorValue(child.measurement,
+				this.sensorValueRepresentation.selectedSensorValueType,
+				this.sensorValueRepresentation.formula)
+		}
+		return total
+	}
+
 	getChildren(element?: SourceFileMetaDataTreeNode | undefined): vscode.ProviderResult<SourceFileMetaDataTreeNode[]> {
 		if (!this.sourceFileMetaDataTree) {
 			return Promise.resolve([])
@@ -363,14 +386,23 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		const displayAsIntern = !element || element.type === DisplayType.intern
 		const children = displayAsIntern ? node.internChildren : node.externChildren
 		let internalTotalValue = 0
+		let locallyTotalValue
 		if (this.sensorValueRepresentation.selectedSensorValueType) {
-			internalTotalValue = calcOrReturnSensorValue(
-				this.sourceFileMetaDataTree.aggregatedInternSourceMetaData.total.sensorValues,
-				this.sensorValueRepresentation.selectedSensorValueType,
-				this.sensorValueRepresentation.formula
-			)
-
+			if ((this.includedFilterPath && this.includedFilterPath.length > 0) || 
+				(this.excludedFilterPath && this.excludedFilterPath.length > 0)){
+				this.directoryTree.forEach(node => {
+					internalTotalValue += calcOrReturnSensorValue(node.measurement,
+						this.sensorValueRepresentation.selectedSensorValueType,
+						this.sensorValueRepresentation.formula)
+				})
+			} else {
+				internalTotalValue = calcOrReturnSensorValue(
+					this.sourceFileMetaDataTree.aggregatedInternSourceMetaData.total.sensorValues,
+					this.sensorValueRepresentation.selectedSensorValueType,
+					this.sensorValueRepresentation.formula)
+			}
 		}
+
 		for (const [filePathPart, childNode] of children.entries()) {
 			const isEmpty =
 				childNode.internChildren.size + childNode.externChildren.size === 0
@@ -402,10 +434,21 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 			}
 
 			let found = true
+
 			if (directory) {
 				if ((this.includedFilterPath && this.includedFilterPath.length > 0)
 					|| (this.excludedFilterPath && this.excludedFilterPath.length > 0)) {
 					found = DirectoryTreeNode.findInDirectoryTree(directory.toString(), this.directoryTree) !== null
+
+					if (node.filePath){
+						const parentDirectoryNode = DirectoryTreeNode.findInDirectoryTree(
+							node.filePath.toString(), this.directoryTree)
+						if (parentDirectoryNode){
+							locallyTotalValue = this.calcuateLocallyTotalValue(parentDirectoryNode.children)
+						}
+					} else {
+						locallyTotalValue = this.calcuateLocallyTotalValue(this.directoryTree)			
+					}
 				}
 			}
 
@@ -427,7 +470,9 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 						? vscode.TreeItemCollapsibleState.None
 						: vscode.TreeItemCollapsibleState.Collapsed,
 					directory,
-					workspaceFilePath
+					workspaceFilePath,
+					undefined,
+					locallyTotalValue
 				)
 			)
 		}
@@ -458,7 +503,8 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 							vscode.TreeItemCollapsibleState.Collapsed,
 							path,
 							undefined,
-							foundNode ? foundNode : undefined
+							foundNode ? foundNode : undefined,
+							locallyTotalValue
 						)
 					)
 				}
