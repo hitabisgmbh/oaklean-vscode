@@ -287,41 +287,52 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		}
 	}
 
-	createDirectoryTree(element?: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined, 
-		parentDirectory?: UnifiedPath) {
+	createDirectoryTree(
+		element?: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined,
+		parentDirectory?: UnifiedPath
+	) {
 		if (!this.sourceFileMetaDataTree) {
 			return
 		}
 		const node = element ? element : this.sourceFileMetaDataTree
-		const internChildren = node.internChildren 
-		const externChildren = node.externChildren
-		this.processChildren(internChildren, parentDirectory)
+		const internChildren = node.internChildren
+		this.processChildren(internChildren, false, parentDirectory)
 
 		if (!element) {
+			const externChildren = node.externChildren
 			const nodeModulesPath = new UnifiedPath('./node_modules')
-			const directoryTreeNode = new DirectoryTreeNode(nodeModulesPath.toString(),
+			const directoryTreeNode = new DirectoryTreeNode(
+				nodeModulesPath.toString(),
 				node.aggregatedExternSourceMetaData.total.sensorValues, 
-				SourceFileMetaDataTreeType.Directory, true)
+				SourceFileMetaDataTreeType.Directory,
+				true
+			)
 			this.directoryTree.push(directoryTreeNode)
 
-			this.processChildren(externChildren, parentDirectory, true)
+			this.processChildren(externChildren, true, parentDirectory)
 		}
 	}
 
-	processChildren(children: ModelMap<UnifiedPathPart_string | NodeModuleIdentifier_string,
-		SourceFileMetaDataTree<SourceFileMetaDataTreeType>>,
-		parentDirectory?: UnifiedPath, external?: boolean) {
+	processChildren(
+		children: ModelMap<
+		UnifiedPathPart_string | NodeModuleIdentifier_string,
+		SourceFileMetaDataTree<SourceFileMetaDataTreeType>
+		>,
+		isExternal: boolean,
+		parentDirectory?: UnifiedPath) {
 		for (const [filePathPart, childNode] of children.entries()) {
-			const directory = this.determineDirectory(filePathPart, childNode, parentDirectory, external)
-			if (directory) {
-				this.addDirectoryTreeNode(directory, childNode, parentDirectory, external)
-				this.createDirectoryTree(childNode, directory)
-			}
+			const directory = this.determineDirectory(filePathPart, childNode, parentDirectory, isExternal)
+			this.addDirectoryTreeNode(directory, childNode, parentDirectory, isExternal)
+			this.createDirectoryTree(childNode, directory)
 		}
 	}
 
-	addDirectoryTreeNode(directory: UnifiedPath, childNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
-		parentDirectory?: UnifiedPath, external = false) {
+	addDirectoryTreeNode(
+		directory: UnifiedPath,
+		childNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
+		parentDirectory?: UnifiedPath,
+		external = false
+	) {
 		const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
 			childNode.aggregatedInternSourceMetaData.total.sensorValues, childNode.type, external)
 		let parentPath = parentDirectory ? parentDirectory.toString() : '' as UnifiedPath_string
@@ -343,7 +354,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 
 	determineDirectory(filePathPart: UnifiedPathPart_string | NodeModuleIdentifier_string,
 		childNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
-		parentDirectory?: UnifiedPath, external?: boolean): UnifiedPath | undefined {
+		parentDirectory?: UnifiedPath, external?: boolean): UnifiedPath {
 		if (external) {
 			const nodeModulesPath = new UnifiedPath('./node_modules')
 			return childNode.type === 'Module' ? nodeModulesPath.join(NodeModule.fromIdentifier(filePathPart as NodeModuleIdentifier_string).name)
@@ -356,7 +367,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		this.changeEvent.fire()
 	}
 
-	calcuateLocallyTotalValue(childrenNodes: DirectoryTreeNode[]): number {
+	calculateLocallyTotalValue(childrenNodes: DirectoryTreeNode[]): number {
 		let total = 0
 		for (const child of childrenNodes) {
 			total += calcOrReturnSensorValue(child.measurement,
@@ -416,12 +427,10 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 					} else {
 						filePath = directory
 					}
-
 				}
 				workspaceFilePath = filePath
 					? WorkspaceUtils.getFileFromWorkspace(filePath.toString())
 					: undefined
-
 			}
 
 			let found = true
@@ -435,10 +444,10 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 						const parentDirectoryNode = DirectoryTreeNode.findInDirectoryTree(
 							node.filePath.toString(), this.directoryTree)
 						if (parentDirectoryNode){
-							locallyTotalValue = this.calcuateLocallyTotalValue(parentDirectoryNode.children)
+							locallyTotalValue = this.calculateLocallyTotalValue(parentDirectoryNode.children)
 						}
 					} else {
-						locallyTotalValue = this.calcuateLocallyTotalValue(this.directoryTree)			
+						locallyTotalValue = this.calculateLocallyTotalValue(this.directoryTree)			
 					}
 				}
 			}

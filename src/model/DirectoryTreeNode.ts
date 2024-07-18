@@ -20,8 +20,11 @@ export class DirectoryTreeNode {
 		this.children = []
 	}
 
-	filterTree(includedFilterPath: string | undefined,
-		excludedFilterPath: string | undefined, childNode?: DirectoryTreeNode | undefined): DirectoryTreeNode | null {
+	filterTree(
+		includedFilterPath: string | undefined,
+		excludedFilterPath: string | undefined,
+		childNode?: DirectoryTreeNode | undefined
+	): DirectoryTreeNode | null {
 		if (includedFilterPath && !(includedFilterPath.endsWith('/*') || includedFilterPath.endsWith('/'))) {
 			includedFilterPath = includedFilterPath + '/*'
 		} else if (includedFilterPath && includedFilterPath.endsWith('/')) {
