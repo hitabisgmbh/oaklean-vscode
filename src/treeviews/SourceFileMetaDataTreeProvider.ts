@@ -4,7 +4,10 @@ import {
 	NodeModuleIdentifier_string,
 	UnifiedPath,
 	SourceFileMetaDataTree,
-	SourceFileMetaDataTreeType
+	SourceFileMetaDataTreeType,
+	UnifiedPathPart_string,
+	ModelMap,
+	UnifiedPath_string
 } from '@oaklean/profiler-core'
 
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -22,7 +25,6 @@ enum DisplayType {
 	intern = 'intern',
 	extern = 'extern',
 }
-
 class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 	type: DisplayType
 	metaDataNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>
@@ -34,6 +36,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 	includedFilterPath: string
 	excludedFilterPath: string
 	directoryTreeNode: DirectoryTreeNode | undefined
+	locallyTotalValue: number | undefined
 	constructor(
 		label: string,
 		type: DisplayType,
@@ -47,7 +50,8 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
 		directory: UnifiedPath | undefined,
 		public readonly file?: UnifiedPath,
-		directoryTreeNode?: DirectoryTreeNode | undefined
+		directoryTreeNode?: DirectoryTreeNode | undefined,
+		locallyTotalValue?: number | undefined
 	) {
 		super(label, collapsibleState)
 		this.type = type
@@ -62,6 +66,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		this.includedFilterPath = includedFilterPath
 		this.excludedFilterPath = excludedFilterPath
 		this.directoryTreeNode = directoryTreeNode
+		this.locallyTotalValue = locallyTotalValue
 		if (this.sensorValueRepresentation.selectedSensorValueType === undefined) {
 			this.sensorValueRepresentation.selectedSensorValueType = 'aggregatedCPUTime'
 		}
@@ -93,29 +98,39 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.locallyRelative) {
 			if (type === DisplayType.extern) {
-				let internTotal = 0
 				const modulesTotalValue = this.calculateModulesTotal(metaDataNode,
 					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				internTotal = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
-					.total.sensorValues,
-				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-
-				proportion = modulesTotalValue / (internTotal + modulesTotalValue) * 100
-			} else {
-				let total = this.calculateModulesTotal(parentNode,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				let result = 0
-
-				if (metaDataNode.type !== SourceFileMetaDataTreeType.Module) {
-					total += calcOrReturnSensorValue(parentNode.aggregatedInternSourceMetaData
+				if (locallyTotalValue){
+					proportion = modulesTotalValue / locallyTotalValue * 100
+				} else {
+					let internTotal = 0
+					internTotal = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 						.total.sensorValues,
 					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				}
 
-				result = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
+					proportion = modulesTotalValue / (internTotal + modulesTotalValue) * 100
+				}
+			} else {
+				let total = 0
+				if (locallyTotalValue) {
+					total = locallyTotalValue
+				} else {
+					total += this.calculateModulesTotal(parentNode,
+						this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+					if (metaDataNode.type !== SourceFileMetaDataTreeType.Module) {
+						total += calcOrReturnSensorValue(parentNode.aggregatedInternSourceMetaData
+							.total.sensorValues,
+						this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+					}
+				}
+				let internalTotalValue = 0
+				internalTotalValue = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
 					.total.sensorValues,
 				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
-				proportion = result / total * 100
+				proportion = internalTotalValue / total * 100
+			}
+			if (isNaN(proportion)){
+				proportion = 0
 			}
 			this.displayedSensorValue = proportion
 			this.description = proportion.toFixed(1) + '%'
@@ -131,6 +146,9 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 					.total.sensorValues,
 				this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
 				proportion = result / (modulesTotalValue + internalTotalValue) * 100
+			}
+			if (isNaN(proportion)){
+				proportion = 0
 			}
 			this.displayedSensorValue = proportion
 			this.description = proportion.toFixed(1) + '%'
@@ -265,98 +283,98 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 			.map(node => node.filterTree(this.includedFilterPath, this.excludedFilterPath))
 			.filter(node => node !== null) as DirectoryTreeNode[]
 		for (let i = 0; i < this.directoryTree.length; i++) {
-			this.directoryTree[i] = this.directoryTree[i].updateAllNodesMeasurements()
+			this.directoryTree[i].updateAllNodesMeasurements()
 		}
 	}
 
-	createDirectoryTree(element?: SourceFileMetaDataTreeNode | undefined):
-	vscode.ProviderResult<SourceFileMetaDataTreeNode[]> {
+	createDirectoryTree(
+		element?: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined,
+		parentDirectory?: UnifiedPath
+	) {
 		if (!this.sourceFileMetaDataTree) {
 			return
 		}
-		const node = element ? element.metaDataNode : this.sourceFileMetaDataTree
-		const result: vscode.ProviderResult<SourceFileMetaDataTreeNode[]>[] = []
-		const displayAsIntern = !element || element.type === DisplayType.intern
-		const children = displayAsIntern ? node.internChildren : node.externChildren
-		let directory
-		for (const [filePathPart, childNode] of children.entries()) {
-			const isEmpty =
-				childNode.internChildren.size + childNode.externChildren.size === 0
-			let workspaceFilePath
-			const nodeModule =
-				childNode.type === 'Module'
-					? NodeModule.fromIdentifier(filePathPart as NodeModuleIdentifier_string)
-					: undefined
-			directory = element
-				? element.directory?.join(nodeModule?.name || filePathPart)
-				: new UnifiedPath(filePathPart)
-			const sourceFileMetaDataTreeNode = new SourceFileMetaDataTreeNode(
-				filePathPart,
-				DisplayType.intern,
-				node,
-				childNode,
-				this.sensorValueRepresentation,
-				0,
-				this.modulesTotalValue,
-				this.includedFilterPath || '',
-				this.excludedFilterPath || '',
-				isEmpty
-					? vscode.TreeItemCollapsibleState.None
-					: vscode.TreeItemCollapsibleState.Collapsed,
-				directory,
-				workspaceFilePath
-			)
-			if (directory) {
-				const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
-					sourceFileMetaDataTreeNode.metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
-					sourceFileMetaDataTreeNode.metaDataNode.type)
-				if (element && element.directory) {
-					const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(
-						element.directory.toString(), this.directoryTree)
-					if (parentDirectoryTreeNode) {
-						parentDirectoryTreeNode.children.push(directoryTreeNode)
-					}
+		const node = element ? element : this.sourceFileMetaDataTree
+		const internChildren = node.internChildren
+		this.processChildren(internChildren, false, parentDirectory)
 
-				} else {
-					this.directoryTree.push(directoryTreeNode)
-				}
-			}
-			result.push(this.createDirectoryTree(
-				sourceFileMetaDataTreeNode
-			))
+		if (!element) {
+			const externChildren = node.externChildren
+			const nodeModulesPath = new UnifiedPath('./node_modules')
+			const directoryTreeNode = new DirectoryTreeNode(
+				nodeModulesPath.toString(),
+				node.aggregatedExternSourceMetaData.total.sensorValues, 
+				SourceFileMetaDataTreeType.Directory,
+				true
+			)
+			this.directoryTree.push(directoryTreeNode)
+
+			this.processChildren(externChildren, true, parentDirectory)
 		}
-		if (displayAsIntern) {
-			directory = new UnifiedPath('./node_modules')
-			const nodeModules = DirectoryTreeNode.findInDirectoryTree(directory.toString(), this.directoryTree)
-			if (node.externChildren.size > 0 && !nodeModules) {
-				const sourceFileMetaDataTreeNode = new SourceFileMetaDataTreeNode(
-					'node_modules',
-					DisplayType.extern,
-					node,
-					node,
-					this.sensorValueRepresentation,
-					0,
-					this.modulesTotalValue,
-					this.includedFilterPath || '',
-					this.excludedFilterPath || '',
-					vscode.TreeItemCollapsibleState.Collapsed,
-					directory
-				)
-				const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
-					sourceFileMetaDataTreeNode.metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
-					sourceFileMetaDataTreeNode.metaDataNode.type)
+	}
+
+	processChildren(
+		children: ModelMap<
+		UnifiedPathPart_string | NodeModuleIdentifier_string,
+		SourceFileMetaDataTree<SourceFileMetaDataTreeType>
+		>,
+		isExternal: boolean,
+		parentDirectory?: UnifiedPath) {
+		for (const [filePathPart, childNode] of children.entries()) {
+			const directory = this.determineDirectory(filePathPart, childNode, parentDirectory, isExternal)
+			this.addDirectoryTreeNode(directory, childNode, parentDirectory, isExternal)
+			this.createDirectoryTree(childNode, directory)
+		}
+	}
+
+	addDirectoryTreeNode(
+		directory: UnifiedPath,
+		childNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
+		parentDirectory?: UnifiedPath,
+		external = false
+	) {
+		const directoryTreeNode = new DirectoryTreeNode(directory.toString(),
+			childNode.aggregatedInternSourceMetaData.total.sensorValues, childNode.type, external)
+		let parentPath = parentDirectory ? parentDirectory.toString() : '' as UnifiedPath_string
+		if (external) {
+			parentPath = new UnifiedPath('./node_modules').toString()
+		}
+		if (parentPath === '') {
+			this.directoryTree.push(directoryTreeNode)
+		} else {
+			const parentDirectoryTreeNode = DirectoryTreeNode.findNodeInTree(parentPath, this.directoryTree)
+			if (parentDirectoryTreeNode) {
+				parentDirectoryTreeNode.children.push(directoryTreeNode)
+			} else {
 				this.directoryTree.push(directoryTreeNode)
-				result.push(this.createDirectoryTree(
-					sourceFileMetaDataTreeNode
-				))
 			}
 		}
-		return Promise.resolve(result) as vscode.ProviderResult<SourceFileMetaDataTreeNode[]>
 
 	}
 
+	determineDirectory(filePathPart: UnifiedPathPart_string | NodeModuleIdentifier_string,
+		childNode: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
+		parentDirectory?: UnifiedPath, external?: boolean): UnifiedPath {
+		if (external) {
+			const nodeModulesPath = new UnifiedPath('./node_modules')
+			return childNode.type === 'Module' ? nodeModulesPath.join(NodeModule.fromIdentifier(filePathPart as NodeModuleIdentifier_string).name)
+				: nodeModulesPath.join(filePathPart)
+		} else {
+			return parentDirectory ? parentDirectory.join(filePathPart) : new UnifiedPath(filePathPart)
+		}
+	}
 	rerender() {
 		this.changeEvent.fire()
+	}
+
+	calculateLocallyTotalValue(childrenNodes: DirectoryTreeNode[]): number {
+		let total = 0
+		for (const child of childrenNodes) {
+			total += calcOrReturnSensorValue(child.measurement,
+				this.sensorValueRepresentation.selectedSensorValueType,
+				this.sensorValueRepresentation.formula)
+		}
+		return total
 	}
 
 	getChildren(element?: SourceFileMetaDataTreeNode | undefined): vscode.ProviderResult<SourceFileMetaDataTreeNode[]> {
@@ -368,14 +386,25 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		const displayAsIntern = !element || element.type === DisplayType.intern
 		const children = displayAsIntern ? node.internChildren : node.externChildren
 		let internalTotalValue = 0
+		let locallyTotalValue
 		if (this.sensorValueRepresentation.selectedSensorValueType) {
-			internalTotalValue = calcOrReturnSensorValue(
-				this.sourceFileMetaDataTree.aggregatedInternSourceMetaData.total.sensorValues,
-				this.sensorValueRepresentation.selectedSensorValueType,
-				this.sensorValueRepresentation.formula
-			)
-
+			if ((this.includedFilterPath && this.includedFilterPath.length > 0) || 
+				(this.excludedFilterPath && this.excludedFilterPath.length > 0)){
+				this.directoryTree.forEach(node => {
+					if (!node.isModulesDirectory) {
+						internalTotalValue += calcOrReturnSensorValue(node.measurement,
+							this.sensorValueRepresentation.selectedSensorValueType,
+							this.sensorValueRepresentation.formula)
+					}
+				})
+			} else {
+				internalTotalValue = calcOrReturnSensorValue(
+					this.sourceFileMetaDataTree.aggregatedInternSourceMetaData.total.sensorValues,
+					this.sensorValueRepresentation.selectedSensorValueType,
+					this.sensorValueRepresentation.formula)
+			}
 		}
+
 		for (const [filePathPart, childNode] of children.entries()) {
 			const isEmpty =
 				childNode.internChildren.size + childNode.externChildren.size === 0
@@ -398,19 +427,28 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 					} else {
 						filePath = directory
 					}
-
 				}
 				workspaceFilePath = filePath
 					? WorkspaceUtils.getFileFromWorkspace(filePath.toString())
 					: undefined
-
 			}
 
 			let found = true
+
 			if (directory) {
 				if ((this.includedFilterPath && this.includedFilterPath.length > 0)
 					|| (this.excludedFilterPath && this.excludedFilterPath.length > 0)) {
 					found = DirectoryTreeNode.findInDirectoryTree(directory.toString(), this.directoryTree) !== null
+
+					if (node.filePath){
+						const parentDirectoryNode = DirectoryTreeNode.findInDirectoryTree(
+							node.filePath.toString(), this.directoryTree)
+						if (parentDirectoryNode){
+							locallyTotalValue = this.calculateLocallyTotalValue(parentDirectoryNode.children)
+						}
+					} else {
+						locallyTotalValue = this.calculateLocallyTotalValue(this.directoryTree)			
+					}
 				}
 			}
 
@@ -432,7 +470,9 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 						? vscode.TreeItemCollapsibleState.None
 						: vscode.TreeItemCollapsibleState.Collapsed,
 					directory,
-					workspaceFilePath
+					workspaceFilePath,
+					undefined,
+					locallyTotalValue
 				)
 			)
 		}
@@ -463,7 +503,8 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 							vscode.TreeItemCollapsibleState.Collapsed,
 							path,
 							undefined,
-							foundNode ? foundNode : undefined
+							foundNode ? foundNode : undefined,
+							locallyTotalValue
 						)
 					)
 				}
