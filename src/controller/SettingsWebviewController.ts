@@ -13,7 +13,6 @@ import { ProfileChangeEvent } from '../helper/EventHandler'
 export default class SettingsWebviewController implements Disposable {
 	private readonly _disposable: Disposable
 	private container: Container
-	private settingsWebViewPanel: SettingsWebViewPanel | undefined
 
 	constructor(container: Container) {
 		this.container = container
@@ -34,12 +33,12 @@ export default class SettingsWebviewController implements Disposable {
 	}
 
 	private profileChanges(event: ProfileChangeEvent) {
-		if (this.settingsWebViewPanel !== undefined && this.settingsWebViewPanel !== null) {
-			this.settingsWebViewPanel.postMessageToWebview({
+		if (SettingsWebViewPanel.currentPanel) {
+			SettingsWebViewPanel.currentPanel.postMessageToWebview({
 				command: 'updateProfile',
 				profile: event.profile
 			})
-			this.settingsWebViewPanel.postMessageToWebview({
+			SettingsWebViewPanel.currentPanel.postMessageToWebview({
 				command: 'loadProfiles',
 				profile: event.profile,
 				profiles: this.profiles
@@ -48,9 +47,9 @@ export default class SettingsWebviewController implements Disposable {
 	}
 
 	private openSettingsPanel(): void {
-		this.settingsWebViewPanel = SettingsWebViewPanel.render(this.container)
-		if (this.settingsWebViewPanel !== undefined && this.settingsWebViewPanel !== null) {
-			this.settingsWebViewPanel.postMessageToWebview({
+		SettingsWebViewPanel.render(this.container)
+		if (SettingsWebViewPanel.currentPanel) {
+			SettingsWebViewPanel.currentPanel.postMessageToWebview({
 				command: 'loadProfiles',
 				profile: this.profile,
 				profiles: this.profiles
@@ -100,13 +99,13 @@ export default class SettingsWebviewController implements Disposable {
 			const success = this.container.profileHelper.addProfile(profile)
 			if (success) {
 				vscode.window.showInformationMessage(INFO_PROFILE_ADDED)
-				if (this.settingsWebViewPanel !== undefined && this.settingsWebViewPanel !== null) {
-					this.settingsWebViewPanel.postMessageToWebview({
+				if (SettingsWebViewPanel.currentPanel) {
+					SettingsWebViewPanel.currentPanel.postMessageToWebview({
 						command: 'loadProfiles',
 						profile: this.profile,
 						profiles: this.profiles
 					})
-					this.settingsWebViewPanel.postMessageToWebview({
+					SettingsWebViewPanel.currentPanel.postMessageToWebview({
 						command: 'clearInput'
 					})
 				}
