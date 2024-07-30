@@ -71,7 +71,7 @@ export class ReportWebviewPanel {
 		)
 		let formattedCommitTimestamp = ''
 		if (commitTimestamp !== undefined) {
-			const commitTimestampDate = new Date(commitTimestamp)
+			const commitTimestampDate = new Date(commitTimestamp * 1000)
 			formattedCommitTimestamp = commitTimestampDate.toLocaleString(
 				undefined,
 				dateOptions as Intl.DateTimeFormatOptions
