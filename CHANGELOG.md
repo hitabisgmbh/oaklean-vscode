@@ -3,7 +3,7 @@
 All notable changes to the "Oaklean" extension will be documented in this file.
 
 
-# 0.1.1
+# 0.1.1 - 2024-07-31
 ### Bug fixes
 - A bug in the filter feature that caused NaN% and Infinity% values when deleting the filter input has been fixed.
 
