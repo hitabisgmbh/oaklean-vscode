@@ -34,10 +34,7 @@
 		"curly": "warn",
 		"eqeqeq": "warn",
 		"no-throw-literal": "warn",
-		"@typescript-eslint/indent": [
-			"error",
-			"tab"
-		],
+		"@typescript-eslint/indent": "off",
 		"linebreak-style": [
 			"error",
 			"unix"

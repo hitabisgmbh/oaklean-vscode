@@ -133,11 +133,13 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 				const document = await vscode.workspace.openTextDocument(uri)
 				if (document) {
 					const programStructureTreeOfFile =
-						this._container.textDocumentController.getProgramStructureTreeOfFile(filePathRelativeToWorkspace)
+						this._container.textDocumentController.getProgramStructureTreeOfFile(
+							filePathRelativeToWorkspace)
 					let position
 					if (programStructureTreeOfFile) {
 						const loc =
-							programStructureTreeOfFile.sourceLocationOfIdentifier(identifier as SourceNodeIdentifier_string)
+							programStructureTreeOfFile.sourceLocationOfIdentifier(
+								identifier as SourceNodeIdentifier_string)
 						if (loc) {
 							position = new vscode.Position(loc.beginLoc.line - 1, loc.beginLoc.column)
 						}

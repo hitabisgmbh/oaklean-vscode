@@ -120,7 +120,8 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 					if (metaDataNode.type !== SourceFileMetaDataTreeType.Module) {
 						total += calcOrReturnSensorValue(parentNode.aggregatedInternSourceMetaData
 							.total.sensorValues,
-							this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+							this.sensorValueRepresentation.selectedSensorValueType,
+							this.sensorValueRepresentation.formula)
 					}
 				}
 				let internalTotalValue = 0
