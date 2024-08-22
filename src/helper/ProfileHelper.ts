@@ -31,18 +31,19 @@ export default class ProfileHelper implements Disposable {
 
 	private profileChanges(event: ProfileChangeEvent) {
 		const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-		this.container.storage.storeWorkspace('sensorValueRepresentation', { 
-			selectedSensorValueType: event.profile.measurement, 
-			selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation, 
-			formula: event.profile.formula})
+		this.container.storage.storeWorkspace('sensorValueRepresentation', {
+			selectedSensorValueType: event.profile.measurement,
+			selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation,
+			formula: event.profile.formula
+		})
 	}
 
 	dispose() {
 		this._disposable.dispose()
 	}
-	returnSettingsPath(): UnifiedPath | undefined{
+	returnSettingsPath(): UnifiedPath | undefined {
 		const workspaceFolder = WorkspaceUtils.getWorkspaceDir()
-		return workspaceFolder?.join('.vscode', 'settings.json') 
+		return workspaceFolder?.join('.vscode', 'settings.json')
 	}
 	readProfiles(): Profile[] {
 		const settingsPath = this.returnSettingsPath()
@@ -55,8 +56,8 @@ export default class ProfileHelper implements Disposable {
 		}
 		return []
 	}
-	
-	addProfile(profile: Profile): boolean{
+
+	addProfile(profile: Profile): boolean {
 		const profiles = this.readProfiles()
 		if (profiles.some(p => p.name === profile.name)) {
 			return false
@@ -66,7 +67,7 @@ export default class ProfileHelper implements Disposable {
 		return true
 	}
 	updateProfile(updatedProfile: Profile) {
-		const profiles =  this.readProfiles()
+		const profiles = this.readProfiles()
 		const index = profiles.findIndex(p => p.name === updatedProfile.name)
 		if (index === -1) {
 			vscode.window.showErrorMessage(ERROR_NO_PROFILE_FOUND)
@@ -86,7 +87,7 @@ export default class ProfileHelper implements Disposable {
 	}
 	writeProfiles(profiles: Profile[]) {
 		try {
-			const settingsPath = this.returnSettingsPath()	
+			const settingsPath = this.returnSettingsPath()
 			if (settingsPath !== undefined) {
 				let settings: any = {}
 				if (!fs.existsSync(settingsPath.dirName().toPlatformString())) {
@@ -102,5 +103,5 @@ export default class ProfileHelper implements Disposable {
 			vscode.window.showErrorMessage(ERROR_FAILED_TO_SAVE_PROFILE)
 		}
 	}
-	
+
 }

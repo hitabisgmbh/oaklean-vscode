@@ -40,10 +40,10 @@ export default class ToggleLineAnnotationCommands extends BaseCommand {
 	}
 
 	execute() {
-		if (this.action === 'disable'){
+		if (this.action === 'disable') {
 			this.container.storage.storeWorkspace('enableLineAnnotations', false)
 			vscode.commands.executeCommand('setContext', ContextOptions.lineAnnotationsEnabled, false)
-		} else if (this.action === 'enable'){
+		} else if (this.action === 'enable') {
 			this.container.storage.storeWorkspace('enableLineAnnotations', true)
 			vscode.commands.executeCommand('setContext', ContextOptions.lineAnnotationsEnabled, true)
 		}

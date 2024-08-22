@@ -10,7 +10,7 @@ import { PROFILE_PERCENT_PRECISION } from '../constants/profile'
 import { Container } from '../container'
 import { ExtendedSensorValueType, SensorValueTypeNames, UnitPerSensorValue } from '../types/sensorValues'
 import { Profile } from '../types/profile'
-import { Color} from '../types/color'
+import { Color } from '../types/color'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
 export type LineProfileDecoration = {
@@ -21,7 +21,7 @@ export type LineProfileDecoration = {
 }
 
 export class TextDocumentHighlighter {
-	
+
 	static highlightLine(
 		editor: TextEditor,
 		lineNumber: number,
@@ -92,11 +92,11 @@ export class TextDocumentHighlighter {
 				continue
 			}
 			const { beginLoc } = locationOfFunction
-			
+
 			const relativeToToal = value / totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
 			let message
 			let weigth
-			if (selectedSensorValueType === 'customFormula'){
+			if (selectedSensorValueType === 'customFormula') {
 				const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 				const formula = sensorValueRepresentation.formula
 				const calculatedFormula = calcOrReturnSensorValue(
@@ -104,15 +104,15 @@ export class TextDocumentHighlighter {
 				const formulaTotal = calcOrReturnSensorValue(
 					totalAndMaxMetaData.total.sensorValues, selectedSensorValueType, formula)
 				const relativeToToalForFormula = calculatedFormula / formulaTotal
-				message = `${formula}: ${calculatedFormula} `+
-				`(${relativeToToalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
+				message = `${formula}: ${calculatedFormula} ` +
+					`(${relativeToToalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weigth = calculatedFormula / calcOrReturnSensorValue(
 					totalAndMaxMetaData.max.sensorValues, selectedSensorValueType, formula)
 			} else {
 				message =
-				SensorValueTypeNames[selectedSensorValueType] +
-				`: ${value} ${UnitPerSensorValue[selectedSensorValueType]} ` +
-				`(${relativeToToal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
+					SensorValueTypeNames[selectedSensorValueType] +
+					`: ${value} ${UnitPerSensorValue[selectedSensorValueType]} ` +
+					`(${relativeToToal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weigth = value / totalAndMaxMetaData.max.sensorValues[selectedSensorValueType]
 			}
 
@@ -126,5 +126,5 @@ export class TextDocumentHighlighter {
 			)
 		}
 	}
-	
+
 }

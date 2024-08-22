@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 
-import {getNonce} from '../utilities/getNonce'
+import { getNonce } from '../utilities/getNonce'
 import { Container } from '../container'
 
 export class GraphicalViewProvider implements vscode.WebviewViewProvider {
@@ -24,10 +24,10 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 		// 	(message: { command: string; text: string }) => {}
 		// )
 
-		this._view.onDidChangeVisibility((e :any) => {
-			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 
+		this._view.onDidChangeVisibility((e: any) => {
+			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 				this._extensionUri)
-			
+
 		})
 		webviewView.webview.options = {
 			// Enable scripts in the webview
@@ -39,7 +39,7 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 			]
 		}
 
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 
+		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 			this._extensionUri)
 	}
 
@@ -62,7 +62,7 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
           </body>
         </html>
     `
-	
+
 		return htmlContent
 	}
 }

@@ -70,11 +70,11 @@ export function main() {
 	if (measurementDropdown !== null && measurementDropdown !== undefined) {
 		measurementDropdown.addEventListener('change', handleCustomFormula)
 	}
-	
+
 	if (profileDropdownStart !== null && profileDropdownStart !== undefined) {
 		profileDropdownStart.addEventListener('change', (event) => {
 			const selectedProfileName = (event.target as HTMLInputElement)?.value
-			const selectedProfile = profiles.find(profile => profile.name === selectedProfileName)			
+			const selectedProfile = profiles.find(profile => profile.name === selectedProfileName)
 			const colorElement = document.getElementById(ID_COLOR) as HTMLInputElement
 			const measurementElement = document.getElementById(ID_MEASUREMENT) as HTMLInputElement
 			if (colorElement && selectedProfile) {
@@ -96,19 +96,19 @@ export function main() {
 				handleLoadProfiles(message.profile, message.profiles)
 				break
 			case 'clearInput':
-				handleClearInput()				
+				handleClearInput()
 				break
 		}
 	})
 }
 
 function handleClearInput() {
-	const titleInput = document.getElementById(ID_TITLE2) as HTMLInputElement 
-	const contentInput = document.getElementById(ID_COLOR2) as Dropdown 
-	const measurementInput = document.getElementById(ID_MEASUREMENT2) as Dropdown 
+	const titleInput = document.getElementById(ID_TITLE2) as HTMLInputElement
+	const contentInput = document.getElementById(ID_COLOR2) as Dropdown
+	const measurementInput = document.getElementById(ID_MEASUREMENT2) as Dropdown
 	const customFormulaInput = document.getElementById(ID_FORMULA_TEXT_FIELD2) as HTMLInputElement
 	const customFormulaDescription = document.getElementById(ID_FORMULA_DESCRIPTION2) as HTMLInputElement
-	const customFormulaLabel = document.getElementById(ID_FORMULA_LABEL2) as HTMLLabelElement	
+	const customFormulaLabel = document.getElementById(ID_FORMULA_LABEL2) as HTMLLabelElement
 	titleInput.value = ''
 	if (contentInput.options.length > 0) {
 		contentInput.value = contentInput.options[0].value
@@ -148,7 +148,7 @@ function handleLoadProfiles(profile: Profile | undefined, profiles: Profile[]) {
 		measurement.value = selectedProfile.measurement
 
 		if (measurement.value === 'customFormula') {
-			customFormula.value = '' 
+			customFormula.value = ''
 			customFormula.value = selectedProfile.formula || '' // Use the formula if it exists, otherwise clear the field
 			customFormula.style.display = 'block'
 			customFormulaDescription.style.display = 'block'
@@ -169,7 +169,7 @@ function handleLoadProfiles(profile: Profile | undefined, profiles: Profile[]) {
 
 function handleProfileChange() {
 	const selectedProfileName = (document.getElementById(ID_PROFILE_DROPDOWN) as Dropdown).value
-	
+
 	postToWebViewPanel({
 		command: 'selectProfile',
 		profileName: selectedProfileName
@@ -275,9 +275,9 @@ function displayProfile(profile: Profile) {
 
 function handleCustomFormula() {
 	const toggleCustomFormulaDisplay = (
-		measurementDropdownId: string, 
-		formulaInputId: string, 
-		formulaDescriptionId: string, 
+		measurementDropdownId: string,
+		formulaInputId: string,
+		formulaDescriptionId: string,
 		formulaLabel: string) => {
 		const measurementDropdown = document.getElementById(measurementDropdownId) as HTMLSelectElement
 		const customFormulaInput = document.getElementById(formulaInputId) as HTMLInputElement
@@ -298,7 +298,7 @@ function handleCustomFormula() {
 		customFormulaLabel.style.display = displayStyle
 	}
 
-	toggleCustomFormulaDisplay(ID_MEASUREMENT, ID_FORMULA_TEXT_FIELD, ID_FORMULA_DESCRIPTION, ID_FORMULA_LABEL )
+	toggleCustomFormulaDisplay(ID_MEASUREMENT, ID_FORMULA_TEXT_FIELD, ID_FORMULA_DESCRIPTION, ID_FORMULA_LABEL)
 	toggleCustomFormulaDisplay(ID_MEASUREMENT2, ID_FORMULA_TEXT_FIELD2, ID_FORMULA_DESCRIPTION2, ID_FORMULA_LABEL2)
 }
 

@@ -6,8 +6,8 @@ import { SourceFileMetaDataTreeProvider } from '../treeviews/SourceFileMetaDataT
 export default class BaseCommand {
 	register() {
 		const identifiers = this.getIdentifier()
-		if (typeof identifiers === 'object' && Array.isArray(identifiers)){
-			return new Disposable(() => { 
+		if (typeof identifiers === 'object' && Array.isArray(identifiers)) {
+			return new Disposable(() => {
 				for (const identifier of identifiers) {
 					vscode.commands.registerCommand(`${APP_IDENTIFIER}.${identifier}`, () => {
 						this.execute()
@@ -16,7 +16,7 @@ export default class BaseCommand {
 			})
 		} else {
 			console.debug(`Register command: ${APP_IDENTIFIER}.${identifiers}`)
-			return vscode.commands.registerCommand(`${APP_IDENTIFIER}.${identifiers}`, (uri:vscode.Uri) => {
+			return vscode.commands.registerCommand(`${APP_IDENTIFIER}.${identifiers}`, (uri: vscode.Uri) => {
 				this.execute(uri)
 			})
 		}

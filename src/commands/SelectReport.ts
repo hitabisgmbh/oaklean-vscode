@@ -43,9 +43,9 @@ export default class SelectReport extends BaseCommand {
 			vscode.window.showInformationMessage('Oaklean: No Project Reports Available')
 			return quickPick
 		}
-		
+
 		const currentReport = this.container.storage.getWorkspace('reportPath') as UnifiedPath
-		if (currentReport && workspaceDir){
+		if (currentReport && workspaceDir) {
 			const relativePath = workspaceDir.pathTo(currentReport).toPlatformString()
 			quickPick.setCurrentItem(relativePath)
 		}

@@ -20,11 +20,11 @@ export default class SensorValueHover {
 		for (const [sensorValueType, sensorValueName] of Object.entries(SensorValueTypeNames)) {
 			const unit = UnitPerSensorValue[sensorValueType as ExtendedSensorValueType]
 			if (sensorValueType === 'customFormula') {
-				if (this.formula){
+				if (this.formula) {
 					const calculatedFormula = calcOrReturnSensorValue(this.sensorValues, sensorValueName, this.formula)
 					contents.appendMarkdown(
 						`|${this.formula}|${calculatedFormula}| \n`
-					)	
+					)
 				}
 			} else {
 				contents.appendMarkdown(

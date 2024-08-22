@@ -18,7 +18,7 @@ jest.mock('fs', () => ({
 	...jest.requireActual('fs'),
 	mkdirSync: jest.fn(),
 }))
-  
+
 jest.mock('vscode', () => ({
 	Disposable: {
 		from: jest.fn().mockImplementation(() => ({
@@ -41,7 +41,7 @@ jest.mock('../../src/container', () => ({
 				}),
 		},
 	})),
-}), { virtual: true }) 
+}), { virtual: true })
 
 describe('ProfileHelper', () => {
 	let profileHelper: ProfileHelper
@@ -52,14 +52,14 @@ describe('ProfileHelper', () => {
 	stub_getWorkspaceDirStub()
 	stub_readProfiles()
 	stub_returnSettingsPath()
-	beforeEach(() => { 
+	beforeEach(() => {
 		storage = {
 			onDidChange: jest.fn(),
 			getWorkspace: jest.fn()
 		}
 
-		container = { 
-			storage, 
+		container = {
+			storage,
 			eventHandler: {
 				onProfileChange: jest.fn().mockImplementation(
 					(listener: (e: ProfileChangeEvent) => any, thisArgs?: any, disposables?: Disposable[]) => {
@@ -67,7 +67,7 @@ describe('ProfileHelper', () => {
 							dispose: jest.fn()
 						} as vscode.Disposable
 					}),
-			} 
+			}
 		} as unknown as Container
 		profileHelper = new ProfileHelper(container)
 	})
@@ -79,7 +79,7 @@ describe('ProfileHelper', () => {
 
 	it('should read profiles from settings file', () => {
 		const result = profileHelper.readProfiles()
-		expect(result).toEqual([ { name: 'Profile 1', color: 'Red', measurement: 'profilerHits' } ])
+		expect(result).toEqual([{ name: 'Profile 1', color: 'Red', measurement: 'profilerHits' }])
 	})
 
 	it('should add a profile', () => {
@@ -149,7 +149,7 @@ describe('ProfileHelper', () => {
 		const mkdirSyncSpy = jest.spyOn(fs, 'mkdirSync')
 		const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync')
 		profileHelper.writeProfiles([{ name: 'Profile 1', color: Color.Blue, measurement: 'aggregatedCPUTime' },
-			{ name: 'Profile 2', color: Color.Blue, measurement: 'aggregatedCPUTime' }])
+		{ name: 'Profile 2', color: Color.Blue, measurement: 'aggregatedCPUTime' }])
 		expect(returnSettingsPathSpy).toHaveBeenCalled()
 		expect(existsSyncSpy).toHaveBeenCalledWith(settingsPath.toPlatformString())
 		expect(mkdirSyncSpy).toHaveBeenCalledWith(settingsPath.dirName().toPlatformString(), { recursive: true })
@@ -167,7 +167,7 @@ describe('ProfileHelper', () => {
 		})
 		const showErrorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage')
 		profileHelper.writeProfiles([{ name: 'Profile 1', color: Color.Blue, measurement: 'aggregatedCPUTime' },
-			{ name: 'Profile 2', color: Color.Blue, measurement: 'aggregatedCPUTime' }])
+		{ name: 'Profile 2', color: Color.Blue, measurement: 'aggregatedCPUTime' }])
 		expect(returnSettingsPathSpy).toHaveBeenCalled()
 		expect(existsSyncSpy).toHaveBeenCalledWith(settingsPath.toPlatformString())
 		expect(writeFileSyncSpy).toHaveBeenCalled()

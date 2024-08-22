@@ -1,11 +1,11 @@
 import * as vscode from 'vscode'
 
-import {getNonce} from '../utilities/getNonce'
+import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import FilterCommand from '../commands/FilterCommand'
-import {FilterViewCommands} from '../types/filterViewCommands'
-import {FilterViewProtocol_ChildToParent} from '../protocols/filterViewProtocol'
+import { FilterViewCommands } from '../types/filterViewCommands'
+import { FilterViewProtocol_ChildToParent } from '../protocols/filterViewProtocol'
 
 export class FilterViewProvider implements vscode.WebviewViewProvider {
 
@@ -23,13 +23,13 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		_token: vscode.CancellationToken
 	) {
 		this._view = webviewView
-		const filterCommand: FilterCommand  = this._container.filterCommand
+		const filterCommand: FilterCommand = this._container.filterCommand
 		let includedFilterPath = this._container.storage.getWorkspace('includedFilterPath') as string || ''
 		let excludedFilterPath = this._container.storage.getWorkspace('excludedFilterPath') as string || ''
 
 		this._view.webview.onDidReceiveMessage(
 			(message: FilterViewProtocol_ChildToParent) => {
-				if (message.command === FilterViewCommands.includedPathChange){
+				if (message.command === FilterViewCommands.includedPathChange) {
 					this._container.storage.storeWorkspace('includedFilterPath', message.text)
 					includedFilterPath = message.text
 					filterCommand.filter(message.command, message.text)
@@ -42,9 +42,9 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		)
 
 		this._view.onDidChangeVisibility(() => {
-			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 
+			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 				this._extensionUri, includedFilterPath, excludedFilterPath)
-			
+
 		})
 		webviewView.webview.options = {
 			// Enable scripts in the webview
@@ -56,11 +56,11 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 			]
 		}
 
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 
+		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 			this._extensionUri, includedFilterPath, excludedFilterPath)
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri, 
+	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri,
 		includedFilterPath?: string, excludedFilterPath?: string) {
 		// Use a nonce to only allow specific scripts to be run
 		const nonce = getNonce()
@@ -88,7 +88,7 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
           </body>
         </html>
     `
-	
+
 		return htmlContent
 	}
 }

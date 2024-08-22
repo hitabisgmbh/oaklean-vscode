@@ -8,7 +8,7 @@ export enum EditorFileMethodViewCommands {
 	initMethods = 'initMethods'
 }
 
-export type EditorFileMethodViewProtocol_ChildToParent = 
+export type EditorFileMethodViewProtocol_ChildToParent =
 	{ command: EditorFileMethodViewCommands.open, identifier: string } |
 	{ command: EditorFileMethodViewCommands.initMethods }
 

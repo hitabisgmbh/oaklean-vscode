@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { SourceNodeIdentifier_string, ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
 import { TextEditor } from 'vscode'
 
-import {getNonce} from '../utilities/getNonce'
+import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -15,8 +15,8 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 	private _view?: vscode.WebviewView
 	_container: Container
 	editor: TextEditor | undefined
-	report : ProjectReport | undefined
-	constructor(private readonly _extensionUri: vscode.Uri, 
+	report: ProjectReport | undefined
+	constructor(private readonly _extensionUri: vscode.Uri,
 		container: Container) {
 		this._container = container
 		this._container.eventHandler.onTextEditorChange(this.textEditorChanged.bind(this))
@@ -32,7 +32,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		this._view = webviewView
 
 		this._view.onDidChangeVisibility(() => {
-			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 
+			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 				this._extensionUri)
 			this.createMethodList()
 		})
@@ -47,21 +47,21 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		}
 
 		this._view.webview.onDidReceiveMessage(
-			(message: {command: 'open', identifier: string}) => {
-				if (message.command === 'open'){
+			(message: { command: 'open', identifier: string }) => {
+				if (message.command === 'open') {
 					const identifier = message.identifier
-					if (identifier){
+					if (identifier) {
 						this.openMethodInEditor(identifier)
 					}
-				} else if (message.command === 'initMethods'){
+				} else if (message.command === 'initMethods') {
 					this.createMethodList()
 				}
 			}
 		)
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 
+		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 			this._extensionUri)
 	}
-	
+
 	reportPathChanged() {
 		this.createMethodList()
 	}
@@ -72,17 +72,17 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 			return
 		}
 		const reportFilePath = this._container.storage.getWorkspace('reportPath') as string
-		
-		if (reportFilePath){
+
+		if (reportFilePath) {
 			const sourceFilePath = new UnifiedPath(this.editor.document.fileName)
 			this.report = this._container.textDocumentController.projectReport
 			const sourceFileMetaData = this.report?.getMetaDataFromFile(
 				new UnifiedPath(reportFilePath.toString()),
 				new UnifiedPath(sourceFilePath.toString())
 			)
-	
+
 			return sourceFileMetaData
-		}		
+		}
 	}
 
 	public postMessageToWebview(message: EditorFileMethodViewProtocol_ParentToChild) {
@@ -94,31 +94,33 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 	textEditorChanged(event: TextEditorChangeEvent) {
 		this.setEditor(event.editor)
 	}
-	
+
 	setEditor(editor: TextEditor) {
 		this.editor = editor
 		this.createMethodList()
 	}
 
-	createMethodList(){
+	createMethodList() {
 		const methodList = this.getMethodList()
-		if (methodList){
-			const sensorValueRepresentation = 
+		if (methodList) {
+			const sensorValueRepresentation =
 				this._container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 			if (methodList?.pathIndex.file !== undefined) {
 				const pathIndex = methodList.pathIndex
-				this.postMessageToWebview({command: EditorFileMethodViewCommands.createMethodList, 
+				this.postMessageToWebview({
+					command: EditorFileMethodViewCommands.createMethodList,
 					methodList, pathIndex, sensorValueRepresentation
 				})
 			}
 		} else {
-			this.postMessageToWebview({command: EditorFileMethodViewCommands.createMethodList, 
+			this.postMessageToWebview({
+				command: EditorFileMethodViewCommands.createMethodList,
 				methodList: undefined, pathIndex: undefined, sensorValueRepresentation: undefined
 			})
 		}
 	}
 
-	async openMethodInEditor(identifier: string){
+	async openMethodInEditor(identifier: string) {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!this.editor || !workspaceDir) {
 			return
@@ -129,26 +131,26 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		try {
 			if (absolutePath) {
 				const document = await vscode.workspace.openTextDocument(uri)
-				if (document){
-					const programStructureTreeOfFile = 
-					this._container.textDocumentController.getProgramStructureTreeOfFile(filePathRelativeToWorkspace)
+				if (document) {
+					const programStructureTreeOfFile =
+						this._container.textDocumentController.getProgramStructureTreeOfFile(filePathRelativeToWorkspace)
 					let position
-					if (programStructureTreeOfFile){
-						const loc = 
-						programStructureTreeOfFile.sourceLocationOfIdentifier(identifier as SourceNodeIdentifier_string)
-						if (loc){
+					if (programStructureTreeOfFile) {
+						const loc =
+							programStructureTreeOfFile.sourceLocationOfIdentifier(identifier as SourceNodeIdentifier_string)
+						if (loc) {
 							position = new vscode.Position(loc.beginLoc.line - 1, loc.beginLoc.column)
 						}
 					}
-					if (position){
-						await vscode.window.showTextDocument(document, 
-							{selection: new vscode.Range(position, position)})
+					if (position) {
+						await vscode.window.showTextDocument(document,
+							{ selection: new vscode.Range(position, position) })
 					} else {
-						await vscode.window.showTextDocument(document)	
+						await vscode.window.showTextDocument(document)
 					}
-					
+
 				}
-				
+
 			} else {
 				console.error(`Could not find file: ${filePathRelativeToWorkspace.toString()}`)
 			}
@@ -162,12 +164,13 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		const methodList = this.getMethodList()
 		if (methodList?.pathIndex.file !== undefined) {
 			const pathIndex = methodList.pathIndex
-			this.postMessageToWebview({command: EditorFileMethodViewCommands.createMethodList, 
+			this.postMessageToWebview({
+				command: EditorFileMethodViewCommands.createMethodList,
 				methodList, pathIndex, sensorValueRepresentation
 			})
 		}
 	}
-	
+
 	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {
 		// Use a nonce to only allow specific scripts to be run
 		const nonce = getNonce()
@@ -191,7 +194,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
           </body>
         </html>
     `
-	
+
 		return htmlContent
 	}
 }

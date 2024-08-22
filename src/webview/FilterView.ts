@@ -15,27 +15,27 @@ window.addEventListener('DOMContentLoaded', () => {
 	initFilter()
 })
 
-export function initFilter(){
+export function initFilter() {
 	const excludePath = document.getElementById('excludePath') as TextField | null
-	const includePath = document.getElementById('includePath') as TextField	| null
+	const includePath = document.getElementById('includePath') as TextField | null
 
-	if (excludePath){
+	if (excludePath) {
 		excludePath?.addEventListener('input', (event) => {
-			if (event.target){
+			if (event.target) {
 				handleExcludedPathChange((event.target as HTMLInputElement).value)
 			}
 
 		})
 	}
-	if (includePath !== null){
+	if (includePath !== null) {
 		includePath.addEventListener('input', (event) => {
-			if (event.target){
+			if (event.target) {
 				handleIncludedPathChange((event.target as HTMLInputElement).value)
 			}
-			
+
 		})
 	}
-    
+
 }
 
 function handleIncludedPathChange(includePath: string) {

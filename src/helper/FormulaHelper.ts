@@ -16,14 +16,14 @@ interface LocalSensorValues {
 
 function deconstructFormula(sensorValues: LocalSensorValues, formula: string | undefined): string {
 	const variablePattern = /[a-zA-Z]+/g
-	if (!formula){
+	if (!formula) {
 		return ''
 	}
 	const valid = checkFormulaValidity(formula)
-	if (valid){
+	if (valid) {
 		const variables = formula.match(variablePattern)
 		const values: Record<string, any> = {}
-	
+
 		if (variables !== null) {
 			for (const variable of variables) {
 				const value = returnSensorValue(sensorValues, variable)
@@ -34,24 +34,24 @@ function deconstructFormula(sensorValues: LocalSensorValues, formula: string | u
 			const variableValue = returnSensorValue(sensorValues, match)
 			return variableValue !== undefined ? variableValue.toString() : match
 		})
-		
+
 		return replacedFormula
 	} else {
 		return ''
 	}
 }
 
-function returnSensorValue(sensorValues: LocalSensorValues, sensorValueName: string ): number {
+function returnSensorValue(sensorValues: LocalSensorValues, sensorValueName: string): number {
 	const value = sensorValues[sensorValueName]
 	return value
 }
 
-export function calcOrReturnSensorValue(sensorValues: LocalSensorValues, 
-	sensorValueName: string, formula: string | undefined): number{
+export function calcOrReturnSensorValue(sensorValues: LocalSensorValues,
+	sensorValueName: string, formula: string | undefined): number {
 	let result = 0
-	if (sensorValueName === 'customFormula' && formula){
+	if (sensorValueName === 'customFormula' && formula) {
 		const assembledFormula = deconstructFormula(sensorValues, formula)
-		if (!assembledFormula){
+		if (!assembledFormula) {
 			throw new Error('assembledFormula is wrong')
 		}
 		result = math.evaluate(assembledFormula)
@@ -61,23 +61,23 @@ export function calcOrReturnSensorValue(sensorValues: LocalSensorValues,
 	return result
 }
 
-export function checkFormulaValidity(formula: string | undefined): boolean{
+export function checkFormulaValidity(formula: string | undefined): boolean {
 	const variablePattern = /[a-zA-Z]+/g
-	if (!formula){
+	if (!formula) {
 		return false
 	}
 	const variables = formula.match(variablePattern)
 	let undefindedValues = ''
 	if (variables !== null) {
 		for (const variable of variables) {
-			if (!(variable in SensorValueTypeNames)){
+			if (!(variable in SensorValueTypeNames)) {
 				undefindedValues += ` ${variable},`
 			}
 		}
 	} else {
 		console.debug('No variables found.')
 	}
-	
+
 	if (undefindedValues.length > 0) {
 		const trimmedundefindedValues = undefindedValues.slice(0, undefindedValues.length - 1)
 		if (typeof process !== 'undefined' && process !== undefined && process.env.RUNNING_IN_EXTENSION) {

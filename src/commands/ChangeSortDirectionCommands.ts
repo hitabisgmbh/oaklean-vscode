@@ -23,7 +23,7 @@ export default class ChangeSortDirectionCommands extends BaseCommand {
 	container: Container
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 	private _direction: SortDirection
-	
+
 	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider, direction: SortDirection) {
 		super()
 		this.container = container
@@ -46,10 +46,10 @@ export default class ChangeSortDirectionCommands extends BaseCommand {
 		}
 	}
 	execute() {
-		const currentDirection  = this._direction
+		const currentDirection = this._direction
 		switch (currentDirection) {
 			case SortDirection.asc:
-				this.directionChange(SortDirection.desc, false, true,false)
+				this.directionChange(SortDirection.desc, false, true, false)
 				break
 			case SortDirection.desc:
 				this.directionChange(SortDirection.default, true, false, false)
@@ -60,7 +60,7 @@ export default class ChangeSortDirectionCommands extends BaseCommand {
 		}
 
 	}
-	directionChange(newDirection: SortDirection, defaultToAsc: boolean, descToDefault: boolean, ascToDesc: boolean){
+	directionChange(newDirection: SortDirection, defaultToAsc: boolean, descToDefault: boolean, ascToDesc: boolean) {
 		this.container.storage.storeWorkspace('sortDirection', newDirection)
 		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDefault, defaultToAsc)
 		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDesc, descToDefault)

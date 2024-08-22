@@ -1,5 +1,4 @@
-export type FilterPaths = { 
+export type FilterPaths = {
 	includedFilterPath: string | undefined,
 	excludedFilterPath: string | undefined
 }
-	

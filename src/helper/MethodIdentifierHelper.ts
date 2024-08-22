@@ -36,13 +36,13 @@ export class MethodIdentifierHelper {
 			return identifierTypeAbbreviation['class']
 		} else if (new RegExp(FunctionExpressionRegex).test(identifier)) {
 			return identifierTypeAbbreviation['functionExpression']
-		} else if (new RegExp(ConstructorDeclarationRegex).test(identifier)){
+		} else if (new RegExp(ConstructorDeclarationRegex).test(identifier)) {
 			return identifierTypeAbbreviation['constructor']
-		} else { 
+		} else {
 			return null
 		}
 	}
-	
+
 	static getMethodNameOfIdentifierPart(identifier: SourceNodeIdentifier_string): string | null {
 		const regex = new RegExp(`{(${allowedMethodTypes.join('|')}):([^}]*)}`)
 		const match = identifier.match(regex)
@@ -50,7 +50,7 @@ export class MethodIdentifierHelper {
 			const name = match[2]
 			return name
 		}
-	
+
 		return null
 	}
 }

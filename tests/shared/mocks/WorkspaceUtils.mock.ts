@@ -49,7 +49,7 @@ export const stub_getWorkspaceDirStub = () => {
 
 export const stub_getProjectReportFromWorkspaceStub = () => {
 	const getWorkspaceDirStub = sinon.stub(WorkspaceUtils, 'getProjectReportFromWorkspace')
-	getWorkspaceDirStub.returns(	
+	getWorkspaceDirStub.returns(
 		[PROJECT_REPORT_PATH_001,
 			PROJECT_REPORT_PATH_002,
 			PROJECT_REPORT_PATH_003]

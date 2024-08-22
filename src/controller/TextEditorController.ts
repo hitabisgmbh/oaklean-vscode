@@ -5,7 +5,7 @@ import { Container } from '../container'
 import { ReportLoadedEvent, ProgramStructureTreeChangeEvent, TextEditorChangeEvent, SelectedSensorValueRepresentationChangeEvent, ToggleLineAnnotationsChangeEvent } from '../helper/EventHandler'
 import { TextDocumentHighlighter } from '../helper/TextDocumentHighlighter'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
-import { SensorValueHoverProvider } from '../hover/SensorValueHoverProvider' 
+import { SensorValueHoverProvider } from '../hover/SensorValueHoverProvider'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 export default class TextEditorController implements Disposable {
 	private _sensorValueRepresentation: SensorValueRepresentation
@@ -24,7 +24,7 @@ export default class TextEditorController implements Disposable {
 			this.container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this)),
 			this.container.eventHandler.onToggleLineAnnotationsChange(this.toggleLineAnnotationsChange.bind(this))
 		)
-		
+
 		this.textDecorations = []
 		this._enableLineAnnotations = this.container.storage.getWorkspace('enableLineAnnotations', true) as boolean
 		this._sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
@@ -56,7 +56,7 @@ export default class TextEditorController implements Disposable {
 			return
 		}
 		const filePathRelativeToWorkspace = workspaceDir.pathTo(this.editor.document.fileName)
-		
+
 		if (filePathRelativeToWorkspace.toString() === event.fileName.toString()) {
 			this.refresh()
 		}
@@ -85,14 +85,14 @@ export default class TextEditorController implements Disposable {
 		if (!this.editor || !workspaceDir) {
 			return
 		}
-	
+
 		// Dispose existing decorations
 		this.disposeTextDecorations()
 
 		if (!this._enableLineAnnotations) {
 			return
 		}
-	
+
 		const filePathRelativeToWorkspace = workspaceDir.pathTo(this.editor.document.fileName)
 		// Get the decorations from TextDocumentHighlighter
 		const decorations = TextDocumentHighlighter.lineAnnotationsByReport(
@@ -101,8 +101,10 @@ export default class TextEditorController implements Disposable {
 			filePathRelativeToWorkspace,
 			this.container
 		)
-		const hoverObjects: { decoration: TextEditorDecorationType; 
-			decorationRange: vscode.Range; sensorValues: SensorValues; }[] = []
+		const hoverObjects: {
+			decoration: TextEditorDecorationType;
+			decorationRange: vscode.Range; sensorValues: SensorValues;
+		}[] = []
 
 		// Apply the new decorations and store TextEditorDecorationType instances
 		for (const { decoration, decorationRange, sensorValues } of decorations) {

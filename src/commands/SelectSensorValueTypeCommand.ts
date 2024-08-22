@@ -19,15 +19,16 @@ const QuickPickOptions_SensorValueTypes = new Map<ExtendedSensorValueType, strin
 		})
 )
 
-function changeSensorValueType(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider, 
+function changeSensorValueType(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider,
 	selectedSensorValueTypeID: ExtendedSensorValueType,
 	formula: string | undefined) {
-	
+
 	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-	container.storage.storeWorkspace('sensorValueRepresentation', { 
-		selectedSensorValueType: selectedSensorValueTypeID, 
-		selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation, 
-		formula})
+	container.storage.storeWorkspace('sensorValueRepresentation', {
+		selectedSensorValueType: selectedSensorValueTypeID,
+		selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation,
+		formula
+	})
 }
 
 export enum CommandIdentifiers {
@@ -39,7 +40,7 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 	container: Container
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 
-	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider ) {
+	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider) {
 		super()
 		this.container = container
 		this._treeDataProvider = treeDataProvider

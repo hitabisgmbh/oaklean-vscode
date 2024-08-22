@@ -105,7 +105,7 @@ export class DirectoryTreeNode {
 	}
 
 	static findNodeInTree(directory: UnifiedPath_string, nodes: DirectoryTreeNode[]):
-	DirectoryTreeNode | undefined {
+		DirectoryTreeNode | undefined {
 		for (const node of nodes) {
 			if (node.directory === directory) {
 				return node

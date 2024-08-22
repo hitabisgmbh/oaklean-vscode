@@ -95,10 +95,10 @@ export class Storage implements Disposable {
 		if (key === 'reportPath' && typeof value === 'string') {
 			return new UnifiedPath(value)
 		}
-		if (key === 'profile' ) {
+		if (key === 'profile') {
 			console.debug('profile', value)
 		}
-		if (key === 'sensorValueRepresentation' ) {
+		if (key === 'sensorValueRepresentation') {
 			console.debug('sensorValueRepresentation', value)
 		}
 		return value
@@ -110,7 +110,7 @@ export class Storage implements Disposable {
 	}
 
 	async storeWorkspace<K extends keyof WorkspaceStorage>
-	(key: K, value: WorkspaceStorage[K]): Promise<void> {
+		(key: K, value: WorkspaceStorage[K]): Promise<void> {
 		await this.context.workspaceState.update(`${APP_IDENTIFIER}:${key}`, value)
 		this._onDidChange.fire({ key: key, workspace: true })
 	}

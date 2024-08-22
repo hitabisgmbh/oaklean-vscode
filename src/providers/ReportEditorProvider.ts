@@ -76,7 +76,7 @@ export class ReportEditorProvider implements CustomEditorProvider {
 		return disposable
 	}
 
-	dispose() { 
+	dispose() {
 		this.subscriptions.forEach(sub => sub.dispose())
 		this.subscriptions = []
 	}

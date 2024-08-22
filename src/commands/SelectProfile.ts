@@ -42,7 +42,7 @@ export default class SelectProfileCommand extends BaseCommand {
 
 		const currentProfile = this.container.storage.getWorkspace('profile') as Profile
 		const quickPick = new QuickPick(quickPickOptions)
-		if (currentProfile){
+		if (currentProfile) {
 			quickPick.setCurrentItem(currentProfile.name)
 		}
 		quickPick.show()

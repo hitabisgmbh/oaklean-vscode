@@ -13,7 +13,7 @@ export enum CommandIdentifiers {
 
 export default class SelectReport extends BaseCommand {
 	container: Container
-	
+
 	constructor(container: Container) {
 		super()
 		this.container = container
@@ -23,13 +23,13 @@ export default class SelectReport extends BaseCommand {
 		return CommandIdentifiers.selectReportFromContextMenu
 	}
 
-	execute(uri:Uri) {
+	execute(uri: Uri) {
 		let file = uri.path
 		if (isWindows() && file.length > 0 && file[0] === '/') {
 			file = file.slice(1)
 		}
 		const reportPath = new UnifiedPath(file)
-		if (reportPath){
+		if (reportPath) {
 			this.container.storage.storeWorkspace('reportPath', reportPath)
 		} else {
 			vscode.window.showErrorMessage(ERROR_NO_REPORT_PATH)

@@ -73,7 +73,7 @@ describe('SelectSensorValueTypeCommand', () => {
 		}))
 		expect(checkFormulaValidity).toHaveBeenCalledWith(formula)
 		expect(container.storage.storeWorkspace).toHaveBeenCalledWith(
-			'sensorValueRepresentation', 
+			'sensorValueRepresentation',
 			expectedSensorValueRepresentation
 		)
 		expect(fireSelectedSensorValueTypeChangeSpy).toHaveBeenCalledWith(expectedSensorValueRepresentation)

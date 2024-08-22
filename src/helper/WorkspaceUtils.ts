@@ -16,7 +16,7 @@ export default class WorkspaceUtils {
 			return ProfilerConfig.resolveFromFile(undefined)
 		}
 		try {
-			return ProfilerConfig.autoResolveFromPath(workspaceDir)	
+			return ProfilerConfig.autoResolveFromPath(workspaceDir)
 		} catch {
 			return ProfilerConfig.resolveFromFile(undefined)
 		}
@@ -54,12 +54,12 @@ export default class WorkspaceUtils {
 		return result
 	}
 
-	static getFileFromWorkspace(filePath : string): UnifiedPath | undefined {
+	static getFileFromWorkspace(filePath: string): UnifiedPath | undefined {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {
 			return undefined
 		}
-		
+
 		const unifiedFilePath = new UnifiedPath(workspaceDir.toString()).join(filePath)
 		return unifiedFilePath
 	}

@@ -40,7 +40,7 @@ export class Container {
 	get reportWebviewController() {
 		return this._reportWebviewController
 	}
-	
+
 	private _reportBackendStorageController: ReportBackendStorageController
 	get reportBackendStorageController() {
 		return this._reportBackendStorageController
@@ -174,7 +174,7 @@ export class Container {
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
 		this.context.subscriptions.push((this._settingsWebviewController = new SettingsWebviewController(this)))
 		this.context.subscriptions.push((this._reportWebviewController = new ReportWebviewController(this)))
-		this.context.subscriptions.push((this._reportBackendStorageController = 
+		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
 		// TreeViews
 		this._treeDataProvider = new SourceFileMetaDataTreeProvider(
@@ -205,7 +205,7 @@ export class Container {
 		this._selectSensorValueTypeCommand = new SelectSensorValueTypeCommand(this, this._treeDataProvider)
 		this.context.subscriptions.push(this._selectSensorValueTypeCommand.register())
 
-		
+
 		this._selectProfileCommand = new SelectProfileCommand(this)
 		this.context.subscriptions.push(this._selectProfileCommand.register())
 
@@ -255,13 +255,13 @@ export class Container {
 				'oaklean.oak', this.reportEditorProvider
 			)
 		)
-			
+
 		this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				EditorFileMethodViewProvider.viewType, this._editorFileMethodViewProvider
 			))
-		
+
 		this._graphicalViewProvider = new GraphicalViewProvider(context.extensionUri, this)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
@@ -280,7 +280,7 @@ export class Container {
 
 		Container.#instance = new Container(context, storage)
 		const sensorValueRepresentation = storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-		if (sensorValueRepresentation === undefined){
+		if (sensorValueRepresentation === undefined) {
 			storage.storeWorkspace('sensorValueRepresentation', defaultSensorValueRepresentation())
 		}
 

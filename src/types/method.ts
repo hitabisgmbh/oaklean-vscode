@@ -1,6 +1,6 @@
 import { SensorValues } from '@oaklean/profiler-core'
 
-export interface Method{
+export interface Method {
 	functionCounter: number;
 	sensorValues: SensorValues;
 	identifier: string;
