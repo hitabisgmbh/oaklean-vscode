@@ -59,8 +59,10 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			(message: MethodViewProtocol_ChildToParent) => {
 				if (message.command === MethodViewCommands.openMethod) {
 					const identifier = message.identifier
-					const filePath = message.filePath
-					this.openMethodInEditor(identifier, filePath)
+					const filePath = vscode.window.activeTextEditor?.document.uri.fsPath
+					if (filePath){
+						this.openMethodInEditor(identifier, filePath)
+					}
 				} else if (message.command === MethodViewCommands.initMethods) {
 					this.fillMethodView()
 				}

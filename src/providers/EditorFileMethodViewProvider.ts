@@ -126,7 +126,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 			return
 		}
 		const filePathRelativeToWorkspace = workspaceDir.pathTo(this.editor.document.fileName)
-		const absolutePath = WorkspaceUtils.getFileFromWorkspace(filePathRelativeToWorkspace.toString())
+		const absolutePath = WorkspaceUtils.getFulleFilePath(filePathRelativeToWorkspace.toString())
 		const uri = vscode.Uri.file(absolutePath?.toString() || '')
 		try {
 			if (absolutePath) {

@@ -3,13 +3,11 @@ import { MethodViewCommands } from '../types/methodViewCommands'
 import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { SortDirection } from '../types/sortDirection'
-import { ExtendedSensorValueType } from '../types/sensorValues'
 import { MethodList } from '../model/MethodList'
 
 export type MethodViewProtocol_ChildToParent = {
 	command: MethodViewCommands;
 	identifier: string;
-	filePath: string;
 } | { command: MethodViewCommands.initMethods }
 
 
