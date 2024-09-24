@@ -1,3 +1,5 @@
+import path from 'path'
+
 import vscode, { EventEmitter, Event, Uri } from 'vscode'
 import {
 	NodeModule,
@@ -156,11 +158,19 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		}
 		{
 			if (this.file) {
-				const file = Uri.file(this.file.toPlatformString())
-				this.command = { command: 'vscode.open', title: label, arguments: [file] }
+			const	file = this.file.toPlatformString()
+				this.command = this.createCommand(label, file)
 			}
 		}
 	}
+
+  private createCommand(label: string, file: string): vscode.Command {
+    return {
+      command: 'oaklean.openDynamicFile',
+      title: label,
+      arguments: [file]
+    }
+  }
 
 	calculateModulesTotal(node: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
 		sensorValueType: ExtendedSensorValueType, formula: string | undefined): number {
@@ -184,6 +194,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 	sortDirection = 'default'
 	directoryTree: DirectoryTreeNode[] = []
 	private changeEvent = new EventEmitter<void>()
+	relativeRootDir: UnifiedPath | undefined
 	public get onDidChangeTreeData(): Event<void> {
 		return this.changeEvent.event
 	}
@@ -240,6 +251,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 	loadFromProjectReport() {
 		const projectReport = this.container.textDocumentController.projectReport
 		if (projectReport) {
+			this.relativeRootDir = projectReport.relativeRootDir
 			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(projectReport, 'original')
 			this.includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
 			this.excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
@@ -429,9 +441,11 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 						filePath = directory
 					}
 				}
-				workspaceFilePath = filePath
-					? WorkspaceUtils.getFileFromWorkspace(filePath.toString())
-					: undefined
+				if (!filePath) {
+					workspaceFilePath = undefined
+				} else {
+					workspaceFilePath = WorkspaceUtils.getFileFromWorkspace(filePath.toString())
+				}
 			}
 
 			let found = true
@@ -456,6 +470,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 			if (!found) {
 				continue
 			}
+
 			result.push(
 				new SourceFileMetaDataTreeNode(
 					filePathPart,
