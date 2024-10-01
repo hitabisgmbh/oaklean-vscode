@@ -66,7 +66,7 @@ export default class WorkspaceUtils {
 		return unifiedFilePath
 	}
 
-	static getFulleFilePath(filePath: string): UnifiedPath | undefined {
+	static getFullFilePath(filePath: string): UnifiedPath | undefined {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {
 			return undefined
