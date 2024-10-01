@@ -258,7 +258,7 @@ export class Container {
 		)
 
 		vscode.commands.registerCommand('oaklean.openDynamicFile', (file: string) => {
-			const resolvedPath = WorkspaceUtils.getFulleFilePath(file)
+			const resolvedPath = WorkspaceUtils.getFullFilePath(file)
 			if (resolvedPath){
 				vscode.commands.executeCommand('vscode.open', vscode.Uri.file(resolvedPath.toPlatformString()))
 			}
