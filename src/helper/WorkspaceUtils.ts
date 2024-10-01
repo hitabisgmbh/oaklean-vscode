@@ -4,7 +4,6 @@ import * as path from 'path'
 import vscode from 'vscode'
 import { sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
-import { re } from 'mathjs'
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
 		if (vscode.workspace.workspaceFolders !== undefined) {
@@ -87,7 +86,6 @@ export default class WorkspaceUtils {
     for (const item of items) {
         const fullPath = path.join(startDir, item)
         const stat = fs.statSync(fullPath)
-
         if (stat.isDirectory()) {
             if (item === pathParts[0]) {
                 if (pathParts.length === 1) {
