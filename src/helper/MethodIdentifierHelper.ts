@@ -57,7 +57,7 @@ export class MethodIdentifierHelper {
 
 		const langInternalMatch = identifier.match(LangInternalSourceNodeIdentifierRegex)
 		if (langInternalMatch) {
-			if (langInternalMatch[0] === identifier) {
+			if (langInternalMatch[0] === identifier && identifier.indexOf(':') === -1) {
 				return identifier
 			}
 		}
