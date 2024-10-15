@@ -2,6 +2,7 @@ import {
 	SourceNodeIdentifier_string
 } from '@oaklean/profiler-core/dist/src/types/SourceNodeIdentifiers.types'
 import {
+	LangInternalSourceNodeIdentifierRegex,
 	MethodDefinitionRegex,
 	ClassDeclarationRegex,
 	FunctionDeclarationRegex,
@@ -44,11 +45,21 @@ export class MethodIdentifierHelper {
 	}
 
 	static getMethodNameOfIdentifierPart(identifier: SourceNodeIdentifier_string): string | null {
+		if (identifier.startsWith('RegExp:')) {
+			return identifier
+		}
 		const regex = new RegExp(`{(${allowedMethodTypes.join('|')}):([^}]*)}`)
 		const match = identifier.match(regex)
 		if (match) {
 			const name = match[2]
 			return name
+		}
+
+		const langInternalMatch = identifier.match(LangInternalSourceNodeIdentifierRegex)
+		if (langInternalMatch) {
+			if (langInternalMatch[0] === identifier) {
+				return identifier
+			}
 		}
 
 		return null
