@@ -23,6 +23,9 @@ export type ReportLoadedEvent = {
 	type: 'ProjectReport'
 }
 
+export type ConfigLoadedEvent = {
+	type: 'Config'
+}
 
 export type SelectedSensorValueRepresentationChangeEvent = {
 	readonly sensorValueRepresentation: SensorValueRepresentation
@@ -34,6 +37,10 @@ export type ToggleLineAnnotationsChangeEvent = {
 
 export type ReportPathChangeEvent = {
 	readonly reportPath: UnifiedPath
+}
+
+export type ConfigPathChangeEvent = {
+	readonly configPath: UnifiedPath
 }
 
 export type TextEditorChangeEvent = {
@@ -69,10 +76,12 @@ export default class EventHandler implements Disposable {
 	container: Container
 
 	private _reportPathChange = new EventEmitter<ReportPathChangeEvent>()
+	private _configPathChange = new EventEmitter<ConfigPathChangeEvent>()
 	private _selectedSensorValueRepresentationChangeEvent =
 		new EventEmitter<SelectedSensorValueRepresentationChangeEvent>()
 	private _toggleLineAnnotationsChangeEvent = new EventEmitter<ToggleLineAnnotationsChangeEvent>()
 	private _reportLoaded = new EventEmitter<ReportLoadedEvent>()
+	private _configLoaded = new EventEmitter<ConfigLoadedEvent>()
 	private _textEditorChange = new EventEmitter<TextEditorChangeEvent>()
 	private _textDocumentOpen = new EventEmitter<TextDocumentOpenEvent>()
 	private _textDocumentClose = new EventEmitter<TextDocumentCloseEvent>()
@@ -95,11 +104,19 @@ export default class EventHandler implements Disposable {
 
 	fireInitialEvents() {
 		const reportPath: UnifiedPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
+		const configPath: UnifiedPath = this.container.storage.getWorkspace('configPath') as UnifiedPath
 		if (reportPath && fs.existsSync(reportPath.toString())) {
 			this.fireReportPathChange(reportPath)
 		} else {
 			this.container.selectReportCommand.execute()
 		}
+
+		if (configPath && fs.existsSync(configPath.toString())) {
+			this.fireConfigPathChange(configPath)
+		} else {
+			this.container.selectConfigCommand.execute()
+		}
+
 		for (const document of vscode.workspace.textDocuments) {
 			this.fireTextDocumentOpen(document)
 		}
@@ -125,6 +142,13 @@ export default class EventHandler implements Disposable {
 				}
 			}
 				break
+			case 'configPath': {
+				const configPath = this.container.storage.getWorkspace('configPath') as UnifiedPath
+				if (configPath) {
+					this.fireConfigPathChange(configPath)
+				}
+			}
+			break
 			case 'sensorValueRepresentation': {
 				const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 				if (sensorValueRepresentation.selectedSensorValueType
@@ -172,6 +196,18 @@ export default class EventHandler implements Disposable {
 			reportPath: reportPath
 		})
 		this._reportPathChange.fire({ reportPath: reportPath })
+	}
+
+	get onConfigPathChange(): Event<ConfigPathChangeEvent> {
+		return this._configPathChange.event
+	}
+
+	fireConfigPathChange(configPath: UnifiedPath) {
+		console.debug('EventFire: EventHandler.fireConfigPathChange', {
+			timestamp: TimeHelper.getCurrentHighResolutionTime(),
+			configPath: configPath
+		})
+		this._configPathChange.fire({ configPath: configPath })
 	}
 
 	get onSelectedSensorValueTypeChange(): Event<SelectedSensorValueRepresentationChangeEvent> {
@@ -222,6 +258,17 @@ export default class EventHandler implements Disposable {
 			timestamp: TimeHelper.getCurrentHighResolutionTime(),
 		})
 		this._reportLoaded.fire({ type: type })
+	}
+
+	get onConfigLoaded(): Event<ConfigLoadedEvent> {
+		return this._configLoaded.event
+	}
+
+	fireConfigLoaded(type: 'Config') {
+		console.debug('EventFire: EventHandler.fireConfigLoaded', {
+			timestamp: TimeHelper.getCurrentHighResolutionTime(),
+		})
+		this._configLoaded.fire({ type: type })
 	}
 
 	get onProgramStructureTreeChange(): Event<ProgramStructureTreeChangeEvent> {

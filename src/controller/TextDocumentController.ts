@@ -1,7 +1,7 @@
 import * as path from 'path'
 
 import vscode from 'vscode'
-import { NodeModule, NodeModuleUtils, Report, UnifiedPath, SourceFileMetaDataTreeType } from '@oaklean/profiler-core'
+import { NodeModule, NodeModuleUtils, Report, UnifiedPath, SourceFileMetaDataTreeType, ProfilerConfig } from '@oaklean/profiler-core'
 import { Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode'
 import {
 	SourceFileMetaDataTree,
@@ -14,11 +14,12 @@ import {
 import {
 	ReportPathChangeEvent,
 	TextDocumentOpenEvent,
-	TextDocumentCloseEvent
+	TextDocumentCloseEvent,
+	ConfigPathChangeEvent
 } from '../helper/EventHandler'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
-import { INFO_PROJECT_REPORT } from '../constants/infoMessages'
+import { INFO_CONFIG_LOAD, INFO_PROJECT_REPORT } from '../constants/infoMessages'
 
 const VALID_EXTENSIONS_TO_PARSE = [
 	'.js',
@@ -41,6 +42,7 @@ export default class TextDocumentController implements Disposable {
 		this.programStructureTreePerDocument = {}
 
 		this._disposable = Disposable.from(
+			this.container.eventHandler.onConfigPathChange(this.configPathChanged.bind(this)),
 			this.container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this)),
 			this.container.eventHandler.onTextDocumentOpen(this.documentOpened.bind(this)),
 			this.container.eventHandler.onTextDocumentClose(this.documentClosed.bind(this)),
@@ -55,6 +57,25 @@ export default class TextDocumentController implements Disposable {
 
 	private set reportPath(value: UnifiedPath | undefined) {
 		this._reportPath = value
+	}
+
+
+	private _configPath: UnifiedPath | undefined
+	get configPath(): UnifiedPath | undefined {
+		return this._configPath
+	}
+
+	private set configPath(value: UnifiedPath | undefined) {
+		this._configPath = value
+	}
+
+	private _config: ProfilerConfig | undefined
+	get config(): ProfilerConfig | undefined {
+		return this._config
+	}
+
+	private set config(value: ProfilerConfig | undefined) {
+		this._config = value
 	}
 
 	private _projectReport: ProjectReport | undefined
@@ -138,6 +159,17 @@ export default class TextDocumentController implements Disposable {
 		vscode.window.showInformationMessage(INFO_PROJECT_REPORT + this.reportPath.basename())
 		this.container.eventHandler.fireReportLoaded('ProjectReport')
 	}
+
+	configPathChanged(event: ConfigPathChangeEvent) {
+		this.configPath = event.configPath 
+		if (!this.configPath) {
+			return undefined
+		}
+		this._config = ProfilerConfig.resolveFromFile(this.configPath)
+		vscode.window.showInformationMessage(INFO_CONFIG_LOAD + this.configPath)
+		this.container.eventHandler.fireConfigLoaded('Config')
+	}
+
 
 	documentChanged(event: TextDocumentChangeEvent) {
 		this.setProgramStructureTreeOfDocument(event.document)

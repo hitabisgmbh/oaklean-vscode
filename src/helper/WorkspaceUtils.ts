@@ -1,9 +1,7 @@
-import * as fs from 'fs'
-import * as path from 'path'
-
 import vscode from 'vscode'
 import { sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
+
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
 		if (vscode.workspace.workspaceFolders !== undefined) {
@@ -22,6 +20,17 @@ export default class WorkspaceUtils {
 		} catch {
 			return ProfilerConfig.resolveFromFile(undefined)
 		}
+	}
+
+	static getWorkspaceProfilerConfigPaths(): string[] {
+		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
+		if (!workspaceDir) {
+			return []
+		}
+
+		const path = workspaceDir.join('/**/.oaklean').toString()
+		const profilePaths = globSync(path).map((configPath) => workspaceDir.pathTo(configPath).toPlatformString())
+		return profilePaths
 	}
 
 	static getCPUProfilesFromWorkspace(): string[] {
@@ -66,65 +75,18 @@ export default class WorkspaceUtils {
 		return unifiedFilePath
 	}
 
-	static getFullFilePath(filePath: string): UnifiedPath | undefined {
+	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath | undefined {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {
 			return undefined
 		}
-		const resolvedPath = WorkspaceUtils.findFileWithUnknownDirs(workspaceDir.toString(), filePath)
-		if (resolvedPath){
-			const unifiedFilePath = new UnifiedPath(resolvedPath)
-			return unifiedFilePath
+		const rootDir = config.getRootDir()
+		const unifiedFilePath = new UnifiedPath(filePath)
+		const fullFilePath = rootDir.join(unifiedFilePath)
+		if (fullFilePath){
+			return fullFilePath
 		} else {
 			return undefined
 		}
 	}
-
-	static findFileRecursively(startDir: string, pathParts: string[]): string | undefined {
-    const items = fs.readdirSync(startDir)
-
-    for (const item of items) {
-        const fullPath = path.join(startDir, item)
-        const stat = fs.statSync(fullPath)
-        if (stat.isDirectory()) {
-            if (item === pathParts[0]) {
-                if (pathParts.length === 1) {
-                    const filePath = path.join(fullPath, pathParts[0])
-                    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-                        return filePath
-                    }
-                } else {
-                    const result = WorkspaceUtils.findFileRecursively(fullPath, pathParts.slice(1))
-                    if (result) {
-                        return result
-                    }
-                }
-            } else {
-                const result = WorkspaceUtils.findFileRecursively(fullPath, pathParts)
-                if (result) {
-                    return result
-                }
-            }
-        } else if (stat.isFile() && item === pathParts[0]) {
-						if (pathParts.length === 1) {
-								return fullPath
-						}
-					}
-    }
-
-    return undefined
-}
-
-
-	static findFileWithUnknownDirs(rootDir: string, relativeFilePath: string): string | undefined {
-    if (relativeFilePath.startsWith('./')) {
-        relativeFilePath = relativeFilePath.slice(2)
-    } else if (relativeFilePath.startsWith('.')) {
-        relativeFilePath = relativeFilePath.slice(1)
-    }
-
-    const pathParts = relativeFilePath.split(path.sep)
-    return WorkspaceUtils.findFileRecursively(rootDir, pathParts)
-}
-
 }

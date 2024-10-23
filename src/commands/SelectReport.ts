@@ -1,5 +1,5 @@
 import vscode from 'vscode'
-import { PathUtils, UnifiedPath } from '@oaklean/profiler-core'
+import { UnifiedPath } from '@oaklean/profiler-core'
 
 import BaseCommand from './BaseCommand'
 
