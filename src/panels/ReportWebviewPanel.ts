@@ -44,7 +44,7 @@ export class ReportWebviewPanel {
 			(message: ReportWebViewProtocol_ChildToParent) => {
 				switch (message.command) {
 					case 'openFile':
-						ReportWebviewController.openJsonEditor(message.filePath)
+						ReportWebviewController.openJsonEditor(this.container, message.filePath)
 						break
 				}
 			}

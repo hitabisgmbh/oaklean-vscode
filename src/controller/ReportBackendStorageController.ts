@@ -27,7 +27,10 @@ export default class ReportBackendStorageController implements Disposable {
 		if (!workspaceDir) {
 			return
 		}
-		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
+		const config = this.container.textDocumentController.config
+		if (config === undefined) {
+			return
+		}
 		const url = config.registryOptions.url
 		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak').toString()
 		if (!workSpaceDir) {

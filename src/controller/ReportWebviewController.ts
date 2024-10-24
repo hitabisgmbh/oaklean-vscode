@@ -15,11 +15,15 @@ export class ReportWebviewController implements Disposable {
 		)
 	}
 
-	public static async openJsonEditor(filePath: string): Promise<void> {
+	public static async openJsonEditor(container: Container, filePath: string): Promise<void> {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
 			const inputPath = new UnifiedPath(filePath)
-			const report = ProjectReport.loadFromFile(inputPath, 'bin', WorkspaceUtils.getWorkspaceProfilerConfig())
+			const config = container.textDocumentController.config
+			if (config === undefined) {
+				return
+			}
+			const report = ProjectReport.loadFromFile(inputPath, 'bin', config)
 			if (report === undefined) {
 				console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
 				throw new Error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)

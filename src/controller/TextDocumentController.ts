@@ -151,7 +151,10 @@ export default class TextDocumentController implements Disposable {
 
 	reportPathChanged(event: ReportPathChangeEvent) {
 		this.reportPath = event.reportPath
-		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
+		const config = this.container.textDocumentController.config
+		if (config === undefined) {
+			return
+		}
 		this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', config)
 		if (this.projectReport) {
 			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport, 'original')
