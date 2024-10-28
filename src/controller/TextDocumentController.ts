@@ -178,6 +178,14 @@ export default class TextDocumentController implements Disposable {
 		this.setProgramStructureTreeOfDocument(event.document)
 	}
 
+	documentSaved(document: TextDocument) {
+		if (path.basename(document.uri.path).toLowerCase() === '.oaklean') {
+			if (this.configPath && document.uri.fsPath === this.configPath.toString()) {
+				this._config = ProfilerConfig.resolveFromFile(this.configPath)
+			}
+		}
+	}
+	
 	setProgramStructureTreeOfDocument(document: TextDocument) {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {

@@ -8,7 +8,7 @@ import vscode,
 	EventEmitter,
 	Event,
 	window,
-	TextDocumentChangeEvent
+	TextDocumentChangeEvent,
 } from 'vscode'
 import { TimeHelper, UnifiedPath } from '@oaklean/profiler-core'
 
@@ -86,6 +86,7 @@ export default class EventHandler implements Disposable {
 	private _textDocumentOpen = new EventEmitter<TextDocumentOpenEvent>()
 	private _textDocumentClose = new EventEmitter<TextDocumentCloseEvent>()
 	private _textDocumentChange = new EventEmitter<TextDocumentChangeEvent>()
+	private _textDocumentDidSave = new EventEmitter<vscode.TextDocument>()
 	private _programStructureTreeChanged = new EventEmitter<ProgramStructureTreeChangeEvent>()
 	private _filterPathChange = new EventEmitter<FilterPathChangeEvent>()
 	private _sortDirectionChange = new EventEmitter<SortDirectionChangeEvent>()
@@ -97,6 +98,7 @@ export default class EventHandler implements Disposable {
 			this.container.storage.onDidChange(this.storeChanged.bind(this)),
 			vscode.workspace.onDidOpenTextDocument(this.fireTextDocumentOpen.bind(this)),
 			vscode.workspace.onDidCloseTextDocument(this.fireTextDocumentClose.bind(this)),
+			vscode.workspace.onDidSaveTextDocument(this.fireTextDocumentDidSave.bind(this)),
 			vscode.workspace.onDidChangeTextDocument(this.fireTextDocumentChange.bind(this)),
 			window.onDidChangeActiveTextEditor(this.fireTextEditorChange.bind(this))
 		)
@@ -283,6 +285,9 @@ export default class EventHandler implements Disposable {
 		this._programStructureTreeChanged.fire({ fileName: fileName })
 	}
 
+	get onTextEditorChange(): Event<TextEditorChangeEvent> {
+		return this._textEditorChange.event
+	}
 	get onTextDocumentChange(): Event<TextDocumentChangeEvent> {
 		return this._textDocumentChange.event
 	}
@@ -292,10 +297,6 @@ export default class EventHandler implements Disposable {
 			timestamp: TimeHelper.getCurrentHighResolutionTime()
 		})
 		this._textDocumentChange.fire(event)
-	}
-
-	get onTextEditorChange(): Event<TextEditorChangeEvent> {
-		return this._textEditorChange.event
 	}
 
 	fireTextEditorChange(editor: TextEditor | undefined) {
@@ -354,5 +355,15 @@ export default class EventHandler implements Disposable {
 			profile: profile
 		})
 		this._profileChange.fire({ profile: profile })
+	}
+	get onTextDocumentDidSave(): Event<vscode.TextDocument> {
+		return this._textDocumentDidSave.event
+}
+
+	fireTextDocumentDidSave(document: vscode.TextDocument) {
+			console.debug('EventFire: EventHandler.fireTextDocumentDidSave', {
+					timestamp: TimeHelper.getCurrentHighResolutionTime()
+			})
+			this._textDocumentDidSave.fire(document)
 	}
 }
