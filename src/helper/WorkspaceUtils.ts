@@ -45,12 +45,12 @@ export default class WorkspaceUtils {
 		return profilePaths
 	}
 
-	static getProjectReportFromWorkspace(): string[] {
+	static getProjectReportFromWorkspace(config: ProfilerConfig | undefined): string[] {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
+		if (!workspaceDir || !config) {
 			return []
 		}
-		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
+
 		const profilesPath = config.getOutDir().join('**', '*.oak').toString()
 		const projectReportPaths = globSync(profilesPath)
 			.map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
