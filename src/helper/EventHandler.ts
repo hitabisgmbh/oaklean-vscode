@@ -106,17 +106,10 @@ export default class EventHandler implements Disposable {
 
 	fireInitialEvents() {
 		const reportPath: UnifiedPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
-		const configPath: UnifiedPath = this.container.storage.getWorkspace('configPath') as UnifiedPath
 		if (reportPath && fs.existsSync(reportPath.toString())) {
 			this.fireReportPathChange(reportPath)
 		} else {
 			this.container.selectReportCommand.execute()
-		}
-
-		if (configPath && fs.existsSync(configPath.toString())) {
-			this.fireConfigPathChange(configPath)
-		} else {
-			this.container.selectConfigCommand.execute()
 		}
 
 		for (const document of vscode.workspace.textDocuments) {
@@ -144,13 +137,6 @@ export default class EventHandler implements Disposable {
 				}
 			}
 				break
-			case 'configPath': {
-				const configPath = this.container.storage.getWorkspace('configPath') as UnifiedPath
-				if (configPath) {
-					this.fireConfigPathChange(configPath)
-				}
-			}
-			break
 			case 'sensorValueRepresentation': {
 				const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 				if (sensorValueRepresentation.selectedSensorValueType

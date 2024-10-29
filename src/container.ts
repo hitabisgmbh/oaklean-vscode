@@ -1,7 +1,6 @@
 import vscode, { ExtensionContext } from 'vscode'
 
 import SelectReport from './commands/SelectReport'
-import SelectConfig from './commands/SelectConfig'
 import SelectReportFromContextMenu from './commands/SelectReportFromContextMenu'
 import EventHandler from './helper/EventHandler'
 import { Storage } from './storage'
@@ -76,11 +75,6 @@ export class Container {
 	private readonly _selectReportCommand: SelectReport
 	get selectReportCommand() {
 		return this._selectReportCommand
-	}
-
-	private readonly _selectConfigCommand: SelectConfig
-	get selectConfigCommand() {
-		return this._selectConfigCommand
 	}
 
 	private readonly _selectReportFromContextMenuCommand: SelectReportFromContextMenu
@@ -202,9 +196,6 @@ export class Container {
 		// Commands
 		this._selectReportCommand = new SelectReport(this)
 		this.context.subscriptions.push(this._selectReportCommand.register())
-
-		this._selectConfigCommand = new SelectConfig(this)
-		this.context.subscriptions.push(this._selectConfigCommand.register())
 
 		this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
 		this.context.subscriptions.push(this._selectReportFromContextMenuCommand.register())

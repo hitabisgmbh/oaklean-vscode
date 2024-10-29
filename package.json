@@ -230,10 +230,6 @@
 				"title": "Oaklean: Select Project/Module Report"
 			},
 			{
-				"command": "oaklean.selectConfig",
-				"title": "Oaklean: Select .oaklean Config"
-			},
-			{
 				"command": "oaklean.selectReportFromContextMenu",
 				"title": "Select Project/Module Report"
 			},
