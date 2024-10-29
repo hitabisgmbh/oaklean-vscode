@@ -45,24 +45,33 @@ export default class WorkspaceUtils {
 		return profilePaths
 	}
 
-	static getProjectReportFromWorkspace(config: ProfilerConfig | undefined): string[] {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir || !config) {
-			return []
-		}
+	static getProjectReportFromWorkspace(): string[] {
+    const workspaceDir = WorkspaceUtils.getWorkspaceDir()
+    const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
+    
+    if (!workspaceDir || !configPaths) {
+        return []
+    }
+    
+    let result: string[] = []
+    
+    for (const configPath of configPaths) {
+				const fullConfigPath = workspaceDir?.join(configPath)
+        const config = ProfilerConfig.resolveFromFile(fullConfigPath)
+        
+        const profilesPath = config.getOutDir().join('**', '*.oak').toString()
+        const projectReportPaths = globSync(profilesPath)
+            .map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
 
-		const profilesPath = config.getOutDir().join('**', '*.oak').toString()
-		const projectReportPaths = globSync(profilesPath)
-			.map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
+        const profilesHistoryPath = config.getOutHistoryDir().join('**', '*.oak').toPlatformString()
+        const projectReportHistoryPaths = globSync(profilesHistoryPath)
+            .map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
 
-		const profilesHistoryPath = config.getOutHistoryDir().join('**', '*.oak').toPlatformString()
-		const projectReportHistoryPaths = globSync(profilesHistoryPath)
-			.map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
+        result = [...result, ...projectReportPaths, ...projectReportHistoryPaths]
+    }
 
-		const result = [...projectReportPaths, ...projectReportHistoryPaths]
-
-		PathUtils.sortFilePathArray(result)
-		return result
+    PathUtils.sortFilePathArray(result)
+    return result
 	}
 
 	static getFileFromWorkspace(filePath: string): UnifiedPath | undefined {
