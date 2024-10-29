@@ -1,5 +1,5 @@
 import vscode, { Disposable } from 'vscode'
-import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
+import { ProfilerConfig, ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -19,7 +19,7 @@ export class ReportWebviewController implements Disposable {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
 			const inputPath = new UnifiedPath(filePath)
-			const config = container.textDocumentController.config
+			const config =  ProfilerConfig.autoResolveFromPath(inputPath.dirName())
 			if (config === undefined) {
 				return
 			}
