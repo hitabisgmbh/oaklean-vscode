@@ -29,7 +29,6 @@ export type GlobalStorage = {
 
 export type WorkspaceStorage = {
 	reportPath: UnifiedPath,
-	configPath: UnifiedPath,
 	includedFilterPath: string | undefined,
 	excludedFilterPath: string | undefined
 	sensorValueRepresentation: SensorValueRepresentation

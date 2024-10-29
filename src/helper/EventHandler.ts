@@ -23,10 +23,6 @@ export type ReportLoadedEvent = {
 	type: 'ProjectReport'
 }
 
-export type ConfigLoadedEvent = {
-	type: 'Config'
-}
-
 export type SelectedSensorValueRepresentationChangeEvent = {
 	readonly sensorValueRepresentation: SensorValueRepresentation
 }
@@ -37,10 +33,6 @@ export type ToggleLineAnnotationsChangeEvent = {
 
 export type ReportPathChangeEvent = {
 	readonly reportPath: UnifiedPath
-}
-
-export type ConfigPathChangeEvent = {
-	readonly configPath: UnifiedPath
 }
 
 export type TextEditorChangeEvent = {
@@ -76,12 +68,10 @@ export default class EventHandler implements Disposable {
 	container: Container
 
 	private _reportPathChange = new EventEmitter<ReportPathChangeEvent>()
-	private _configPathChange = new EventEmitter<ConfigPathChangeEvent>()
 	private _selectedSensorValueRepresentationChangeEvent =
 		new EventEmitter<SelectedSensorValueRepresentationChangeEvent>()
 	private _toggleLineAnnotationsChangeEvent = new EventEmitter<ToggleLineAnnotationsChangeEvent>()
 	private _reportLoaded = new EventEmitter<ReportLoadedEvent>()
-	private _configLoaded = new EventEmitter<ConfigLoadedEvent>()
 	private _textEditorChange = new EventEmitter<TextEditorChangeEvent>()
 	private _textDocumentOpen = new EventEmitter<TextDocumentOpenEvent>()
 	private _textDocumentClose = new EventEmitter<TextDocumentCloseEvent>()
@@ -186,18 +176,6 @@ export default class EventHandler implements Disposable {
 		this._reportPathChange.fire({ reportPath: reportPath })
 	}
 
-	get onConfigPathChange(): Event<ConfigPathChangeEvent> {
-		return this._configPathChange.event
-	}
-
-	fireConfigPathChange(configPath: UnifiedPath) {
-		console.debug('EventFire: EventHandler.fireConfigPathChange', {
-			timestamp: TimeHelper.getCurrentHighResolutionTime(),
-			configPath: configPath
-		})
-		this._configPathChange.fire({ configPath: configPath })
-	}
-
 	get onSelectedSensorValueTypeChange(): Event<SelectedSensorValueRepresentationChangeEvent> {
 		return this._selectedSensorValueRepresentationChangeEvent.event
 	}
@@ -246,17 +224,6 @@ export default class EventHandler implements Disposable {
 			timestamp: TimeHelper.getCurrentHighResolutionTime(),
 		})
 		this._reportLoaded.fire({ type: type })
-	}
-
-	get onConfigLoaded(): Event<ConfigLoadedEvent> {
-		return this._configLoaded.event
-	}
-
-	fireConfigLoaded(type: 'Config') {
-		console.debug('EventFire: EventHandler.fireConfigLoaded', {
-			timestamp: TimeHelper.getCurrentHighResolutionTime(),
-		})
-		this._configLoaded.fire({ type: type })
 	}
 
 	get onProgramStructureTreeChange(): Event<ProgramStructureTreeChangeEvent> {

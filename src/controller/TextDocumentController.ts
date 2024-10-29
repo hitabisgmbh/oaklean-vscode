@@ -42,7 +42,6 @@ export default class TextDocumentController implements Disposable {
 		this.programStructureTreePerDocument = {}
 
 		this._disposable = Disposable.from(
-			this.container.eventHandler.onConfigPathChange(this.configPathChanged.bind(this)),
 			this.container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this)),
 			this.container.eventHandler.onTextDocumentOpen(this.documentOpened.bind(this)),
 			this.container.eventHandler.onTextDocumentClose(this.documentClosed.bind(this)),
@@ -162,17 +161,6 @@ export default class TextDocumentController implements Disposable {
 		vscode.window.showInformationMessage(INFO_PROJECT_REPORT + this.reportPath.basename())
 		this.container.eventHandler.fireReportLoaded('ProjectReport')
 	}
-
-	configPathChanged(event: ConfigPathChangeEvent) {
-		this.configPath = event.configPath 
-		if (!this.configPath) {
-			return undefined
-		}
-		this._config = ProfilerConfig.resolveFromFile(this.configPath)
-		vscode.window.showInformationMessage(INFO_CONFIG_LOAD + this.configPath)
-		this.container.eventHandler.fireConfigLoaded('Config')
-	}
-
 
 	documentChanged(event: TextDocumentChangeEvent) {
 		this.setProgramStructureTreeOfDocument(event.document)
