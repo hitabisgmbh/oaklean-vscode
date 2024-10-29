@@ -1,5 +1,5 @@
 import vscode, { CustomEditorProvider, ExtensionContext, CustomDocumentContentChangeEvent } from 'vscode'
-import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
+import { ProfilerConfig, ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import { ReportWebviewPanel } from '../panels/ReportWebviewPanel'
@@ -24,7 +24,7 @@ export class ReportEditorProvider implements CustomEditorProvider {
 
 	async resolveCustomEditor(document: vscode.CustomDocument): Promise<void> {
 		const inputPath = new UnifiedPath(document.uri.fsPath)
-		const config = this._container.textDocumentController.config
+		const config = ProfilerConfig.autoResolveFromPath(inputPath.dirName())
 		if (config === undefined) {
 			return
 		}
