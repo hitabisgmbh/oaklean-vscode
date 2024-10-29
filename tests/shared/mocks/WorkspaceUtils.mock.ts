@@ -35,6 +35,12 @@ export const stub_globSync = () => {
 					WORKSPACE_PATH_UNIFIED.join(PROFILE_PATH_002).toString(),
 				]
 			}
+
+			if ((pattern as string).endsWith('/**/.oaklean')) {
+				return [
+					WORKSPACE_PATH_UNIFIED.join('/**/.oaklean').toString()
+				]
+			}
 			return []
 		})
 	return globSyncStub

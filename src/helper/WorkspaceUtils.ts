@@ -48,7 +48,6 @@ export default class WorkspaceUtils {
 	static getProjectReportFromWorkspace(): string[] {
     const workspaceDir = WorkspaceUtils.getWorkspaceDir()
     const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
-    
     if (!workspaceDir || !configPaths) {
         return []
     }

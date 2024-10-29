@@ -19,6 +19,7 @@ export default jest.mock('vscode', () => ({
 		onDidOpenTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 		onDidCloseTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 		onDidChangeTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+		onDidSaveTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 	},
 	Disposable: {
 		from: jest.fn().mockReturnValue({ dispose: jest.fn() }),

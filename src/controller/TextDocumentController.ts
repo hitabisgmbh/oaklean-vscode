@@ -14,8 +14,7 @@ import {
 import {
 	ReportPathChangeEvent,
 	TextDocumentOpenEvent,
-	TextDocumentCloseEvent,
-	ConfigPathChangeEvent
+	TextDocumentCloseEvent
 } from '../helper/EventHandler'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
