@@ -19,7 +19,7 @@ export class ReportWebviewController implements Disposable {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
 			const inputPath = new UnifiedPath(filePath)
-			const config =  ProfilerConfig.autoResolveFromPath(inputPath.dirName())
+			const config =  WorkspaceUtils.autoResolveConfigFromPath(inputPath.dirName())
 			const report = ProjectReport.loadFromFile(inputPath, 'bin', config)
 			if (report === undefined) {
 				console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)

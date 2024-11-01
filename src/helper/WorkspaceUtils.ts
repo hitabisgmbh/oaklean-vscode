@@ -1,7 +1,9 @@
 import vscode from 'vscode'
 import { sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
+import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
+import { ERROR_NO_CONFIG } from '../constants/infoMessages'
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
 		if (vscode.workspace.workspaceFolders !== undefined) {
@@ -16,7 +18,7 @@ export default class WorkspaceUtils {
 			return []
 		}
 
-		const path = workspaceDir.join('/**/.oaklean').toString()
+		const path = workspaceDir.join('/**/' + STATIC_CONFIG_FILENAME).toString()
 		const profilePaths = globSync(path).map((configPath) => workspaceDir.pathTo(configPath).toPlatformString())
 		return profilePaths
 	}
@@ -63,16 +65,6 @@ export default class WorkspaceUtils {
     return result
 	}
 
-	static getFileFromWorkspace(filePath: string): UnifiedPath | undefined {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
-			return undefined
-		}
-
-		const unifiedFilePath = new UnifiedPath(filePath)
-		return unifiedFilePath
-	}
-
 	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath {
 		return config.getRootDir().join(filePath)
 	}
@@ -80,6 +72,14 @@ export default class WorkspaceUtils {
 	static resolveConfigFromFile(configPath: UnifiedPath): ProfilerConfig | undefined {
 		try {
 			return ProfilerConfig.resolveFromFile(configPath)
+		} catch (e) {
+			return undefined
+		}
+	}
+
+	static autoResolveConfigFromPath(configPath: UnifiedPath): ProfilerConfig | undefined {
+		try {
+			return ProfilerConfig.autoResolveFromPath(configPath)
 		} catch (e) {
 			return undefined
 		}

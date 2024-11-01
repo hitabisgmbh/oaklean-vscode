@@ -8,8 +8,9 @@ import {
 	ProjectReport,
 	SourceFileMetaData,
 	ProgramStructureTree,
-	TypescriptParser
+	TypescriptParser,
 } from '@oaklean/profiler-core'
+import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
 import {
 	ReportPathChangeEvent,
@@ -44,7 +45,8 @@ export default class TextDocumentController implements Disposable {
 			this.container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this)),
 			this.container.eventHandler.onTextDocumentOpen(this.documentOpened.bind(this)),
 			this.container.eventHandler.onTextDocumentClose(this.documentClosed.bind(this)),
-			this.container.eventHandler.onTextDocumentChange(this.documentChanged.bind(this))
+			this.container.eventHandler.onTextDocumentChange(this.documentChanged.bind(this)),
+			this.container.eventHandler.onTextDocumentDidSave(this.documentSaved.bind(this))
 		)
 	}
 
@@ -149,7 +151,8 @@ export default class TextDocumentController implements Disposable {
 
 	reportPathChanged(event: ReportPathChangeEvent) {
 		this.reportPath = event.reportPath
-		this.config = ProfilerConfig.autoResolveFromPath(this.reportPath.dirName())
+		this.config = WorkspaceUtils.autoResolveConfigFromPath(this.reportPath.dirName())
+		// Error handling
 		this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', this.config)
 		if (this.projectReport) {
 			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport, 'original')
@@ -163,9 +166,12 @@ export default class TextDocumentController implements Disposable {
 	}
 
 	documentSaved(document: TextDocument) {
-		if (path.basename(document.uri.path).toLowerCase() === '.oaklean') {
+		if (path.basename(document.uri.path).toLowerCase() === STATIC_CONFIG_FILENAME) {
 			if (this.configPath && document.uri.fsPath === this.configPath.toString()) {
-				this.config = WorkspaceUtils.resolveConfigFromFile(this.configPath)
+				const changedConfig = WorkspaceUtils.resolveConfigFromFile(this.configPath)
+				if (changedConfig) {
+					this.config = changedConfig
+				}
 			}
 		}
 	}

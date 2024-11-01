@@ -30,7 +30,6 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		_token: vscode.CancellationToken
 	) {
 		this._view = webviewView
-
 		this._view.onDidChangeVisibility(() => {
 			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 				this._extensionUri)

@@ -50,12 +50,12 @@ const postToProvider = (message: MethodViewProtocol_ChildToParent) => {
 const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 	const { methodList, sensorValueRepresentation, type, filterPaths,
 		sortDirection, fileSensorValues } = message.data
-
 	let path: string
 	let parts: string[]
 	let filename: string
 	let methods: Method[]
 	let selectedSensorValueType = ''
+
 	const contentDiv = document.getElementById('content')
 	const fileAndMethods = document.createElement('div')
 	const fileDiv = document.createElement('div')

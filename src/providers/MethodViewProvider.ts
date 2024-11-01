@@ -39,6 +39,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
 		container.eventHandler.onFilterPathChange(this.filterPathChange.bind(this))
 		container.eventHandler.onSortDirectionChange(this.sortDirectionChange.bind(this))
+		container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this))
 	}
 
 	public resolveWebviewView(
@@ -74,7 +75,6 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	fillMethodView() {
 		this.report = this._container.textDocumentController.projectReport
-
 		let internMeasurements: ModelMap<PathID_number, SourceFileMetaData> | undefined
 		const methodLists: MethodList[] = []
 		if (this.report !== undefined) {
@@ -121,6 +121,10 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	}
 
+	reportPathChanged() {
+		this.fillMethodView()
+	}
+
 	public postMessageToWebview(message: MethodViewProtocol_ParentToChild) {
 		this._view?.webview.postMessage(message)
 	}
@@ -150,7 +154,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	async openMethodInEditor(identifier: string, filePath: string) {
 		const unifiedFilePath = new UnifiedPath(filePath)
-		const absolutePath = WorkspaceUtils.getFileFromWorkspace(filePath)
+		const absolutePath = new UnifiedPath(filePath)
 		const uri = vscode.Uri.file(absolutePath?.toString() || '')
 		const errorMessage = `Could not find file: ${filePath}`
 		try {

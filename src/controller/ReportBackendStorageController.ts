@@ -34,7 +34,7 @@ export default class ReportBackendStorageController implements Disposable {
 			const config = WorkspaceUtils.resolveConfigFromFile(unifiedConfigPath)
 
 			if (config === undefined) {
-				return
+				continue
 			}
 			const url = config.registryOptions.url
 			const workSpaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak').toString()
@@ -42,7 +42,7 @@ export default class ReportBackendStorageController implements Disposable {
 			if (!workSpaceDir) {
 				return
 			}
-			const projectReportPaths = glob.sync(workSpaceDir, { ignore: ['**/node_modules/**', '**/dist/**'] })
+			const projectReportPaths = glob.sync(workSpaceDir, { ignore: ['**/node_modules/**'] })
 				.map((profilePath) => workspaceDir.pathTo(profilePath).toString())
 			const batchSize = 99
 			for (let i = 0; i < projectReportPaths.length; i += batchSize) {

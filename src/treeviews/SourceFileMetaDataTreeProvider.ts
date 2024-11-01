@@ -444,7 +444,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 				if (!filePath) {
 					workspaceFilePath = undefined
 				} else {
-					workspaceFilePath = WorkspaceUtils.getFileFromWorkspace(filePath.toString())
+					workspaceFilePath = new UnifiedPath(filePath.toString())
 				}
 			}
 
