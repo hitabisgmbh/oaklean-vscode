@@ -10,18 +10,6 @@ export default class WorkspaceUtils {
 		return undefined
 	}
 
-	static getWorkspaceProfilerConfig(): ProfilerConfig {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
-			return ProfilerConfig.resolveFromFile(undefined)
-		}
-		try {
-			return ProfilerConfig.autoResolveFromPath(workspaceDir)
-		} catch {
-			return ProfilerConfig.resolveFromFile(undefined)
-		}
-	}
-
 	static getWorkspaceProfilerConfigPaths(): string[] {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {
@@ -56,8 +44,10 @@ export default class WorkspaceUtils {
     
     for (const configPath of configPaths) {
 				const fullConfigPath = workspaceDir?.join(configPath)
-        const config = ProfilerConfig.resolveFromFile(fullConfigPath)
-        
+				const config = WorkspaceUtils.resolveConfigFromFile(fullConfigPath)
+        if (!config) {
+					continue
+				}
         const profilesPath = config.getOutDir().join('**', '*.oak').toString()
         const projectReportPaths = globSync(profilesPath)
             .map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
@@ -83,17 +73,14 @@ export default class WorkspaceUtils {
 		return unifiedFilePath
 	}
 
-	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath | undefined {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
-			return undefined
-		}
-		const rootDir = config.getRootDir()
-		const unifiedFilePath = new UnifiedPath(filePath)
-		const fullFilePath = rootDir.join(unifiedFilePath)
-		if (fullFilePath){
-			return fullFilePath
-		} else {
+	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath {
+		return config.getRootDir().join(filePath)
+	}
+
+	static resolveConfigFromFile(configPath: UnifiedPath): ProfilerConfig | undefined {
+		try {
+			return ProfilerConfig.resolveFromFile(configPath)
+		} catch (e) {
 			return undefined
 		}
 	}

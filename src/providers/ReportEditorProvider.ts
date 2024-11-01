@@ -25,9 +25,6 @@ export class ReportEditorProvider implements CustomEditorProvider {
 	async resolveCustomEditor(document: vscode.CustomDocument): Promise<void> {
 		const inputPath = new UnifiedPath(document.uri.fsPath)
 		const config = ProfilerConfig.autoResolveFromPath(inputPath.dirName())
-		if (config === undefined) {
-			return
-		}
 		const report = ProjectReport.loadFromFile(inputPath, 'bin', config)
 		if (report === undefined) {
 			console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)

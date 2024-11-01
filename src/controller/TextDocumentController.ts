@@ -18,7 +18,7 @@ import {
 } from '../helper/EventHandler'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
-import { INFO_CONFIG_LOAD, INFO_PROJECT_REPORT } from '../constants/infoMessages'
+import { INFO_PROJECT_REPORT } from '../constants/infoMessages'
 
 const VALID_EXTENSIONS_TO_PARSE = [
 	'.js',
@@ -150,9 +150,6 @@ export default class TextDocumentController implements Disposable {
 	reportPathChanged(event: ReportPathChangeEvent) {
 		this.reportPath = event.reportPath
 		this.config = ProfilerConfig.autoResolveFromPath(this.reportPath.dirName())
-		if (this.config === undefined) {
-			return
-		}
 		this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', this.config)
 		if (this.projectReport) {
 			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport, 'original')
@@ -168,7 +165,7 @@ export default class TextDocumentController implements Disposable {
 	documentSaved(document: TextDocument) {
 		if (path.basename(document.uri.path).toLowerCase() === '.oaklean') {
 			if (this.configPath && document.uri.fsPath === this.configPath.toString()) {
-				this._config = ProfilerConfig.resolveFromFile(this.configPath)
+				this.config = WorkspaceUtils.resolveConfigFromFile(this.configPath)
 			}
 		}
 	}

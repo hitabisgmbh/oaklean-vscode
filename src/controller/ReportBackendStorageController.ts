@@ -30,7 +30,9 @@ export default class ReportBackendStorageController implements Disposable {
 		const cofigPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
 		for (const configPath of cofigPaths) {
 			const unifiedConfigPath = new UnifiedPath(configPath)
-			const config = ProfilerConfig.resolveFromFile(unifiedConfigPath)
+
+			const config = WorkspaceUtils.resolveConfigFromFile(unifiedConfigPath)
+
 			if (config === undefined) {
 				return
 			}
