@@ -5,6 +5,8 @@ import { glob, sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig, ProjectReport } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
+import { Container } from '../container'
+
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
 		if (vscode.workspace.workspaceFolders !== undefined) {
@@ -82,42 +84,43 @@ export default class WorkspaceUtils {
 		return new UnifiedPath(absoluteRootPath)
 	}
 
-	static async getProjectReportsForConfigToUpload(
-		configPath: UnifiedPath, config: ProfilerConfig): Promise<ProjectReport[] | undefined> {
+	static async getProjectReportsForConfigToUpload(config: ProfilerConfig, container: Container
+	): Promise<ProjectReport[] | undefined> {
 		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workSpaceDir) {
 			return undefined
 		}
-		const parentDir = configPath.dirName()
-		const outDir = new UnifiedPath(path.resolve(parentDir.toString(), config.getOutDir().toString()))
-		const outHistoryDir	= new UnifiedPath(path.resolve(parentDir.toString(), config.getOutHistoryDir().toString()))
 
-		const fullOutDir = workSpaceDir.join(outDir)
-		const fullOutHistoryDir = workSpaceDir.join(outHistoryDir)
-
-		const projectReportPaths = globSync(fullOutDir.join('**', '*.oak').toString())
-			.map((profilePath) => new UnifiedPath(profilePath).toPlatformString())
-			
-		const projectReportHistoryPaths = globSync(fullOutHistoryDir.join('**', '*.oak').toString())
-			.map((profilePath) => new UnifiedPath(profilePath).toPlatformString())
-
-		const allPaths = [...projectReportPaths, ...projectReportHistoryPaths]
+		const outDir = config.getOutDir()
+		const outHistoryDir = config.getOutHistoryDir()
 		const reports: ProjectReport[] = []
+		const outDirReportPaths = globSync(outDir.join('**', '*.oak').toString())
+		const historyOutDirPaths = globSync(outHistoryDir.join('**', '*.oak').toString())
+		const allPaths = [...outDirReportPaths, ...historyOutDirPaths]
+
 		for (const reportPath of allPaths) {
-			let report: ProjectReport | undefined
+			const shouldNotBeStored = container.storage.get(`reportPathShouldNotBeStored-${reportPath}`)
+			if (shouldNotBeStored){
+				continue
+			}
+			let report
 			try {
 				report = ProjectReport.loadFromFile(new UnifiedPath(reportPath), 'bin', config)
 			} catch (e){
-				console.error(e)
+				console.error('Error loading report:', e)
+				continue
 			}
+
 			if (report) {
 				const shoudBeUploaded = await report.shouldBeStoredInRegistry()
+				
 				if (shoudBeUploaded) {
 					reports.push(report)
+				} else {
+					container.storage.store(`reportPathShouldNotBeStored-${reportPath}`, true)
 				}
 			}
 		}
-
 		return reports
 	}
 }

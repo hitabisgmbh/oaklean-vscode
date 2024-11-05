@@ -1,5 +1,4 @@
-import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
-import { glob } from 'glob'
+import { UnifiedPath } from '@oaklean/profiler-core'
 import vscode, { Disposable } from 'vscode'
 
 import { Container } from '../container'
@@ -23,21 +22,20 @@ export default class ReportBackendStorageController implements Disposable {
 	}
 
 	async checkAndUploadReports() {
+		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
+		if (!workspaceDir) {
+			return
+		}
 		const cofigPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
 		for (const configPath of cofigPaths) {
-
-			const unifiedConfigPath = new UnifiedPath(configPath)
-			const config = WorkspaceUtils.resolveConfigFromFile(unifiedConfigPath)
+			const fullConfigPath = workspaceDir.join(configPath)
+			const config = WorkspaceUtils.resolveConfigFromFile(fullConfigPath)
 
 			if (config === undefined) {
 				continue
 			}
-			const configRoot = WorkspaceUtils.configRootPath(unifiedConfigPath, config)
-			if (!configRoot) {
-				continue
-			}
 
-			const projectReports = await WorkspaceUtils.getProjectReportsForConfigToUpload(configRoot, config)
+			const projectReports = await WorkspaceUtils.getProjectReportsForConfigToUpload(config, this.container)
 			if (!projectReports || projectReports.length === 0) {
 				continue
 			}
