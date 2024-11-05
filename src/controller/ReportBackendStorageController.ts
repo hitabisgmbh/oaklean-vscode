@@ -1,4 +1,3 @@
-import { UnifiedPath } from '@oaklean/profiler-core'
 import vscode, { Disposable } from 'vscode'
 
 import { Container } from '../container'
@@ -15,7 +14,7 @@ export default class ReportBackendStorageController implements Disposable {
 		// sends every minute a request to the registry to check if the reports are already uploaded
 		// and if not uploads them
 		this.checkAndUploadReports()
-		setInterval(() => this.checkAndUploadReports(), 10000)
+		setInterval(() => this.checkAndUploadReports(), 60000)
 	}
 	dispose() {
 		throw new Error('Method not implemented.')
