@@ -30,10 +30,7 @@ export default class SelectReport extends BaseCommand {
 		for (const reportFilePath of reportFilePaths) {
 			quickPickOptions.set(reportFilePath, {
 				selectionCallback: () => {
-					const reportPath = workspaceDir?.join(reportFilePath)
-					if (reportPath) {
-						this.container.storage.storeWorkspace('reportPath', reportPath)
-					}
+						this.container.storage.storeWorkspace('reportPath', new UnifiedPath(reportFilePath))
 				}
 			})
 		}

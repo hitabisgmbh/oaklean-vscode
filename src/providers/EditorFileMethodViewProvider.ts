@@ -21,7 +21,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		this._container = container
 		this._container.eventHandler.onTextEditorChange(this.textEditorChanged.bind(this))
 		this._container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
-		this._container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this))
+		this._container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
 	}
 
 	public resolveWebviewView(
@@ -61,7 +61,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 			this._extensionUri)
 	}
 
-	reportPathChanged() {
+	reportLoaded() {
 		this.createMethodList()
 	}
 
