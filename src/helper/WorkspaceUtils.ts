@@ -1,7 +1,7 @@
 import * as path from 'path'
 
 import vscode from 'vscode'
-import { sync as globSync } from 'glob'
+import { glob, sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig, ProjectReport } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
@@ -37,31 +37,14 @@ export default class WorkspaceUtils {
 	}
 
 	static getProjectReportFromWorkspace(): string[] {
-    const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-    const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
-    if (!workspaceDir || !configPaths) {
+    const workspaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak')
+	
+    if (!workspaceDir) {
         return []
     }
     
-    let result: string[] = []
-    
-    for (const configPath of configPaths) {
-				const fullConfigPath = workspaceDir?.join(configPath)
-				const config = WorkspaceUtils.resolveConfigFromFile(fullConfigPath)
-        if (!config) {
-					continue
-				}
-        const profilesPath = config.getOutDir().join('**', '*.oak').toString()
-        const projectReportPaths = globSync(profilesPath)
-            .map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
-
-        const profilesHistoryPath = config.getOutHistoryDir().join('**', '*.oak').toPlatformString()
-        const projectReportHistoryPaths = globSync(profilesHistoryPath)
-            .map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
-
-        result = [...result, ...projectReportPaths, ...projectReportHistoryPaths]
-    }
-
+		const result = glob.sync(workspaceDir.toString(), { ignore: ['**/node_modules/**'] })
+			.map((reportPath) => reportPath)
     PathUtils.sortFilePathArray(result)
     return result
 	}
