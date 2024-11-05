@@ -1,9 +1,10 @@
+import * as path from 'path'
+
 import vscode from 'vscode'
 import { sync as globSync } from 'glob'
-import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
+import { PathUtils, UnifiedPath, ProfilerConfig, ProjectReport } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
-import { ERROR_NO_CONFIG } from '../constants/infoMessages'
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
 		if (vscode.workspace.workspaceFolders !== undefined) {
@@ -83,5 +84,57 @@ export default class WorkspaceUtils {
 		} catch (e) {
 			return undefined
 		}
+	}
+
+	static configRootPath(configPath: UnifiedPath, config: ProfilerConfig): UnifiedPath | undefined {
+		const root = config.getRootDir().toString()
+		const parentDir = path.dirname(configPath.toString())
+		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()
+		if (!workSpaceDir) {
+			return undefined
+		}
+		const fullConfigPath = workSpaceDir.join(parentDir)
+		const absoluteRootPath = path.resolve(fullConfigPath.toString(), root)
+
+		return new UnifiedPath(absoluteRootPath)
+	}
+
+	static async getProjectReportsForConfigToUpload(
+		configPath: UnifiedPath, config: ProfilerConfig): Promise<ProjectReport[] | undefined> {
+		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()
+		if (!workSpaceDir) {
+			return undefined
+		}
+		const parentDir = configPath.dirName()
+		const outDir = new UnifiedPath(path.resolve(parentDir.toString(), config.getOutDir().toString()))
+		const outHistoryDir	= new UnifiedPath(path.resolve(parentDir.toString(), config.getOutHistoryDir().toString()))
+
+		const fullOutDir = workSpaceDir.join(outDir)
+		const fullOutHistoryDir = workSpaceDir.join(outHistoryDir)
+
+		const projectReportPaths = globSync(fullOutDir.join('**', '*.oak').toString())
+			.map((profilePath) => new UnifiedPath(profilePath).toPlatformString())
+			
+		const projectReportHistoryPaths = globSync(fullOutHistoryDir.join('**', '*.oak').toString())
+			.map((profilePath) => new UnifiedPath(profilePath).toPlatformString())
+
+		const allPaths = [...projectReportPaths, ...projectReportHistoryPaths]
+		const reports: ProjectReport[] = []
+		for (const reportPath of allPaths) {
+			let report: ProjectReport | undefined
+			try {
+				report = ProjectReport.loadFromFile(new UnifiedPath(reportPath), 'bin', config)
+			} catch (e){
+				console.error(e)
+			}
+			if (report) {
+				const shoudBeUploaded = await report.shouldBeStoredInRegistry()
+				if (shoudBeUploaded) {
+					reports.push(report)
+				}
+			}
+		}
+
+		return reports
 	}
 }
