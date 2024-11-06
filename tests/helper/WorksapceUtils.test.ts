@@ -6,7 +6,9 @@ import {
 	PROFILE_PATH_003,
 	PROJECT_REPORT_PATH_001,
 	PROJECT_REPORT_PATH_002,
-	PROJECT_REPORT_PATH_003
+	PROJECT_REPORT_PATH_003,
+	PROJECT_REPORT_PATH_004,
+	PROJECT_REPORT_PATH_005
 } from '../shared/constants/profiles'
 import { stub_ProfilerConfig } from '../shared/mocks/ProfilerConfig.mock'
 import { stub_globSync, stub_getWorkspaceDirStub } from '../shared/mocks/WorkspaceUtils.mock'
@@ -34,9 +36,11 @@ describe('WorkspaceUtils.getCPUProfilesFromWorkspace', () => {
 describe('WorkspaceUtils.getProjectReportFromWorkspace', () => {
 	it('should return the mocked value', () => {
 		expect(WorkspaceUtils.getProjectReportFromWorkspace()).toEqual([
+			PROJECT_REPORT_PATH_004,
+			PROJECT_REPORT_PATH_005,
 			PROJECT_REPORT_PATH_001,
 			PROJECT_REPORT_PATH_002,
-			PROJECT_REPORT_PATH_003
+			PROJECT_REPORT_PATH_003,
 		])
 	})
 })

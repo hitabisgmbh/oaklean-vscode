@@ -40,13 +40,12 @@ export default class WorkspaceUtils {
 
 	static getProjectReportFromWorkspace(): string[] {
     const workspaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak')
-	
+		console.log('workspaceDir', workspaceDir)
     if (!workspaceDir) {
         return []
     }
     
-		const result = glob.sync(workspaceDir.toString(), { ignore: ['**/node_modules/**'] })
-			.map((reportPath) => reportPath)
+		const result = globSync(workspaceDir.toString(), { ignore: ['**/node_modules/**'] })
     PathUtils.sortFilePathArray(result)
     return result
 	}

@@ -43,8 +43,7 @@ export default class SelectReport extends BaseCommand {
 
 		const currentReport = this.container.storage.getWorkspace('reportPath') as UnifiedPath
 		if (currentReport && workspaceDir) {
-			const relativePath = workspaceDir.pathTo(currentReport).toPlatformString()
-			quickPick.setCurrentItem(relativePath)
+			quickPick.setCurrentItem(currentReport.toString())
 		}
 		quickPick.show()
 		return quickPick

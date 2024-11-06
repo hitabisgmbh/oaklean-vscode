@@ -10,7 +10,9 @@ import {
 	PROFILE_PATH_003,
 	PROJECT_REPORT_PATH_001,
 	PROJECT_REPORT_PATH_002,
-	PROJECT_REPORT_PATH_003
+	PROJECT_REPORT_PATH_003,
+	PROJECT_REPORT_PATH_004,
+	PROJECT_REPORT_PATH_005
 } from '../constants/profiles'
 
 const WORKSPACE_PATH_UNIFIED = new UnifiedPath(WORKSPACE_PATH)
@@ -20,11 +22,13 @@ export const stub_globSync = () => {
 		(
 			pattern: string | string[]
 		): string[] => {
-			if ((pattern as string).endsWith('profiles/**/*.oak')) {
+			if ((pattern as string).endsWith('/**/*.oak')) {
 				return [
-					WORKSPACE_PATH_UNIFIED.join(PROJECT_REPORT_PATH_003).toString(),
-					WORKSPACE_PATH_UNIFIED.join(PROJECT_REPORT_PATH_001).toString(),
-					WORKSPACE_PATH_UNIFIED.join(PROJECT_REPORT_PATH_002).toString(),
+					PROJECT_REPORT_PATH_003.toString(),
+					PROJECT_REPORT_PATH_001.toString(),
+					PROJECT_REPORT_PATH_002.toString(),
+					PROJECT_REPORT_PATH_004.toString(),
+					PROJECT_REPORT_PATH_005.toString()
 				]
 			}
 
@@ -58,7 +62,9 @@ export const stub_getProjectReportFromWorkspaceStub = () => {
 	getWorkspaceDirStub.returns(
 		[PROJECT_REPORT_PATH_001,
 			PROJECT_REPORT_PATH_002,
-			PROJECT_REPORT_PATH_003]
+			PROJECT_REPORT_PATH_003,
+			PROJECT_REPORT_PATH_004,
+			PROJECT_REPORT_PATH_005]
 	)
 
 	return getWorkspaceDirStub
