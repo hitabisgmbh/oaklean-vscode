@@ -25,6 +25,7 @@ import {
 } from '../protocols/methodViewProtocol'
 import { MethodList } from '../model/MethodList'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import WorkspaceUtils from '../helper/WorkspaceUtils'
 
 export class MethodViewProvider implements vscode.WebviewViewProvider {
 
@@ -58,7 +59,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			(message: MethodViewProtocol_ChildToParent) => {
 				if (message.command === MethodViewCommands.openMethod) {
 					const identifier = message.identifier
-					const filePath = vscode.window.activeTextEditor?.document.uri.fsPath
+					const filePath = message.filePath
 					if (filePath){
 						this.openMethodInEditor(identifier, filePath)
 					}
@@ -156,7 +157,12 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 	async openMethodInEditor(identifier: string, filePath: string) {
 		const unifiedFilePath = new UnifiedPath(filePath)
 		const absolutePath = new UnifiedPath(filePath)
-		const uri = vscode.Uri.file(absolutePath?.toString() || '')
+		const config = this._container.textDocumentController.config
+		if (!config) {
+			return
+		}
+		const fullPath = WorkspaceUtils.getFullFilePath(config, filePath)
+		const uri = vscode.Uri.file(fullPath.toString())
 		const errorMessage = `Could not find file: ${filePath}`
 		try {
 			if (absolutePath) {
@@ -188,6 +194,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			}
 		} catch (error) {
 			vscode.window.showErrorMessage(errorMessage)
+			console.error(error)
 			console.error(errorMessage)
 		}
 	}

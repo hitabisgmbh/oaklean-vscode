@@ -156,7 +156,8 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 						if (identifier !== null && filePath !== null) {
 							postToProvider({
 								command: MethodViewCommands.openMethod,
-								identifier
+								identifier,
+								filePath
 							})
 						}
 					})

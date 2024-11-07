@@ -8,6 +8,7 @@ import { MethodList } from '../model/MethodList'
 export type MethodViewProtocol_ChildToParent = {
 	command: MethodViewCommands;
 	identifier: string;
+	filePath: string;
 } | { command: MethodViewCommands.initMethods }
 
 
