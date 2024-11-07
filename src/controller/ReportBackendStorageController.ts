@@ -1,4 +1,5 @@
 import vscode, { Disposable } from 'vscode'
+import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -25,8 +26,8 @@ export default class ReportBackendStorageController implements Disposable {
 		if (!workspaceDir) {
 			return
 		}
-		const cofigPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
-		for (const configPath of cofigPaths) {
+		const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
+		for (const configPath of configPaths) {
 			const fullConfigPath = workspaceDir.join(configPath)
 			const config = WorkspaceUtils.resolveConfigFromFile(fullConfigPath)
 
@@ -34,17 +35,22 @@ export default class ReportBackendStorageController implements Disposable {
 				continue
 			}
 
-			const projectReports = await WorkspaceUtils.getProjectReportsForConfigToUpload(config, this.container)
-			if (!projectReports || projectReports.length === 0) {
+			const projectReportPaths = await WorkspaceUtils.getProjectReportPathsForConfig(config)
+			if (!projectReportPaths || projectReportPaths.length === 0) {
 				continue
 			}
 			const url = config.registryOptions.url
 
 			const batchSize = 99
-			for (let i = 0; i < projectReports.length; i += batchSize) {
-				const batchReports = projectReports.slice(i, i + batchSize)
-				const hashes = (await Promise.all(batchReports.map(async (report) => {
-					const hash = report.hash()
+			for (let i = 0; i < projectReportPaths.length; i += batchSize) {
+				const batchReportPaths = projectReportPaths.slice(i, i + batchSize)
+				const hashes = (await Promise.all(batchReportPaths.map(async (reportPath) => {
+					const shouldNotBeStored = this.container.storage.get(`reportPathShouldNotBeStored-${reportPath}`)
+					if (shouldNotBeStored){
+						return
+					}
+
+					const hash = ProjectReport.hashFromBinFile(new UnifiedPath(reportPath))
 					if (this.isHashChecked(hash, url)) {
 						return
 					}
@@ -55,7 +61,7 @@ export default class ReportBackendStorageController implements Disposable {
 				if (hashes.length === 0) {
 					continue
 				}
-	
+				
 	
 				const urlWithHashes = `http:/${url}/check-existence?` + hashes.map(hash => `hashes[]=${hash}`).join('&')
 				let response
@@ -72,7 +78,25 @@ export default class ReportBackendStorageController implements Disposable {
 				const data = await response.json()
 				for (const hash of hashes) {
 					if (hash && !data[hash]) {
-						const report = batchReports[hashes.indexOf(hash)]
+						const reportPath = batchReportPaths[hashes.indexOf(hash)]
+						let report
+						try {
+							report = ProjectReport.loadFromFile(new UnifiedPath(reportPath), 'bin', config)
+						} catch (e){
+							console.debug('Error loading report!', e)
+							continue
+						}
+						if (!report){
+							console.debug('Report not found!', reportPath)
+							continue
+						}
+						const shouldBeUploaded = await report.shouldBeStoredInRegistry()
+				
+						if (!shouldBeUploaded) {
+							this.container.storage.store(`reportPathShouldNotBeStored-${reportPath}`, true)
+							continue
+						}
+
 						const result = await report.uploadToRegistry(config)
 						if (result === undefined) {
 							console.debug('upload failed! report path: ', report, ' url: ', url)

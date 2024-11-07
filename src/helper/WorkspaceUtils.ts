@@ -83,8 +83,7 @@ export default class WorkspaceUtils {
 		return new UnifiedPath(absoluteRootPath)
 	}
 
-	static async getProjectReportsForConfigToUpload(config: ProfilerConfig, container: Container
-	): Promise<ProjectReport[] | undefined> {
+	static getProjectReportPathsForConfig(config: ProfilerConfig): string[] | undefined {
 		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workSpaceDir) {
 			return undefined
@@ -92,34 +91,9 @@ export default class WorkspaceUtils {
 
 		const outDir = config.getOutDir()
 		const outHistoryDir = config.getOutHistoryDir()
-		const reports: ProjectReport[] = []
 		const outDirReportPaths = globSync(outDir.join('**', '*.oak').toString())
 		const historyOutDirPaths = globSync(outHistoryDir.join('**', '*.oak').toString())
 		const allPaths = [...outDirReportPaths, ...historyOutDirPaths]
-
-		for (const reportPath of allPaths) {
-			const shouldNotBeStored = container.storage.get(`reportPathShouldNotBeStored-${reportPath}`)
-			if (shouldNotBeStored){
-				continue
-			}
-			let report
-			try {
-				report = ProjectReport.loadFromFile(new UnifiedPath(reportPath), 'bin', config)
-			} catch (e){
-				console.error('Error loading report:', e)
-				continue
-			}
-
-			if (report) {
-				const shoudBeUploaded = await report.shouldBeStoredInRegistry()
-				
-				if (shoudBeUploaded) {
-					reports.push(report)
-				} else {
-					container.storage.store(`reportPathShouldNotBeStored-${reportPath}`, true)
-				}
-			}
-		}
-		return reports
+		return allPaths
 	}
 }

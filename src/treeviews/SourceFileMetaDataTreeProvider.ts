@@ -12,7 +12,6 @@ import {
 	UnifiedPath_string
 } from '@oaklean/profiler-core'
 
-import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { Container } from '../container'
 import { ReportLoadedEvent, SelectedSensorValueRepresentationChangeEvent, SortDirectionChangeEvent } from '../helper/EventHandler'
 import { ValueRepresentationType } from '../types/valueRepresentationTypes'
