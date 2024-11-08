@@ -2,8 +2,7 @@ import globToRegExp from 'glob-to-regexp'
 import { SensorValues, SourceNodeIdentifier_string } from '@oaklean/profiler-core'
 import { provideVSCodeDesignSystem, allComponents } from '@vscode/webview-ui-toolkit'
 
-
-
+import { roundToThreeDecimals } from '../helper/NumberHelper'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { Method } from '../types/method'
 import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
@@ -137,7 +136,7 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 
 				sensorValue = parseFloat(parseFloat(sensorValue).toFixed(8)).toString()
 				const sensorValueSpan = document.createElement('span')
-				sensorValueSpan.textContent = ' ' + sensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				sensorValueSpan.textContent = ' ' + roundToThreeDecimals(sensorValue) + ' ' + UnitPerSensorValue[selectedSensorValueType]
 				sensorValueSpan.className = 'sensorValue'
 
 				const functionCounterSpan = document.createElement('span')
@@ -167,7 +166,7 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 			if (selectedSensorValueType && selectedSensorValueType === SensorValueTypeNames.customFormula) {
 				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue
 			} else {
-				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				totalSensorValueSpan.textContent = ' ' + roundToThreeDecimals(filesTotalSensorValue) + ' ' + UnitPerSensorValue[selectedSensorValueType]
 			}
 			totalSensorValueSpan.className = 'sensorValue'
 			fileDiv.appendChild(totalSensorValueSpan)
@@ -262,10 +261,11 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 			sensorValueSpan.className = 'sensorValue'
 			let sensorValue
 			if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
-				sensorValue = calcOrReturnSensorValue(sensorValues, selectedSensorValueType, formula)
+				sensorValue = 
+					roundToThreeDecimals(calcOrReturnSensorValue(sensorValues, selectedSensorValueType, formula))
 				sensorValueSpan.textContent = ' ' + sensorValue
 			} else {
-				sensorValue = sensorValues[selectedSensorValueType] ? sensorValues[selectedSensorValueType] : '0'
+				sensorValue = sensorValues[selectedSensorValueType] ? roundToThreeDecimals(sensorValues[selectedSensorValueType]) : '0'
 				sensorValueSpan.textContent = ' ' + sensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
 			}
 			filesTotalSensorValue += parseFloat(sensorValue)

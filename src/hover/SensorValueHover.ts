@@ -3,7 +3,7 @@ import { SensorValues } from '@oaklean/profiler-core'
 
 import { SensorValueTypeNames, UnitPerSensorValue, ExtendedSensorValueType } from '../types/sensorValues'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
-
+import { roundToThreeDecimals } from '../helper/NumberHelper'
 export default class SensorValueHover {
 	private sensorValues: SensorValues
 	private formula: string | undefined
@@ -21,14 +21,16 @@ export default class SensorValueHover {
 			const unit = UnitPerSensorValue[sensorValueType as ExtendedSensorValueType]
 			if (sensorValueType === 'customFormula') {
 				if (this.formula) {
-					const calculatedFormula = calcOrReturnSensorValue(this.sensorValues, sensorValueName, this.formula)
+					const calculatedFormula = 
+						roundToThreeDecimals(calcOrReturnSensorValue(this.sensorValues, sensorValueName, this.formula))
 					contents.appendMarkdown(
 						`|${this.formula}|${calculatedFormula}| \n`
 					)
 				}
 			} else {
+				const roundedSensorValue = roundToThreeDecimals(this.sensorValues[sensorValueType])
 				contents.appendMarkdown(
-					`|${sensorValueName}|${this.sensorValues[sensorValueType]}|${unit}| \n`
+					`|${sensorValueName}|${roundedSensorValue}|${unit}| \n`
 				)
 			}
 		}

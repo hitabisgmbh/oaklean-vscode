@@ -2,6 +2,7 @@ import { PathIndex, SourceFileMetaData, SourceNodeIdentifier_string } from '@oak
 import { ISourceNodeIndex, SourceNodeIndexType } from '@oaklean/profiler-core/dist/src/model/index/SourceNodeIndex'
 import { IPathIndex } from '@oaklean/profiler-core/dist/src/model/index/PathIndex'
 
+import { roundToThreeDecimals } from '../helper/NumberHelper'
 import { ExtendedSensorValueType, SensorValueTypeNames, UnitPerSensorValue } from '../types/sensorValues'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
@@ -125,7 +126,7 @@ function createHtmlFromTree(methodList: SourceFileMetaData, parentElement: HTMLE
 						} else {
 							sensorValue = '0'
 						}
-						sensorValue = parseFloat(parseFloat(sensorValue).toFixed(4)).toString()
+						sensorValue = roundToThreeDecimals(sensorValue)
 						identifierContainer.setAttribute('data-selectedSensorValue', sensorValue)
 						const sensorValueSpan = document.createElement('span')
 						sensorValueSpan.textContent = ' ' + sensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]

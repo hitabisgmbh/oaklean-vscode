@@ -2,6 +2,7 @@ import vscode, { TextEditor, TextEditorDecorationType } from 'vscode'
 import { SensorValues, UnifiedPath } from '@oaklean/profiler-core'
 
 import { calcOrReturnSensorValue } from './FormulaHelper'
+import { roundToThreeDecimals } from './NumberHelper'
 
 import { pad } from '../system/string'
 import { getImportanceColor } from '../system/color'
@@ -85,7 +86,7 @@ export class TextDocumentHighlighter {
 			if (sourceNodeIndex === undefined) {
 				continue
 			}
-			const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
+			const value = roundToThreeDecimals(sourceNodeMetaData.sensorValues[selectedSensorValueType])
 			const locationOfFunction =
 				programStructureTreeOfFile.sourceLocationOfIdentifier(sourceNodeIndex.identifier)
 			if (!locationOfFunction) {
