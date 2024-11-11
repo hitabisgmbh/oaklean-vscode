@@ -136,8 +136,14 @@ export default class TextDocumentController implements Disposable {
 		try {
 			this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', config)
 		} catch (e) {
+			let reportVersion
+			try {
+					reportVersion = ProjectReport.versionFromBinFile(this.reportPath)
+			} catch (error) {
+					vscode.window.showErrorMessage('The selected file is not a valid Oaklean report file.')
+					return
+			}
 			const extensionVersion = getExtensionVersion()
-			const reportVersion = ProjectReport.versionFromBinFile(this.reportPath)
 			const profilerVersion = VERSION
 		if (reportVersion && profilerVersion < reportVersion) {
 			vscode.window.showInformationMessage(`${this.reportPath.basename()} (Version: ${reportVersion}) `+
