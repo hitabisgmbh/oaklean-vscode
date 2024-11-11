@@ -2,7 +2,7 @@ import vscode, { TextEditor, TextEditorDecorationType } from 'vscode'
 import { SensorValues, UnifiedPath } from '@oaklean/profiler-core'
 
 import { calcOrReturnSensorValue } from './FormulaHelper'
-import { roundToThreeDecimals } from './NumberHelper'
+import { NumberHelper } from './NumberHelper'
 
 import { pad } from '../system/string'
 import { getImportanceColor } from '../system/color'
@@ -86,7 +86,7 @@ export class TextDocumentHighlighter {
 			if (sourceNodeIndex === undefined) {
 				continue
 			}
-			const value = roundToThreeDecimals(sourceNodeMetaData.sensorValues[selectedSensorValueType])
+			const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
 			const locationOfFunction =
 				programStructureTreeOfFile.sourceLocationOfIdentifier(sourceNodeIndex.identifier)
 			if (!locationOfFunction) {
@@ -102,17 +102,21 @@ export class TextDocumentHighlighter {
 				const formula = sensorValueRepresentation.formula
 				const calculatedFormula = calcOrReturnSensorValue(
 					sourceNodeMetaData.sensorValues, selectedSensorValueType, formula)
+				const roundedCalculatedFormula = NumberHelper.round(calculatedFormula, selectedSensorValueType, 
+					UnitPerSensorValue[selectedSensorValueType])
 				const formulaTotal = calcOrReturnSensorValue(
 					totalAndMaxMetaData.total.sensorValues, selectedSensorValueType, formula)
 				const relativeToToalForFormula = calculatedFormula / formulaTotal
-				message = `${formula}: ${calculatedFormula} ` +
+				message = `${formula}: ${roundedCalculatedFormula.newValue} ` +
 					`(${relativeToToalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weigth = calculatedFormula / calcOrReturnSensorValue(
 					totalAndMaxMetaData.max.sensorValues, selectedSensorValueType, formula)
 			} else {
+				const roundedValue = NumberHelper.round(value, selectedSensorValueType, 
+					UnitPerSensorValue[selectedSensorValueType])
 				message =
 					SensorValueTypeNames[selectedSensorValueType] +
-					`: ${value} ${UnitPerSensorValue[selectedSensorValueType]} ` +
+					`: ${roundedValue.newValue} ${roundedValue.newUnit} ` +
 					`(${relativeToToal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weigth = value / totalAndMaxMetaData.max.sensorValues[selectedSensorValueType]
 			}

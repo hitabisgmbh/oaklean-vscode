@@ -2,7 +2,7 @@ import globToRegExp from 'glob-to-regexp'
 import { SensorValues, SourceNodeIdentifier_string } from '@oaklean/profiler-core'
 import { provideVSCodeDesignSystem, allComponents } from '@vscode/webview-ui-toolkit'
 
-import { roundToThreeDecimals } from '../helper/NumberHelper'
+import { NumberHelper } from '../helper/NumberHelper'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { Method } from '../types/method'
 import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
@@ -136,7 +136,9 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 
 				sensorValue = parseFloat(parseFloat(sensorValue).toFixed(8)).toString()
 				const sensorValueSpan = document.createElement('span')
-				sensorValueSpan.textContent = ' ' + roundToThreeDecimals(sensorValue) + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				const reoundSensorValue = NumberHelper.round(sensorValue, 
+					selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
+				sensorValueSpan.textContent = ' ' + reoundSensorValue.newValue + ' ' + reoundSensorValue.newUnit
 				sensorValueSpan.className = 'sensorValue'
 
 				const functionCounterSpan = document.createElement('span')
@@ -166,7 +168,9 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 			if (selectedSensorValueType && selectedSensorValueType === SensorValueTypeNames.customFormula) {
 				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue
 			} else {
-				totalSensorValueSpan.textContent = ' ' + roundToThreeDecimals(filesTotalSensorValue) + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				const roundedFilesTotalSensorValue = NumberHelper.round(filesTotalSensorValue, 
+					selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
+				totalSensorValueSpan.textContent = ' ' + roundedFilesTotalSensorValue.newValue + ' ' + roundedFilesTotalSensorValue.newUnit
 			}
 			totalSensorValueSpan.className = 'sensorValue'
 			fileDiv.appendChild(totalSensorValueSpan)
@@ -261,12 +265,16 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 			sensorValueSpan.className = 'sensorValue'
 			let sensorValue
 			if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
-				sensorValue = 
-					roundToThreeDecimals(calcOrReturnSensorValue(sensorValues, selectedSensorValueType, formula))
-				sensorValueSpan.textContent = ' ' + sensorValue
+				sensorValue = calcOrReturnSensorValue(
+					sensorValues, selectedSensorValueType, formula)
+				const roundedSensorValue = NumberHelper.round(sensorValue, 
+					selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
+				sensorValueSpan.textContent = ' ' + roundedSensorValue.newValue
 			} else {
-				sensorValue = sensorValues[selectedSensorValueType] ? roundToThreeDecimals(sensorValues[selectedSensorValueType]) : '0'
-				sensorValueSpan.textContent = ' ' + sensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				sensorValue = sensorValues[selectedSensorValueType]
+				const roundedSensorValue = NumberHelper.round(sensorValue, 
+					selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
+				sensorValueSpan.textContent = ' ' + roundedSensorValue.newValue + ' ' + roundedSensorValue.newUnit
 			}
 			filesTotalSensorValue += parseFloat(sensorValue)
 			const functionCounterSpan = document.createElement('span')
@@ -284,10 +292,12 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 		fileAndMethod.setAttribute('data-total-selected-sensorvalue', filesTotalSensorValue.toString())
 		const fileDivSensoorValueSpan = fileDiv.getElementsByClassName('sensorValue')[0]
 
+		const roundedFilesTotalSensorValue = NumberHelper.round(filesTotalSensorValue,
+			selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
 		if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
-			fileDivSensoorValueSpan.textContent = ' ' + filesTotalSensorValue
+			fileDivSensoorValueSpan.textContent = ' ' + roundedFilesTotalSensorValue.newValue
 		} else {
-			fileDivSensoorValueSpan.textContent = ' ' + filesTotalSensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+			fileDivSensoorValueSpan.textContent = ' ' + roundedFilesTotalSensorValue.newValue + ' ' + roundedFilesTotalSensorValue.newUnit
 		}
 	})
 }

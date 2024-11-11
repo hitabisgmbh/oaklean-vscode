@@ -19,7 +19,7 @@ import { DirectoryTreeNode } from '../model/DirectoryTreeNode'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { SortDirection } from '../types/sortDirection'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from '../types/sensorValueRepresentation'
-import { roundToThreeDecimals } from '../helper/NumberHelper'
+import { NumberHelper } from '../helper/NumberHelper'
 
 
 enum DisplayType {
@@ -94,8 +94,10 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 					this.sensorValueRepresentation.selectedSensorValueType,
 					this.sensorValueRepresentation.formula)
 			}
-			this.displayedSensorValue = roundToThreeDecimals(proportion)
-			this.description = this.displayedSensorValue + ' ' + UnitPerSensorValue[this.sensorValueRepresentation.selectedSensorValueType]
+			const roundedValue = NumberHelper.round(proportion, 
+				this.sensorValueRepresentation.selectedSensorValueType.toString(),
+				UnitPerSensorValue[this.sensorValueRepresentation.selectedSensorValueType])
+			this.description = roundedValue.newValue + ' ' + roundedValue.newUnit
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.locallyRelative) {
 			if (type === DisplayType.extern) {
