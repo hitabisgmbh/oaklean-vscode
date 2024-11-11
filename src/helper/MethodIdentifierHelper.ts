@@ -1,6 +1,6 @@
 import {
 	SourceNodeIdentifier_string
-} from '@oaklean/profiler-core/dist/src/types/SourceNodeIdentifiers.types'
+} from '@oaklean/profiler-core/dist/src/types'
 import {
 	LangInternalSourceNodeIdentifierRegex,
 	MethodDefinitionRegex,
