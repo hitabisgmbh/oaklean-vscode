@@ -7,7 +7,7 @@ import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { Method } from '../types/method'
 import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
 import { MethodViewCommands } from '../types/methodViewCommands'
-import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import { SensorValueRepresentation, defaultSensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { ExtendedSensorValueType, UnitPerSensorValue } from '../types/sensorValues'
 import { SortDirection } from '../types/sortDirection'
 import { MethodList } from '../model/MethodList'
@@ -54,7 +54,7 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 	let parts: string[]
 	let filename: string
 	let methods: Method[]
-	let selectedSensorValueType = ''
+	let selectedSensorValueType: ExtendedSensorValueType = defaultSensorValueRepresentation().selectedSensorValueType
 	const contentDiv = document.getElementById('content')
 	const fileAndMethods = document.createElement('div')
 	const fileDiv = document.createElement('div')
@@ -134,7 +134,7 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 				functionNameSpan.innerHTML = shortenedFuntionName
 				functionNameSpan.className = 'functionName'
 
-				sensorValue = parseFloat(parseFloat(sensorValue).toFixed(8)).toString()
+				sensorValue = parseFloat(sensorValue).toString()
 				const sensorValueSpan = document.createElement('span')
 				const reoundSensorValue = NumberHelper.round(sensorValue, 
 					selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
@@ -276,7 +276,11 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 					selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
 				sensorValueSpan.textContent = ' ' + roundedSensorValue.newValue + ' ' + roundedSensorValue.newUnit
 			}
+			if (sensorValue === undefined) {
+				sensorValue = '0'
+			}
 			filesTotalSensorValue += parseFloat(sensorValue)
+
 			const functionCounterSpan = document.createElement('span')
 			functionCounterSpan.textContent = ' ' + method.getAttribute('data-functionCounter')
 			functionCounterSpan.className = 'functionCounter'
@@ -291,7 +295,6 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 
 		fileAndMethod.setAttribute('data-total-selected-sensorvalue', filesTotalSensorValue.toString())
 		const fileDivSensoorValueSpan = fileDiv.getElementsByClassName('sensorValue')[0]
-
 		const roundedFilesTotalSensorValue = NumberHelper.round(filesTotalSensorValue,
 			selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
 		if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
