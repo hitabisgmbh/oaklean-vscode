@@ -21,13 +21,13 @@ export class ReportWebviewController implements Disposable {
 			const inputPath = new UnifiedPath(filePath)
 			const config =  WorkspaceUtils.autoResolveConfigFromPath(inputPath.dirName())
 			if (config === undefined) {
-				console.error(`Could not find a profiler config at ${inputPath.dirName().toPlatformString()}`)
-				throw new Error(`Could not find a profiler config at ${inputPath.toPlatformString()}`) 
+				vscode.window.showErrorMessage(`Could not find a profiler config at ${inputPath.toPlatformString()}`)
+				return
 			}
 			const report = ProjectReport.loadFromFile(inputPath, 'bin', config)
 			if (report === undefined) {
-				console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
-				throw new Error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+				vscode.window.showErrorMessage(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+				return
 			}
 			const formattedJson = JSON.stringify(report, null, 2)
 			const provider = {

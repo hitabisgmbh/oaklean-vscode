@@ -143,8 +143,9 @@ export default class TextDocumentController implements Disposable {
 		this.reportPath = event.reportPath
 		this.config = WorkspaceUtils.autoResolveConfigFromPath(this.reportPath.dirName())
 		if (this.config === undefined) {
-			console.error(`Could not find a profiler config at ${this.reportPath.dirName().toPlatformString()}`)
-			throw new Error(`Could not find a profiler config at ${this.reportPath.dirName().toPlatformString()}`)
+			vscode.window.showErrorMessage(
+				`Could not find a profiler config at ${this.reportPath.dirName().toPlatformString()}`)
+			return
 		}
 		this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', this.config)
 		if (this.projectReport) {

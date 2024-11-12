@@ -26,13 +26,14 @@ export class ReportEditorProvider implements CustomEditorProvider {
 		const inputPath = new UnifiedPath(document.uri.fsPath)
 		const config = WorkspaceUtils.autoResolveConfigFromPath(inputPath.dirName())
 		if (config === undefined) {
-			console.error(`Could not find a profiler config for report ${inputPath.dirName().toPlatformString()}`)
-			throw new Error(`Could not find a profiler config for report ${inputPath.toPlatformString()}`)
+			vscode.window.showErrorMessage(
+				`Could not find a profiler config for report ${inputPath.toPlatformString()}`)
+			return
 		}
 		const report = ProjectReport.loadFromFile(inputPath, 'bin', config)
 		if (report === undefined) {
-			console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
-			throw new Error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+			vscode.window.showErrorMessage(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+			return
 		} else {
 			await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 			ReportWebviewPanel.render(this._container, report, inputPath.toPlatformString())

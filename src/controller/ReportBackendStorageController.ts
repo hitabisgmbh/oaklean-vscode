@@ -68,8 +68,8 @@ export default class ReportBackendStorageController implements Disposable {
 			const batchReportPathHashes = new Map<string, string>()
 			for (let i = 0; i < projectReportPaths.length; i += batchSize) {
 				const batchReportPaths = projectReportPaths.slice(i, i + batchSize)
-				for (let i = 0; i < batchReportPaths.length; i++) {
-					const reportPath = batchReportPaths[i]
+				for (let j = 0; j < batchReportPaths.length; j++) {
+					const reportPath = batchReportPaths[j]
 					const shouldNotBeStored = this.reportPathShouldNotBeStored(reportPath)
 					if (shouldNotBeStored){
 						continue
