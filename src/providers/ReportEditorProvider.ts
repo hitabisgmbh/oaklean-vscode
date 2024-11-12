@@ -33,8 +33,8 @@ export class ReportEditorProvider implements CustomEditorProvider {
 			return
 		}
 		if (report === undefined) {
-			console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
-			throw new Error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+			vscode.window.showErrorMessage(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+			return
 		} else {
 			await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 			ReportWebviewPanel.render(this._container, report, inputPath.toPlatformString())
