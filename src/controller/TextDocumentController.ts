@@ -59,16 +59,6 @@ export default class TextDocumentController implements Disposable {
 		this._reportPath = value
 	}
 
-
-	private _configPath: UnifiedPath | undefined
-	get configPath(): UnifiedPath | undefined {
-		return this._configPath
-	}
-
-	private set configPath(value: UnifiedPath | undefined) {
-		this._configPath = value
-	}
-
 	private _config: ProfilerConfig | undefined
 	get config(): ProfilerConfig | undefined {
 		return this._config
@@ -170,8 +160,9 @@ export default class TextDocumentController implements Disposable {
 
 	documentSaved(document: TextDocument) {
 		if (path.basename(document.uri.path).toLowerCase() === STATIC_CONFIG_FILENAME) {
-			if (this.configPath && document.uri.fsPath === this.configPath.toString()) {
-				const changedConfig = WorkspaceUtils.resolveConfigFromFile(this.configPath)
+			const configPath = this.config?.filePath
+			if (configPath && document.uri.fsPath === configPath.toString()) {
+				const changedConfig = WorkspaceUtils.resolveConfigFromFile(configPath)
 				if (changedConfig) {
 					this.config = changedConfig
 				}
