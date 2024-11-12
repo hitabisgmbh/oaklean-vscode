@@ -60,9 +60,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 				if (message.command === MethodViewCommands.openMethod) {
 					const identifier = message.identifier
 					const filePath = message.filePath
-					if (filePath){
-						this.openMethodInEditor(identifier, filePath)
-					}
+					this.openMethodInEditor(identifier, filePath)
 				} else if (message.command === MethodViewCommands.initMethods) {
 					this.fillMethodView()
 				}
