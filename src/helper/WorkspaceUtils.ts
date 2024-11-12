@@ -2,7 +2,7 @@ import * as path from 'path'
 
 import vscode from 'vscode'
 import { glob, sync as globSync } from 'glob'
-import { PathUtils, UnifiedPath, ProfilerConfig, ProjectReport } from '@oaklean/profiler-core'
+import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
 export default class WorkspaceUtils {
