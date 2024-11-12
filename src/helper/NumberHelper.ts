@@ -18,7 +18,7 @@ export class NumberHelper {
 
 		if (energyConsumptionTypes.includes(valueType)) {
 			const roundedValue = (Math.round(value * 1000) / 1000).toFixed(2)
-			newValue = roundedValue.toString()
+			newValue = roundedValue === '0.00' ? '0' : roundedValue.toString()
 		} else {
 			newValue = value.toString()
 		}
