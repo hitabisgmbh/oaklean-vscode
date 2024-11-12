@@ -1,5 +1,5 @@
 import sinon from 'sinon'
-import * as glob from 'glob'
+import * as globSync from 'glob'
 import { UnifiedPath } from '@oaklean/profiler-core'
 
 import WorkspaceUtils from '../../../src/helper/WorkspaceUtils'
@@ -18,7 +18,7 @@ import {
 const WORKSPACE_PATH_UNIFIED = new UnifiedPath(WORKSPACE_PATH)
 
 export const stub_globSync = () => {
-	const globSyncStub = sinon.stub(glob, 'sync').callsFake(
+	const globSyncStub = sinon.stub(globSync, 'sync').callsFake(
 		(
 			pattern: string | string[]
 		): string[] => {

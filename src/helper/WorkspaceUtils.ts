@@ -1,7 +1,7 @@
 import * as path from 'path'
 
 import vscode from 'vscode'
-import { globSync } from 'glob'
+import { glob, sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig, ProjectReport } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
