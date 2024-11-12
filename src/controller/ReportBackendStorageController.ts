@@ -22,14 +22,10 @@ export default class ReportBackendStorageController implements Disposable {
 	}
 
 	async checkAndUploadReports() {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
-			return
-		}
 		const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
 		for (const configPath of configPaths) {
-			const fullConfigPath = workspaceDir.join(configPath)
-			const config = WorkspaceUtils.resolveConfigFromFile(fullConfigPath)
+			const unifiedConfigPath = new UnifiedPath(configPath)
+			const config = WorkspaceUtils.resolveConfigFromFile(unifiedConfigPath)
 
 			if (config === undefined) {
 				continue

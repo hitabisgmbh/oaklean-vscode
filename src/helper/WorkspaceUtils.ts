@@ -1,11 +1,9 @@
 import * as path from 'path'
 
 import vscode from 'vscode'
-import { glob, sync as globSync } from 'glob'
+import { globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig, ProjectReport } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
-
-import { Container } from '../container'
 
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
@@ -22,7 +20,7 @@ export default class WorkspaceUtils {
 		}
 
 		const path = workspaceDir.join('/**/' + STATIC_CONFIG_FILENAME).toString()
-		const profilePaths = globSync(path).map((configPath) => workspaceDir.pathTo(configPath).toPlatformString())
+		const profilePaths = globSync(path)
 		return profilePaths
 	}
 
