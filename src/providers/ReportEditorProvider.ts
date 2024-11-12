@@ -4,6 +4,7 @@ import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
 import { Container } from '../container'
 import { ReportWebviewPanel } from '../panels/ReportWebviewPanel'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
+import { VersionErrorHelper } from '../helper/VersionErrorHelper'
 
 export class ReportEditorProvider implements CustomEditorProvider {
 	private onDidChangeCustomDocumentEmitter = new vscode.EventEmitter<CustomDocumentContentChangeEvent>()
@@ -24,7 +25,13 @@ export class ReportEditorProvider implements CustomEditorProvider {
 
 	async resolveCustomEditor(document: vscode.CustomDocument): Promise<void> {
 		const inputPath = new UnifiedPath(document.uri.fsPath)
-		const report = ProjectReport.loadFromFile(inputPath, 'bin', WorkspaceUtils.getWorkspaceProfilerConfig())
+		let report
+		try {
+			report = ProjectReport.loadFromFile(inputPath, 'bin', WorkspaceUtils.getWorkspaceProfilerConfig())
+		} catch (e) {
+			VersionErrorHelper.showVersionInformationOrError(inputPath)
+			return
+		}
 		if (report === undefined) {
 			console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
 			throw new Error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)

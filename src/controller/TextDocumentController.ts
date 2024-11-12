@@ -10,7 +10,7 @@ import {
 	ProgramStructureTree,
 	TypescriptParser
 } from '@oaklean/profiler-core'
-import { VERSION } from '@oaklean/profiler-core/dist/src/constants/app'
+
 
 import {
 	ReportPathChangeEvent,
@@ -20,7 +20,7 @@ import {
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { INFO_PROJECT_REPORT } from '../constants/infoMessages'
-import { getExtensionVersion } from '../utilities/getExtensionVersion'
+import { VersionErrorHelper } from '../helper/VersionErrorHelper'
 
 const VALID_EXTENSIONS_TO_PARSE = [
 	'.js',
@@ -136,23 +136,7 @@ export default class TextDocumentController implements Disposable {
 		try {
 			this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', config)
 		} catch (e) {
-			let reportVersion
-			try {
-					reportVersion = ProjectReport.versionFromBinFile(this.reportPath)
-			} catch (error) {
-					vscode.window.showErrorMessage('The selected file is not a valid Oaklean report file.')
-					return
-			}
-			const extensionVersion = getExtensionVersion()
-			const profilerVersion = VERSION
-		if (reportVersion && profilerVersion < reportVersion) {
-			vscode.window.showInformationMessage(`${this.reportPath.basename()} (Version: ${reportVersion}) `+
-			'is not compatible with the current version of Oaklean. Please update the application.')
-			vscode.window.showInformationMessage(`Extension Version: ${extensionVersion} `+ 
-				`(reports up to version ${profilerVersion})`)
-		} else {
-			console.log('Your Oaklean extension is up to date and compatible with the report requirements.')
-		}
+			VersionErrorHelper.showVersionInformationOrError(this.reportPath)
 			return
 		}
 		if (this.projectReport) {
