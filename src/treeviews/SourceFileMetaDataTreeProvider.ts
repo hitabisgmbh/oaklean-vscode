@@ -95,7 +95,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 					this.sensorValueRepresentation.formula)
 			}
 			const roundedValue = NumberHelper.round(proportion, 
-				this.sensorValueRepresentation.selectedSensorValueType.toString(),
+				this.sensorValueRepresentation.selectedSensorValueType,
 				UnitPerSensorValue[this.sensorValueRepresentation.selectedSensorValueType])
 			this.description = roundedValue.newValue + ' ' + roundedValue.newUnit
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation

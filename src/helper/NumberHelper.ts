@@ -1,4 +1,6 @@
-const energyConsumptionTypes = [
+import { ExtendedSensorValueType, SensorUnits } from '../types/sensorValues'
+
+const energyConsumptionTypes: ExtendedSensorValueType[]  = [
 	'selfCPUEnergyConsumption',
 	'aggregatedCPUEnergyConsumption',
 	'internCPUEnergyConsumption',
@@ -11,8 +13,8 @@ const energyConsumptionTypes = [
 	'langInternalRAMEnergyConsumption'
 ]
 export class NumberHelper {
-	static round(value: number, valueType: string, 
-		unit: string): { newValue: string, newUnit: string } {
+	static round(value: number, valueType: ExtendedSensorValueType, 
+		unit: SensorUnits): { newValue: string, newUnit: SensorUnits } {
 		let newValue
 		const newUnit = unit
 

@@ -18,7 +18,8 @@ export default class SensorValueHover {
 		contents.appendMarkdown('|---|---|---| \n')
 
 		for (const [sensorValueType, sensorValueName] of Object.entries(SensorValueTypeNames)) {
-			const unit = UnitPerSensorValue[sensorValueType as ExtendedSensorValueType]
+			const extendedSensorValueType = sensorValueType as ExtendedSensorValueType
+			const unit = UnitPerSensorValue[extendedSensorValueType]
 			if (sensorValueType === 'customFormula') {
 				if (this.formula) {
 					const calculatedFormula = calcOrReturnSensorValue(
@@ -29,7 +30,8 @@ export default class SensorValueHover {
 					)
 				}
 			} else {
-				const roundedSensorValue = NumberHelper.round(this.sensorValues[sensorValueType], sensorValueType, unit)
+				const roundedSensorValue = NumberHelper.round(
+					this.sensorValues[sensorValueType], extendedSensorValueType, unit)
 				contents.appendMarkdown(
 					`|${sensorValueName}|${roundedSensorValue.newValue}|${roundedSensorValue.newUnit}| \n`
 				)
