@@ -93,8 +93,8 @@ export class TextDocumentHighlighter {
 				continue
 			}
 			const { beginLoc } = locationOfFunction
-
-			const relativeToToal = value / totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
+			const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
+			const relativeToToal = total === 0 ? 0 : value / total
 			let message
 			let weigth
 			if (selectedSensorValueType === 'customFormula') {
