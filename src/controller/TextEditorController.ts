@@ -24,11 +24,17 @@ export default class TextEditorController implements Disposable {
 			this.container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this)),
 			this.container.eventHandler.onToggleLineAnnotationsChange(this.toggleLineAnnotationsChange.bind(this))
 		)
-
+		this.registerThemeChangeListener()
 		this.textDecorations = []
 		this._enableLineAnnotations = this.container.storage.getWorkspace('enableLineAnnotations', true) as boolean
 		this._sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 
+	}
+	
+	private registerThemeChangeListener() {
+		vscode.window.onDidChangeActiveColorTheme(() => {
+				this.refresh()	
+		})
 	}
 
 	toggleLineAnnotationsChange(event: ToggleLineAnnotationsChangeEvent) {

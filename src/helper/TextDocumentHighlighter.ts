@@ -1,3 +1,5 @@
+import { text } from 'stream/consumers'
+
 import vscode, { TextEditor, TextEditorDecorationType } from 'vscode'
 import { SensorValues, UnifiedPath } from '@oaklean/profiler-core'
 
@@ -33,6 +35,14 @@ export class TextDocumentHighlighter {
 		const color: Color = (profile?.color || Color.Red)
 		const { red, green, blue, alpha } = getImportanceColor(color, importanceWeight)
 		const backgroundColor = `RGBA(${red}, ${green}, ${blue}, ${alpha})`
+    const colorTheme = vscode.window.activeColorTheme
+
+    let textColor: string
+    if (colorTheme.kind === vscode.ColorThemeKind.Dark) {
+        textColor = '#ffffffff'
+    } else {
+        textColor = '#000000'
+    }
 
 		const start = new vscode.Position(lineNumber, 0)
 		const end = new vscode.Position(lineNumber, editor.document.lineAt(lineNumber).text.length)
@@ -45,7 +55,7 @@ export class TextDocumentHighlighter {
 			overviewRulerLane: vscode.OverviewRulerLane.Left,
 			after: {
 				backgroundColor: '#00000000',
-				color: '#ffffffff',
+				color: textColor,
 				contentText: pad(message.replace(/ /g, GlyphChars.Space), 1, 1),
 				fontWeight: 'normal',
 				fontStyle: 'normal'
