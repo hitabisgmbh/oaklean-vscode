@@ -1,4 +1,4 @@
-import { SourceNodeIdentifier_string } from '@oaklean/profiler-core/dist/src/types/SourceNodeIdentifiers.types'
+import { SourceNodeIdentifier_string } from '@oaklean/profiler-core/dist/src/types'
 
 import { MethodIdentifierHelper } from '../../src/helper/MethodIdentifierHelper'
 
