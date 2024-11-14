@@ -14,11 +14,12 @@ import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { Container } from '../container'
 import { ReportLoadedEvent, SelectedSensorValueRepresentationChangeEvent, SortDirectionChangeEvent } from '../helper/EventHandler'
 import { ValueRepresentationType } from '../types/valueRepresentationTypes'
-import { ExtendedSensorValueType, UnitPerSensorValue } from '../types/sensorValues'
+import { ExtendedSensorValueType } from '../types/sensorValues'
 import { DirectoryTreeNode } from '../model/DirectoryTreeNode'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { SortDirection } from '../types/sortDirection'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from '../types/sensorValueRepresentation'
+import { SensorValueFormatHelper } from '../helper/SensorValueFormatHelper'
 
 
 enum DisplayType {
@@ -93,8 +94,11 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 					this.sensorValueRepresentation.selectedSensorValueType,
 					this.sensorValueRepresentation.formula)
 			}
-			this.displayedSensorValue = proportion
-			this.description = proportion + ' ' + UnitPerSensorValue[this.sensorValueRepresentation.selectedSensorValueType]
+			const formattedValue = SensorValueFormatHelper.format(
+				proportion,
+				this.sensorValueRepresentation.selectedSensorValueType
+			)
+			this.description = formattedValue.value + ' ' + formattedValue.unit
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.locallyRelative) {
 			if (type === DisplayType.extern) {

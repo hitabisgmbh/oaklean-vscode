@@ -75,3 +75,7 @@ export const UnitPerSensorValue: SensorValueToUnitMap = {
 
 	customFormula: SensorUnits.flat
 }
+
+export const EnergyConsumptionSensorValueTypes = Object.keys(UnitPerSensorValue).filter(
+	(key) => UnitPerSensorValue[key as ExtendedSensorValueType] === SensorUnits.milliJoule
+) as ExtendedSensorValueType[]
