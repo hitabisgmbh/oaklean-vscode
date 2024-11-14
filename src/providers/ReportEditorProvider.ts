@@ -1,9 +1,10 @@
 import vscode, { CustomEditorProvider, ExtensionContext, CustomDocumentContentChangeEvent } from 'vscode'
-import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
+import { UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import { ReportWebviewPanel } from '../panels/ReportWebviewPanel'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
+import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 export class ReportEditorProvider implements CustomEditorProvider {
 	private onDidChangeCustomDocumentEmitter = new vscode.EventEmitter<CustomDocumentContentChangeEvent>()
@@ -24,14 +25,12 @@ export class ReportEditorProvider implements CustomEditorProvider {
 
 	async resolveCustomEditor(document: vscode.CustomDocument): Promise<void> {
 		const inputPath = new UnifiedPath(document.uri.fsPath)
-		const report = ProjectReport.loadFromFile(inputPath, 'bin', WorkspaceUtils.getWorkspaceProfilerConfig())
-		if (report === undefined) {
-			console.error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
-			throw new Error(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
-		} else {
-			await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-			ReportWebviewPanel.render(this._container, report, inputPath.toPlatformString())
+		const report = ProjectReportHelper.loadReport(inputPath, WorkspaceUtils.getWorkspaceProfilerConfig())
+		if (report === null) {
+			return
 		}
+		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+		ReportWebviewPanel.render(this._container, report, inputPath.toPlatformString())
 	}
 
 
