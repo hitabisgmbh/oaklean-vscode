@@ -1,7 +1,6 @@
 import vscode from 'vscode'
 import { sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
-
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
 		if (vscode.workspace.workspaceFolders !== undefined) {

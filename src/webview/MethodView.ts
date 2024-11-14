@@ -2,14 +2,13 @@ import globToRegExp from 'glob-to-regexp'
 import { SensorValues, SourceNodeIdentifier_string } from '@oaklean/profiler-core'
 import { provideVSCodeDesignSystem, allComponents } from '@vscode/webview-ui-toolkit'
 
-
-
+import { SensorValueFormatHelper } from '../helper/SensorValueFormatHelper'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { Method } from '../types/method'
 import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
 import { MethodViewCommands } from '../types/methodViewCommands'
-import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
-import { ExtendedSensorValueType, UnitPerSensorValue } from '../types/sensorValues'
+import { SensorValueRepresentation, defaultSensorValueRepresentation } from '../types/sensorValueRepresentation'
+import { ExtendedSensorValueType } from '../types/sensorValues'
 import { SortDirection } from '../types/sortDirection'
 import { MethodList } from '../model/MethodList'
 import { FilterPaths } from '../types/FilterPaths'
@@ -55,7 +54,7 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 	let parts: string[]
 	let filename: string
 	let methods: Method[]
-	let selectedSensorValueType = ''
+	let selectedSensorValueType: ExtendedSensorValueType = defaultSensorValueRepresentation().selectedSensorValueType
 	const contentDiv = document.getElementById('content')
 	const fileAndMethods = document.createElement('div')
 	const fileDiv = document.createElement('div')
@@ -135,9 +134,13 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 				functionNameSpan.innerHTML = shortenedFuntionName
 				functionNameSpan.className = 'functionName'
 
-				sensorValue = parseFloat(parseFloat(sensorValue).toFixed(8)).toString()
+				sensorValue = parseFloat(sensorValue).toString()
 				const sensorValueSpan = document.createElement('span')
-				sensorValueSpan.textContent = ' ' + sensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				const formattedSensorValue = SensorValueFormatHelper.format(
+					sensorValue,
+					selectedSensorValueType
+				)
+				sensorValueSpan.textContent = ' ' + formattedSensorValue.value + ' ' + formattedSensorValue.unit
 				sensorValueSpan.className = 'sensorValue'
 
 				const functionCounterSpan = document.createElement('span')
@@ -167,7 +170,11 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 			if (selectedSensorValueType && selectedSensorValueType === SensorValueTypeNames.customFormula) {
 				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue
 			} else {
-				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				const formattedFilesTotalSensorValue = SensorValueFormatHelper.format(
+					filesTotalSensorValue,
+					selectedSensorValueType
+				)
+				totalSensorValueSpan.textContent = ' ' + formattedFilesTotalSensorValue.value + ' ' + formattedFilesTotalSensorValue.unit
 			}
 			totalSensorValueSpan.className = 'sensorValue'
 			fileDiv.appendChild(totalSensorValueSpan)
@@ -262,13 +269,26 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 			sensorValueSpan.className = 'sensorValue'
 			let sensorValue
 			if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
-				sensorValue = calcOrReturnSensorValue(sensorValues, selectedSensorValueType, formula)
-				sensorValueSpan.textContent = ' ' + sensorValue
+				sensorValue = calcOrReturnSensorValue(
+					sensorValues, selectedSensorValueType, formula)
+				const formattedSensorValue = SensorValueFormatHelper.format(
+					sensorValue,
+					selectedSensorValueType
+				)
+				sensorValueSpan.textContent = ' ' + formattedSensorValue.value
 			} else {
-				sensorValue = sensorValues[selectedSensorValueType] ? sensorValues[selectedSensorValueType] : '0'
-				sensorValueSpan.textContent = ' ' + sensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+				sensorValue = sensorValues[selectedSensorValueType]
+				const formattedSensorValue = SensorValueFormatHelper.format(
+					sensorValue,
+					selectedSensorValueType
+				)
+				sensorValueSpan.textContent = ' ' + formattedSensorValue.value + ' ' + formattedSensorValue.unit
+			}
+			if (sensorValue === undefined) {
+				sensorValue = '0'
 			}
 			filesTotalSensorValue += parseFloat(sensorValue)
+
 			const functionCounterSpan = document.createElement('span')
 			functionCounterSpan.textContent = ' ' + method.getAttribute('data-functionCounter')
 			functionCounterSpan.className = 'functionCounter'
@@ -282,12 +302,15 @@ function updateSensorValue(selectedSensorValueType: ExtendedSensorValueType, for
 		const fileDiv = fileAndMethod.getElementsByClassName('files')[0] as HTMLElement
 
 		fileAndMethod.setAttribute('data-total-selected-sensorvalue', filesTotalSensorValue.toString())
-		const fileDivSensoorValueSpan = fileDiv.getElementsByClassName('sensorValue')[0]
-
+		const fileDivSensorValueSpan = fileDiv.getElementsByClassName('sensorValue')[0]
+		const formattedFilesTotalSensorValue = SensorValueFormatHelper.format(
+			filesTotalSensorValue,
+			selectedSensorValueType
+		)
 		if (selectedSensorValueType === SensorValueTypeNames.customFormula && formula) {
-			fileDivSensoorValueSpan.textContent = ' ' + filesTotalSensorValue
+			fileDivSensorValueSpan.textContent = ' ' + formattedFilesTotalSensorValue.value
 		} else {
-			fileDivSensoorValueSpan.textContent = ' ' + filesTotalSensorValue + ' ' + UnitPerSensorValue[selectedSensorValueType]
+			fileDivSensorValueSpan.textContent = ' ' + formattedFilesTotalSensorValue.value + ' ' + formattedFilesTotalSensorValue.unit
 		}
 	})
 }
