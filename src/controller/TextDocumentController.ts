@@ -1,9 +1,13 @@
 import * as path from 'path'
 
 import vscode from 'vscode'
-import { NodeModule, NodeModuleUtils, Report, UnifiedPath, SourceFileMetaDataTreeType } from '@oaklean/profiler-core'
 import { Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode'
 import {
+	NodeModule,
+	NodeModuleUtils,
+	Report,
+	UnifiedPath,
+	SourceFileMetaDataTreeType,
 	SourceFileMetaDataTree,
 	ProjectReport,
 	SourceFileMetaData,
@@ -20,7 +24,7 @@ import {
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { INFO_PROJECT_REPORT } from '../constants/infoMessages'
-import { VersionErrorHelper } from '../helper/VersionErrorHelper'
+import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 const VALID_EXTENSIONS_TO_PARSE = [
 	'.js',
@@ -133,12 +137,11 @@ export default class TextDocumentController implements Disposable {
 	reportPathChanged(event: ReportPathChangeEvent) {
 		this.reportPath = event.reportPath
 		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
-		try {
-			this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', config)
-		} catch (e) {
-			VersionErrorHelper.showVersionInformationOrError(this.reportPath)
+		const report = ProjectReportHelper.loadReport(this.reportPath, config)
+		if (report === null) {
 			return
 		}
+		this.projectReport = report
 		if (this.projectReport) {
 			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport, 'original')
 		}

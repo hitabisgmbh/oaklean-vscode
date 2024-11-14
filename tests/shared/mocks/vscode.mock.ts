@@ -4,6 +4,7 @@ export default jest.mock('vscode', () => ({
 		showQuickPick: jest.fn(),
 		showInputBox: jest.fn(),
 		showInformationMessage: jest.fn(),
+		showErrorMessage: jest.fn(),
 		createQuickPick: jest.fn(() => ({
 			onDidHide: jest.fn(),
 			onDidChangeSelection: jest.fn(),

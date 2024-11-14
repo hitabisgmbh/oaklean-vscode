@@ -1,8 +1,9 @@
 import vscode, { Disposable } from 'vscode'
-import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
+import { UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
+import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 export class ReportWebviewController implements Disposable {
 	private container: Container
@@ -19,9 +20,8 @@ export class ReportWebviewController implements Disposable {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
 			const inputPath = new UnifiedPath(filePath)
-			const report = ProjectReport.loadFromFile(inputPath, 'bin', WorkspaceUtils.getWorkspaceProfilerConfig())
-			if (report === undefined) {
-				vscode.window.showErrorMessage(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+			const report = ProjectReportHelper.loadReport(inputPath, WorkspaceUtils.getWorkspaceProfilerConfig())
+			if (report === null) {
 				return
 			}
 			const formattedJson = JSON.stringify(report, null, 2)
