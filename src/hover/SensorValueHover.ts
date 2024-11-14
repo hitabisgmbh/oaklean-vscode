@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 import { SensorValues } from '@oaklean/profiler-core'
 
-import { SensorValueTypeNames, UnitPerSensorValue, ExtendedSensorValueType } from '../types/sensorValues'
+import { SensorValueTypeNames, ExtendedSensorValueType } from '../types/sensorValues'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
-import { NumberHelper } from '../helper/NumberHelper'
+import { SensorValueFormatHelper } from '../helper/SensorValueFormatHelper'
 export default class SensorValueHover {
 	private sensorValues: SensorValues
 	private formula: string | undefined
@@ -17,23 +17,29 @@ export default class SensorValueHover {
 		contents.appendMarkdown('|type|value|unit| \n')
 		contents.appendMarkdown('|---|---|---| \n')
 
-		for (const [sensorValueType, sensorValueName] of Object.entries(SensorValueTypeNames)) {
-			const extendedSensorValueType = sensorValueType as ExtendedSensorValueType
-			const unit = UnitPerSensorValue[extendedSensorValueType]
+		for (const [
+			sensorValueType,
+			sensorValueName
+		] of Object.entries(SensorValueTypeNames) as [ExtendedSensorValueType, string][]) {
 			if (sensorValueType === 'customFormula') {
 				if (this.formula) {
 					const calculatedFormula = calcOrReturnSensorValue(
 						this.sensorValues, sensorValueName, this.formula)
-					const rounded = NumberHelper.round(calculatedFormula, sensorValueType, unit)
+					const formattedCalculatedFormula = SensorValueFormatHelper.format(
+						calculatedFormula,
+						sensorValueType
+					)
 					contents.appendMarkdown(
-						`|${this.formula}|${rounded.newValue}| \n`
+						`|${this.formula}|${formattedCalculatedFormula.value}| \n`
 					)
 				}
 			} else {
-				const roundedSensorValue = NumberHelper.round(
-					this.sensorValues[sensorValueType], extendedSensorValueType, unit)
+				const formattedSensorValue = SensorValueFormatHelper.format(
+					this.sensorValues[sensorValueType],
+					sensorValueType
+				)
 				contents.appendMarkdown(
-					`|${sensorValueName}|${roundedSensorValue.newValue}|${roundedSensorValue.newUnit}| \n`
+					`|${sensorValueName}|${formattedSensorValue.value}|${formattedSensorValue.unit}| \n`
 				)
 			}
 		}

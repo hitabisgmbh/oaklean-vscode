@@ -1,9 +1,12 @@
 import { PathIndex, SourceFileMetaData, SourceNodeIdentifier_string } from '@oaklean/profiler-core'
-import { ISourceNodeIndex, SourceNodeIndexType } from '@oaklean/profiler-core/dist/src/model/index/SourceNodeIndex'
-import { IPathIndex } from '@oaklean/profiler-core/dist/src/model/index/PathIndex'
+import {
+	ISourceNodeIndex,
+	SourceNodeIndexType,
+	IPathIndex
+} from '@oaklean/profiler-core/dist/src/types'
 
-import { NumberHelper } from '../helper/NumberHelper'
-import { ExtendedSensorValueType, SensorValueTypeNames, UnitPerSensorValue } from '../types/sensorValues'
+import { SensorValueFormatHelper } from '../helper/SensorValueFormatHelper'
+import { ExtendedSensorValueType, SensorValueTypeNames } from '../types/sensorValues'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { EditorFileMethodViewProtocol_ChildToParent, EditorFileMethodViewCommands } from '../protocols/editorFileMethodViewProtocol'
@@ -126,12 +129,14 @@ function createHtmlFromTree(methodList: SourceFileMetaData, parentElement: HTMLE
 						} else {
 							sensorValue = '0'
 						}
-						const sensorValueRounded = NumberHelper.round(sensorValue, 
-							selectedSensorValueType, UnitPerSensorValue[selectedSensorValueType])
-						sensorValue = sensorValueRounded.newValue
+						const formattedSensorValue = SensorValueFormatHelper.format(
+							sensorValue,
+							selectedSensorValueType
+						)
+						sensorValue = formattedSensorValue.value
 						identifierContainer.setAttribute('data-selectedSensorValue', sensorValue)
 						const sensorValueSpan = document.createElement('span')
-						sensorValueSpan.textContent = ' ' + sensorValue + ' ' + sensorValueRounded.newUnit
+						sensorValueSpan.textContent = ' ' + sensorValue + ' ' + formattedSensorValue.unit
 						sensorValueSpan.className = 'sensorValue'
 						identifierContainer.appendChild(sensorValueSpan)
 					}
