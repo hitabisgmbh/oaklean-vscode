@@ -1,9 +1,11 @@
 export default jest.mock('vscode', () => ({
 	window: {
+		onDidChangeActiveColorTheme: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 		onDidChangeActiveTextEditor: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 		showQuickPick: jest.fn(),
 		showInputBox: jest.fn(),
 		showInformationMessage: jest.fn(),
+		showErrorMessage: jest.fn(),
 		createQuickPick: jest.fn(() => ({
 			onDidHide: jest.fn(),
 			onDidChangeSelection: jest.fn(),

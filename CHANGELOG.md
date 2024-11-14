@@ -2,6 +2,12 @@
 
 All notable changes to the "Oaklean" extension will be documented in this file.
 
+# 0.1.2
+### Bug fixes
+- Display an error message if the report version the user is attempting to load is not supported by the VSCode extension
+
+### Quality of Life improvements
+- Sensor Values are now displayed with only up to three decimal places for better readability
 
 # 0.1.1 - 2024-07-31
 ### Bug fixes

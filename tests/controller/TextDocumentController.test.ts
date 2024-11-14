@@ -23,7 +23,7 @@ describe('TextDocumentController', () => {
 		const reportPathChangeEvent = { reportPath: new UnifiedPath('/path/to/report') }
 		textDocumentController.reportPathChanged(reportPathChangeEvent)
 		expect(textDocumentController.reportPath).toEqual(reportPathChangeEvent.reportPath)
-		expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+		expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
 			expect.stringContaining(reportPathChangeEvent.reportPath.basename()))
 	})
 

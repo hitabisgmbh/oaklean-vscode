@@ -1,9 +1,10 @@
 import vscode, { CustomEditorProvider, ExtensionContext, CustomDocumentContentChangeEvent } from 'vscode'
-import { ProfilerConfig, ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
+import { UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import { ReportWebviewPanel } from '../panels/ReportWebviewPanel'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
+import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 export class ReportEditorProvider implements CustomEditorProvider {
 	private onDidChangeCustomDocumentEmitter = new vscode.EventEmitter<CustomDocumentContentChangeEvent>()
@@ -30,14 +31,12 @@ export class ReportEditorProvider implements CustomEditorProvider {
 				`Could not find a profiler config for report ${inputPath.toPlatformString()}`)
 			return
 		}
-		const report = ProjectReport.loadFromFile(inputPath, 'bin', config)
-		if (report === undefined) {
-			vscode.window.showErrorMessage(`Could not find a profiler report at ${inputPath.toPlatformString()}`)
+		const report = ProjectReportHelper.loadReport(inputPath, config)
+		if (report === null) {
 			return
-		} else {
-			await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-			ReportWebviewPanel.render(this._container, report, inputPath.toPlatformString())
 		}
+		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+		ReportWebviewPanel.render(this._container, report, inputPath.toPlatformString())
 	}
 
 

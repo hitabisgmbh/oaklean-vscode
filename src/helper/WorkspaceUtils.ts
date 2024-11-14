@@ -1,7 +1,7 @@
 import * as path from 'path'
 
 import vscode from 'vscode'
-import { glob, sync as globSync } from 'glob'
+import { sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
@@ -37,15 +37,15 @@ export default class WorkspaceUtils {
 	}
 
 	static getProjectReportFromWorkspace(): string[] {
-    const workspaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak')
+		const workspaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak')
 		console.log('workspaceDir', workspaceDir)
-    if (!workspaceDir) {
-        return []
-    }
-    
+		if (!workspaceDir) {
+			return []
+		}
+
 		const result = globSync(workspaceDir.toString(), { ignore: ['**/node_modules/**'] })
-    PathUtils.sortFilePathArray(result)
-    return result
+		PathUtils.sortFilePathArray(result)
+		return result
 	}
 
 	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath {

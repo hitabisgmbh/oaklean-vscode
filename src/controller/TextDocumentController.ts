@@ -1,16 +1,22 @@
 import * as path from 'path'
 
 import vscode from 'vscode'
-import { NodeModule, NodeModuleUtils, Report, UnifiedPath, SourceFileMetaDataTreeType, ProfilerConfig } from '@oaklean/profiler-core'
 import { Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode'
 import {
+	NodeModule,
+	NodeModuleUtils,
+	Report,
+	UnifiedPath,
+	SourceFileMetaDataTreeType,
 	SourceFileMetaDataTree,
 	ProjectReport,
 	SourceFileMetaData,
 	ProgramStructureTree,
 	TypescriptParser,
+	ProfilerConfig
 } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
+
 
 import {
 	ReportPathChangeEvent,
@@ -20,6 +26,7 @@ import {
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { INFO_PROJECT_REPORT } from '../constants/infoMessages'
+import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 const VALID_EXTENSIONS_TO_PARSE = [
 	'.js',
@@ -147,7 +154,11 @@ export default class TextDocumentController implements Disposable {
 				`Could not find a profiler config at ${this.reportPath.dirName().toPlatformString()}`)
 			return
 		}
-		this.projectReport = ProjectReport.loadFromFile(this.reportPath, 'bin', this.config)
+		const report = ProjectReportHelper.loadReport(this.reportPath, this.config)
+		if (report === null) {
+			return
+		}
+		this.projectReport = report
 		if (this.projectReport) {
 			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport, 'original')
 		}
@@ -170,7 +181,7 @@ export default class TextDocumentController implements Disposable {
 			}
 		}
 	}
-	
+
 	setProgramStructureTreeOfDocument(document: TextDocument) {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {

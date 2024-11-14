@@ -1,14 +1,17 @@
+import { text } from 'stream/consumers'
+
 import vscode, { TextEditor, TextEditorDecorationType } from 'vscode'
 import { SensorValues, UnifiedPath } from '@oaklean/profiler-core'
 
 import { calcOrReturnSensorValue } from './FormulaHelper'
+import { SensorValueFormatHelper } from './SensorValueFormatHelper'
 
 import { pad } from '../system/string'
 import { getImportanceColor } from '../system/color'
 import { GlyphChars } from '../constants/characters'
 import { PROFILE_PERCENT_PRECISION } from '../constants/profile'
 import { Container } from '../container'
-import { ExtendedSensorValueType, SensorValueTypeNames, UnitPerSensorValue } from '../types/sensorValues'
+import { ExtendedSensorValueType, SensorValueTypeNames } from '../types/sensorValues'
 import { Profile } from '../types/profile'
 import { Color } from '../types/color'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
@@ -33,6 +36,14 @@ export class TextDocumentHighlighter {
 		const color: Color = (profile?.color || Color.Red)
 		const { red, green, blue, alpha } = getImportanceColor(color, importanceWeight)
 		const backgroundColor = `RGBA(${red}, ${green}, ${blue}, ${alpha})`
+		const colorTheme = vscode.window.activeColorTheme
+
+		let textColor: string
+		if (colorTheme.kind === vscode.ColorThemeKind.Dark) {
+			textColor = '#ffffff'
+		} else {
+			textColor = '#000000'
+		}
 
 		const start = new vscode.Position(lineNumber, 0)
 		const end = new vscode.Position(lineNumber, editor.document.lineAt(lineNumber).text.length)
@@ -45,7 +56,7 @@ export class TextDocumentHighlighter {
 			overviewRulerLane: vscode.OverviewRulerLane.Left,
 			after: {
 				backgroundColor: '#00000000',
-				color: '#ffffffff',
+				color: textColor,
 				contentText: pad(message.replace(/ /g, GlyphChars.Space), 1, 1),
 				fontWeight: 'normal',
 				fontStyle: 'normal'
@@ -92,8 +103,8 @@ export class TextDocumentHighlighter {
 				continue
 			}
 			const { beginLoc } = locationOfFunction
-
-			const relativeToToal = value / totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
+			const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
+			const relativeToToal = total === 0 ? 0 : value / total
 			let message
 			let weigth
 			if (selectedSensorValueType === 'customFormula') {
@@ -101,17 +112,25 @@ export class TextDocumentHighlighter {
 				const formula = sensorValueRepresentation.formula
 				const calculatedFormula = calcOrReturnSensorValue(
 					sourceNodeMetaData.sensorValues, selectedSensorValueType, formula)
+				const formattedCalculatedFormula = SensorValueFormatHelper.format(
+					calculatedFormula,
+					selectedSensorValueType
+				)
 				const formulaTotal = calcOrReturnSensorValue(
 					totalAndMaxMetaData.total.sensorValues, selectedSensorValueType, formula)
 				const relativeToToalForFormula = calculatedFormula / formulaTotal
-				message = `${formula}: ${calculatedFormula} ` +
+				message = `${formula}: ${formattedCalculatedFormula.value} ` +
 					`(${relativeToToalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weigth = calculatedFormula / calcOrReturnSensorValue(
 					totalAndMaxMetaData.max.sensorValues, selectedSensorValueType, formula)
 			} else {
+				const formattedValue = SensorValueFormatHelper.format(
+					value,
+					selectedSensorValueType
+				)
 				message =
 					SensorValueTypeNames[selectedSensorValueType] +
-					`: ${value} ${UnitPerSensorValue[selectedSensorValueType]} ` +
+					`: ${formattedValue.value} ${formattedValue.unit} ` +
 					`(${relativeToToal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weigth = value / totalAndMaxMetaData.max.sensorValues[selectedSensorValueType]
 			}
