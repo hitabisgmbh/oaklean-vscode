@@ -1,5 +1,5 @@
 import vscode from 'vscode'
-import { PathUtils, UnifiedPath } from '@oaklean/profiler-core'
+import { UnifiedPath } from '@oaklean/profiler-core'
 
 import BaseCommand from './BaseCommand'
 
@@ -24,16 +24,13 @@ export default class SelectReport extends BaseCommand {
 	}
 
 	execute() {
-		const reportFilePaths = WorkspaceUtils.getProjectReportFromWorkspace()
+		const reportFilePaths = WorkspaceUtils.getProjectReportPathsFromWorkspace()
 		const quickPickOptions: QuickPickOptions = new Map()
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		for (const reportFilePath of reportFilePaths) {
-			quickPickOptions.set(reportFilePath, {
+			quickPickOptions.set(reportFilePath.toString(), {
 				selectionCallback: () => {
-					const reportPath = workspaceDir?.join(reportFilePath)
-					if (reportPath) {
-						this.container.storage.storeWorkspace('reportPath', reportPath)
-					}
+					this.container.storage.storeWorkspace('reportPath', reportFilePath)
 				}
 			})
 		}
@@ -44,10 +41,9 @@ export default class SelectReport extends BaseCommand {
 			return quickPick
 		}
 
-		const currentReport = this.container.storage.getWorkspace('reportPath') as UnifiedPath
-		if (currentReport && workspaceDir) {
-			const relativePath = workspaceDir.pathTo(currentReport).toPlatformString()
-			quickPick.setCurrentItem(relativePath)
+		const currentReportPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
+		if (currentReportPath && workspaceDir) {
+			quickPick.setCurrentItem(currentReportPath.toString())
 		}
 		quickPick.show()
 		return quickPick

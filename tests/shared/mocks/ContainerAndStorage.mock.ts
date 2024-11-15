@@ -61,6 +61,7 @@ export default class StorageAndContainerMock {
 		onReportPathChange: jest.fn(),
 		onTextDocumentClose: jest.fn(),
 		onTextDocumentChange: jest.fn(),
+		onTextDocumentDidSave: jest.fn(),
 		fireReportLoaded: jest.fn(),
 		fireProgramStructureTreeChange: jest.fn(),
 		onSortDirectionChange: jest.fn(),

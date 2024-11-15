@@ -24,6 +24,7 @@ import { EditorFileMethodViewProvider } from './providers/EditorFileMethodViewPr
 import { GraphicalViewProvider } from './providers/GraphicalViewProvider'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from './types/sensorValueRepresentation'
 import ReportBackendStorageController from './controller/ReportBackendStorageController'
+import WorkspaceUtils from './helper/WorkspaceUtils'
 
 export class Container {
 	static #instance: Container | undefined
@@ -254,6 +255,19 @@ export class Container {
 			vscode.window.registerCustomEditorProvider(
 				'oaklean.oak', this.reportEditorProvider
 			)
+		)
+
+		this.context.subscriptions.push(
+			vscode.commands.registerCommand('oaklean.openDynamicFile', (file: string) => {
+				const config = this._textDocumentController.config
+				if (!config) {
+					return
+				}
+				const resolvedPath = WorkspaceUtils.getFullFilePath(config, file)
+				if (resolvedPath) {
+					vscode.commands.executeCommand('vscode.open', vscode.Uri.file(resolvedPath.toPlatformString()))
+				}
+			})
 		)
 
 		this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)

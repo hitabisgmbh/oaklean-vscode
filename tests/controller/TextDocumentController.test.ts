@@ -6,6 +6,7 @@ import TextDocumentController from '../../src/controller/TextDocumentController'
 import { Container } from '../../src/container'
 import { stub_getWorkspaceDirStub } from '../shared/mocks/WorkspaceUtils.mock'
 import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
+import { stub_ProfilerConfig } from '../shared/mocks/ProfilerConfig.mock'
 
 describe('TextDocumentController', () => {
 	let container: Container
@@ -16,6 +17,7 @@ describe('TextDocumentController', () => {
 		container = containerAndStorageMock.container
 		textDocumentController = new TextDocumentController(container)
 	})
+	stub_ProfilerConfig()
 	stub_getWorkspaceDirStub()
 	it('should handle reportPathChanged event correctly', () => {
 		const reportPathChangeEvent = { reportPath: new UnifiedPath('/path/to/report') }

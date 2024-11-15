@@ -1,6 +1,5 @@
-import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
-import { glob } from 'glob'
 import vscode, { Disposable } from 'vscode'
+import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -22,111 +21,13 @@ export default class ReportBackendStorageController implements Disposable {
 		throw new Error('Method not implemented.')
 	}
 
-	async checkAndUploadReports() {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
-			return
-		}
-		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
-		const url = config.registryOptions.url
-		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak').toString()
-		if (!workSpaceDir) {
-			return
-		}
-		const projectReportPaths = glob.sync(workSpaceDir, { ignore: ['**/node_modules/**', '**/dist/**'] })
-			.map((profilePath) => workspaceDir.pathTo(profilePath).toString())
-		const batchSize = 99
-		for (let i = 0; i < projectReportPaths.length; i += batchSize) {
-			const batchFiles = projectReportPaths.slice(i, i + batchSize)
-			const hashes = (await Promise.all(batchFiles.map(async (filePath) => {
-				const unifiedFilePath = new UnifiedPath(filePath)
-				const reportPath = WorkspaceUtils.getWorkspaceDir()?.join(unifiedFilePath)
-				if (!reportPath) {
-					return
-				}
-
-				const hash = ProjectReport.hashFromBinFile(reportPath)
-				if (this.isHashChecked(hash, url)) {
-					return
-				}
-				let projectReport
-				try {
-					projectReport = ProjectReport.loadFromFile(reportPath, 'bin')
-				} catch (e) {
-					return
-				}
-				const shouldBeStored = await projectReport?.shouldBeStoredInRegistry()
-				if (projectReport === undefined || !shouldBeStored) {
-					return
-				}
-
-				return hash
-
-			}))).filter(hash => hash !== undefined)
-
-			if (hashes.length === 0) {
-				continue
-			}
-
-
-			const urlWithHashes = `http:/${url}/check-existence?` + hashes.map(hash => `hashes[]=${hash}`).join('&')
-			let response
-			try {
-				response = await fetch(urlWithHashes)
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-			} catch (error) {
-				console.debug('Error fetching URL:', error)
-				return
-			}
-
-			const data = await response.json()
-			for (const hash of hashes) {
-				if (hash && !data[hash]) {
-					const filePath = batchFiles[hashes.indexOf(hash)]
-					const unifiedFilePath = new UnifiedPath(filePath)
-					const reportPath = WorkspaceUtils.getWorkspaceDir()?.join(unifiedFilePath)
-					if (!reportPath) {
-						console.debug('reportPath not found!', unifiedFilePath, WorkspaceUtils.getWorkspaceDir())
-						continue
-					}
-					const report = ProjectReport.loadFromFile(reportPath, 'bin')
-
-					if (!report) {
-						console.debug('report not found!', reportPath)
-						continue
-					}
-
-					const result = await report.uploadToRegistry(config)
-					if (result === undefined) {
-						console.debug('upload failed! report path: ', reportPath, ' url: ', url)
-						continue
-					}
-
-					if (result.data.success === true ||
-						(result.data.success === false && result.data.error === 'REPORT_EXISTS')) {
-						result.data.success ? console.debug('Upload successful!', reportPath) : console.debug('Report already exists!', reportPath)
-						this.markHashAsChecked(hash, url)
-					} else {
-						console.debug('Upload failed!', result.data.error, ' report path: ', reportPath, ' url: ', url)
-						continue
-					}
-				} else if (hash && data[hash]) {
-					this.markHashAsChecked(hash, url)
-				}
-
-			}
-		}
+	reportPathShouldNotBeStored(reportPath: string): boolean {
+		const shouldNotBeStored = this.container.storage.get(`reportPathShouldNotBeStored-${reportPath}`)
+		return shouldNotBeStored === true
 	}
 
-	isHashChecked(hash: string | undefined, url: string): boolean {
-		if (hash === undefined) {
-			return false
-		}
-		const hashKey = `reportHash.${`${url}${hash}`}`
-		return this.container.storage.get(hashKey) as boolean || false
-
+	setReportPathShouldNotBeStored(reportPath: string): void {
+		this.container.storage.store(`reportPathShouldNotBeStored-${reportPath}`, true)
 	}
 
 	markHashAsChecked(hash: string | undefined, url: string): void {
@@ -137,5 +38,110 @@ export default class ReportBackendStorageController implements Disposable {
 			this.container.storage.store(`reportHash.${`${url}${hash}`}`, true)
 		}
 	}
-}
 
+	isHashChecked(hash: string | undefined, url: string): boolean {
+		if (hash === undefined) {
+			return false
+		}
+		const hashKey = `reportHash.${`${url}${hash}`}`
+		return this.container.storage.get(hashKey) as boolean || false
+	}
+
+	async checkAndUploadReports() {
+		const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
+		for (const configPath of configPaths) {
+			const { config } = WorkspaceUtils.resolveConfigFromFile(configPath)
+
+			if (config === undefined || config.uploadEnabled() === false) {
+				continue
+			}
+
+			const projectReportPaths = await WorkspaceUtils.getProjectReportPathsForConfig(config)
+			if (!projectReportPaths || projectReportPaths.length === 0) {
+				continue
+			}
+			const url = config.registryOptions.url
+
+			const batchSize = 99
+			const batchReportPathHashes = new Map<string, string>()
+			for (let i = 0; i < projectReportPaths.length; i += batchSize) {
+				const batchReportPaths = projectReportPaths.slice(i, i + batchSize)
+				for (let j = 0; j < batchReportPaths.length; j++) {
+					const reportPath = batchReportPaths[j]
+					const shouldNotBeStored = this.reportPathShouldNotBeStored(reportPath)
+					if (shouldNotBeStored) {
+						console.debug('Report should not be stored!', reportPath)
+						continue
+					}
+					const hash = ProjectReport.hashFromBinFile(new UnifiedPath(reportPath))
+					if (hash === undefined || this.isHashChecked(hash, url)) {
+						console.debug('Hash already checked!', hash, reportPath)
+						continue
+					}
+					batchReportPathHashes.set(hash, reportPath)
+				}
+
+				if (batchReportPathHashes.size === 0) {
+					continue
+				}
+				const allHashes = Array.from(batchReportPathHashes.keys())
+				const urlWithHashes = `http:/${url}/check-existence?` + allHashes.map(hash => `hashes[]=${hash}`).join('&')
+
+				let response
+				try {
+					response = await fetch(urlWithHashes)
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`)
+					}
+				} catch (error) {
+					console.debug('Error fetching URL:', error)
+					return
+				}
+
+				const responseData = await response.json()
+				for (const hash in responseData) {
+					if (responseData[hash] === false) {
+						const reportPath = batchReportPathHashes.get(hash)
+						if (reportPath) {
+							let report
+							try {
+								report = ProjectReport.loadFromFile(new UnifiedPath(reportPath), 'bin')
+							} catch (e) {
+								console.debug('Error loading report!', e)
+								continue
+							}
+							if (report === undefined) {
+								console.debug('Report not found!', reportPath)
+								continue
+							}
+							const shouldBeUploaded = await report.shouldBeStoredInRegistry()
+
+							if (!shouldBeUploaded) {
+								this.setReportPathShouldNotBeStored(reportPath)
+								continue
+							}
+
+							const result = await report.uploadToRegistry(config)
+							if (result === undefined) {
+								console.debug('upload failed! report path: ', reportPath, ' url: ', url)
+								continue
+							}
+
+							if (result.data.success === true ||
+								(result.data.success === false && result.data.error === 'REPORT_EXISTS')) {
+								result.data.success ? console.debug('Upload successful!', reportPath) : console.debug('Report already exists!', reportPath)
+								this.markHashAsChecked(hash, url)
+							} else {
+								console.debug('Upload failed!', result.data.error, ' report path: ', reportPath, ' url: ', url)
+								continue
+							}
+						}
+					} else if (responseData[hash] && responseData[hash] === true) {
+						this.markHashAsChecked(hash, url)
+					}
+				}
+			}
+		}
+	}
+
+}

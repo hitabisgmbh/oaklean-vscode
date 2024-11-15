@@ -4,7 +4,7 @@ import * as vscode from 'vscode'
 import SelectReport from '../../src/commands/SelectReport'
 import { Container } from '../../src/container'
 import { CommandIdentifiers } from '../../src/commands/SelectReport'
-import { stub_getWorkspaceDirStub, stub_globSync, stub_getProjectReportFromWorkspaceStub } from '../shared/mocks/WorkspaceUtils.mock'
+import { stub_getWorkspaceDirStub, stub_globSync, stub_getProjectReportPathsFromWorkspaceStub } from '../shared/mocks/WorkspaceUtils.mock'
 import {
 	PROJECT_REPORT_PATH_001,
 } from '../shared/constants/profiles'
@@ -13,7 +13,7 @@ import WorkspaceUtils from '../../src/helper/WorkspaceUtils'
 
 stub_globSync()
 stub_getWorkspaceDirStub()
-stub_getProjectReportFromWorkspaceStub()
+stub_getProjectReportPathsFromWorkspaceStub()
 describe('SelectReport', () => {
 	let container: Container
 	let command: SelectReport
@@ -49,7 +49,7 @@ describe('SelectReport', () => {
 	})
 
 	it('should show a message when no reports are available', async () => {
-		const getWorkspaceDirStub = jest.spyOn(WorkspaceUtils, 'getProjectReportFromWorkspace')
+		const getWorkspaceDirStub = jest.spyOn(WorkspaceUtils, 'getProjectReportPathsFromWorkspace')
 		getWorkspaceDirStub.mockReturnValue([])
 		command.execute()
 		expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Oaklean: No Project Reports Available')

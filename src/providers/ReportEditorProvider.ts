@@ -24,13 +24,13 @@ export class ReportEditorProvider implements CustomEditorProvider {
 	}
 
 	async resolveCustomEditor(document: vscode.CustomDocument): Promise<void> {
-		const inputPath = new UnifiedPath(document.uri.fsPath)
-		const report = ProjectReportHelper.loadReport(inputPath, WorkspaceUtils.getWorkspaceProfilerConfig())
+		const reportPath = new UnifiedPath(document.uri.fsPath)
+		const report = ProjectReportHelper.loadReport(reportPath)
 		if (report === null) {
 			return
 		}
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-		ReportWebviewPanel.render(this._container, report, inputPath.toPlatformString())
+		ReportWebviewPanel.render(this._container, report, reportPath.toPlatformString())
 	}
 
 

@@ -49,7 +49,6 @@ const postToProvider = (message: MethodViewProtocol_ChildToParent) => {
 const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 	const { methodList, sensorValueRepresentation, type, filterPaths,
 		sortDirection, fileSensorValues } = message.data
-
 	let path: string
 	let parts: string[]
 	let filename: string
@@ -159,7 +158,8 @@ const handleExtensionMessages = (message: ExtensionMessageEvent) => {
 						if (identifier !== null && filePath !== null) {
 							postToProvider({
 								command: MethodViewCommands.openMethod,
-								identifier, filePath
+								identifier,
+								filePath
 							})
 						}
 					})

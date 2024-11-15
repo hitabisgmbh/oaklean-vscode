@@ -2,14 +2,12 @@ import * as vscode from 'vscode'
 import {
 	ModelMap,
 	PathID_number,
-	PathIndex,
 	ProjectReport,
 	SourceFileMetaData,
 	SourceNodeIdentifier_string,
 	UnifiedPath
 } from '@oaklean/profiler-core'
 
-import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
@@ -27,6 +25,7 @@ import {
 } from '../protocols/methodViewProtocol'
 import { MethodList } from '../model/MethodList'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import WorkspaceUtils from '../helper/WorkspaceUtils'
 
 export class MethodViewProvider implements vscode.WebviewViewProvider {
 
@@ -39,6 +38,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
 		container.eventHandler.onFilterPathChange(this.filterPathChange.bind(this))
 		container.eventHandler.onSortDirectionChange(this.sortDirectionChange.bind(this))
+		container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
 	}
 
 	public resolveWebviewView(
@@ -72,7 +72,6 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	fillMethodView() {
 		this.report = this._container.textDocumentController.projectReport
-
 		let internMeasurements: ModelMap<PathID_number, SourceFileMetaData> | undefined
 		const methodLists: MethodList[] = []
 		if (this.report !== undefined) {
@@ -99,6 +98,9 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		const includedFilterPath = this._container.storage.getWorkspace('includedFilterPath') as string
 		const excludedFilterPath = this._container.storage.getWorkspace('excludedFilterPath') as string
 		const sortDirection = this._container.storage.getWorkspace('sortDirection') as SortDirection
+		this.postMessageToWebview({
+			type: MethodViewMessageTypes.clear
+		})
 		methodLists.forEach((methodList) => {
 			if (methodList.methods.length > 0) {
 				this.postMessageToWebview({
@@ -117,6 +119,10 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		}
 
 
+	}
+
+	reportLoaded() {
+		this.fillMethodView()
 	}
 
 	public postMessageToWebview(message: MethodViewProtocol_ParentToChild) {
@@ -148,8 +154,13 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	async openMethodInEditor(identifier: string, filePath: string) {
 		const unifiedFilePath = new UnifiedPath(filePath)
-		const absolutePath = WorkspaceUtils.getFileFromWorkspace(filePath)
-		const uri = vscode.Uri.file(absolutePath?.toString() || '')
+		const absolutePath = new UnifiedPath(filePath)
+		const config = this._container.textDocumentController.config
+		if (!config) {
+			return
+		}
+		const fullPath = WorkspaceUtils.getFullFilePath(config, filePath)
+		const uri = vscode.Uri.file(fullPath.toString())
 		const errorMessage = `Could not find file: ${filePath}`
 		try {
 			if (absolutePath) {
@@ -181,6 +192,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			}
 		} catch (error) {
 			vscode.window.showErrorMessage(errorMessage)
+			console.error(error)
 			console.error(errorMessage)
 		}
 	}

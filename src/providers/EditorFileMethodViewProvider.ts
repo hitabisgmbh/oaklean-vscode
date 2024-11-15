@@ -21,7 +21,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		this._container = container
 		this._container.eventHandler.onTextEditorChange(this.textEditorChanged.bind(this))
 		this._container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
-		this._container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this))
+		this._container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
 	}
 
 	public resolveWebviewView(
@@ -30,7 +30,6 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		_token: vscode.CancellationToken
 	) {
 		this._view = webviewView
-
 		this._view.onDidChangeVisibility(() => {
 			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 				this._extensionUri)
@@ -62,7 +61,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 			this._extensionUri)
 	}
 
-	reportPathChanged() {
+	reportLoaded() {
 		this.createMethodList()
 	}
 
@@ -126,7 +125,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 			return
 		}
 		const filePathRelativeToWorkspace = workspaceDir.pathTo(this.editor.document.fileName)
-		const absolutePath = WorkspaceUtils.getFileFromWorkspace(filePathRelativeToWorkspace.toString())
+		const absolutePath = this.editor.document.fileName
 		const uri = vscode.Uri.file(absolutePath?.toString() || '')
 		try {
 			if (absolutePath) {

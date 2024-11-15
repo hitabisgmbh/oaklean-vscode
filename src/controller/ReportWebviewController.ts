@@ -16,11 +16,11 @@ export class ReportWebviewController implements Disposable {
 		)
 	}
 
-	public static async openJsonEditor(filePath: string): Promise<void> {
+	public static async openJsonEditor(container: Container, filePath: string): Promise<void> {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
-			const inputPath = new UnifiedPath(filePath)
-			const report = ProjectReportHelper.loadReport(inputPath, WorkspaceUtils.getWorkspaceProfilerConfig())
+			const reportPath = new UnifiedPath(filePath)
+			const report = ProjectReportHelper.loadReport(reportPath)
 			if (report === null) {
 				return
 			}

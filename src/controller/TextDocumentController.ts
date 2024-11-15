@@ -12,8 +12,10 @@ import {
 	ProjectReport,
 	SourceFileMetaData,
 	ProgramStructureTree,
-	TypescriptParser
+	TypescriptParser,
+	ProfilerConfig
 } from '@oaklean/profiler-core'
+import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
 
 import {
@@ -50,7 +52,8 @@ export default class TextDocumentController implements Disposable {
 			this.container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this)),
 			this.container.eventHandler.onTextDocumentOpen(this.documentOpened.bind(this)),
 			this.container.eventHandler.onTextDocumentClose(this.documentClosed.bind(this)),
-			this.container.eventHandler.onTextDocumentChange(this.documentChanged.bind(this))
+			this.container.eventHandler.onTextDocumentChange(this.documentChanged.bind(this)),
+			this.container.eventHandler.onTextDocumentDidSave(this.documentSaved.bind(this))
 		)
 	}
 
@@ -61,6 +64,15 @@ export default class TextDocumentController implements Disposable {
 
 	private set reportPath(value: UnifiedPath | undefined) {
 		this._reportPath = value
+	}
+
+	private _config: ProfilerConfig | undefined
+	get config(): ProfilerConfig | undefined {
+		return this._config
+	}
+
+	private set config(value: ProfilerConfig | undefined) {
+		this._config = value
 	}
 
 	private _projectReport: ProjectReport | undefined
@@ -136,8 +148,11 @@ export default class TextDocumentController implements Disposable {
 
 	reportPathChanged(event: ReportPathChangeEvent) {
 		this.reportPath = event.reportPath
-		const config = WorkspaceUtils.getWorkspaceProfilerConfig()
-		const report = ProjectReportHelper.loadReport(this.reportPath, config)
+		const config = WorkspaceUtils.autoResolveConfigFromReportPath(this.reportPath)
+		if (config !== null) {
+			this.config = config
+		}
+		const report = ProjectReportHelper.loadReport(this.reportPath)
 		if (report === null) {
 			return
 		}
@@ -151,6 +166,22 @@ export default class TextDocumentController implements Disposable {
 
 	documentChanged(event: TextDocumentChangeEvent) {
 		this.setProgramStructureTreeOfDocument(event.document)
+	}
+
+	documentSaved(document: TextDocument) {
+		if (path.basename(document.uri.path).toLowerCase() === STATIC_CONFIG_FILENAME) {
+			const savedConfigFilePath = new UnifiedPath(document.uri.path)
+			const { config: changedConfig, error } = WorkspaceUtils.resolveConfigFromFile(savedConfigFilePath)
+			if (changedConfig === undefined) {
+				vscode.window.showWarningMessage('Saved .oaklean config file has an invalid format: ' + error)
+			}
+			const currentLoadedConfigPath = this.config?.filePath
+			if (currentLoadedConfigPath && savedConfigFilePath.toString() === currentLoadedConfigPath.toString()) {
+				if (changedConfig) {
+					this.config = changedConfig
+				}
+			}
+		}
 	}
 
 	setProgramStructureTreeOfDocument(document: TextDocument) {

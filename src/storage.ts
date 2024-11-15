@@ -92,7 +92,7 @@ export class Storage implements Disposable {
 		defaultValue?: unknown,
 	): unknown | undefined {
 		const value = this.context.workspaceState.get(`${APP_IDENTIFIER}:${key}`, defaultValue)
-		if (key === 'reportPath' && typeof value === 'string') {
+		if ((key === 'reportPath') && typeof value === 'string') {
 			return new UnifiedPath(value)
 		}
 		if (key === 'profile') {
