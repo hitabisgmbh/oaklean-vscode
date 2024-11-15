@@ -30,7 +30,7 @@ export default class SelectReport extends BaseCommand {
 		for (const reportFilePath of reportFilePaths) {
 			quickPickOptions.set(reportFilePath, {
 				selectionCallback: () => {
-						this.container.storage.storeWorkspace('reportPath', new UnifiedPath(reportFilePath))
+					this.container.storage.storeWorkspace('reportPath', new UnifiedPath(reportFilePath))
 				}
 			})
 		}
@@ -41,9 +41,9 @@ export default class SelectReport extends BaseCommand {
 			return quickPick
 		}
 
-		const currentReport = this.container.storage.getWorkspace('reportPath') as UnifiedPath
-		if (currentReport && workspaceDir) {
-			quickPick.setCurrentItem(currentReport.toString())
+		const currentReportPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
+		if (currentReportPath && workspaceDir) {
+			quickPick.setCurrentItem(currentReportPath.toString())
 		}
 		quickPick.show()
 		return quickPick

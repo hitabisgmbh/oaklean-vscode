@@ -1,5 +1,4 @@
 import {
-	ProfilerConfig,
 	ProjectReport,
 	UnifiedPath
 } from '@oaklean/profiler-core'
@@ -9,11 +8,10 @@ import { VersionHelper } from '@oaklean/profiler-core/dist/src/helper/VersionHel
 
 export class ProjectReportHelper {
 	static loadReport(
-		reportPath: UnifiedPath,
-		config: ProfilerConfig
+		reportPath: UnifiedPath
 	): ProjectReport | null {
 		try {
-			const loadedReport = ProjectReport.loadFromFile(reportPath, 'bin', config)
+			const loadedReport = ProjectReport.loadFromFile(reportPath, 'bin')
 			if (loadedReport === undefined) {
 				vscode.window.showErrorMessage(`Could not find a profiler report at ${reportPath.toPlatformString()}`)
 				return null

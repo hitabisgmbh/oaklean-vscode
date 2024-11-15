@@ -23,13 +23,13 @@ export default class ReportBackendStorageController implements Disposable {
 
 	reportPathShouldNotBeStored(reportPath: string): boolean {
 		const shouldNotBeStored = this.container.storage.get(`reportPathShouldNotBeStored-${reportPath}`)
-		return shouldNotBeStored as boolean
+		return shouldNotBeStored === true
 	}
 
 	setReportPathShouldNotBeStored(reportPath: string): void {
 		this.container.storage.store(`reportPathShouldNotBeStored-${reportPath}`, true)
 	}
-	
+
 	markHashAsChecked(hash: string | undefined, url: string): void {
 		if (hash === undefined) {
 			return
@@ -38,23 +38,23 @@ export default class ReportBackendStorageController implements Disposable {
 			this.container.storage.store(`reportHash.${`${url}${hash}`}`, true)
 		}
 	}
-	
+
 	isHashChecked(hash: string | undefined, url: string): boolean {
 		if (hash === undefined) {
 			return false
 		}
 		const hashKey = `reportHash.${`${url}${hash}`}`
 		return this.container.storage.get(hashKey) as boolean || false
-	
+
 	}
 
 	async checkAndUploadReports() {
 		const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
 		for (const configPath of configPaths) {
 			const unifiedConfigPath = new UnifiedPath(configPath)
-			const config = WorkspaceUtils.resolveConfigFromFile(unifiedConfigPath)
+			const { config } = WorkspaceUtils.resolveConfigFromFile(unifiedConfigPath)
 
-			if (config === undefined) {
+			if (config === undefined || config.uploadEnabled() === false) {
 				continue
 			}
 
@@ -71,7 +71,7 @@ export default class ReportBackendStorageController implements Disposable {
 				for (let j = 0; j < batchReportPaths.length; j++) {
 					const reportPath = batchReportPaths[j]
 					const shouldNotBeStored = this.reportPathShouldNotBeStored(reportPath)
-					if (shouldNotBeStored){
+					if (shouldNotBeStored) {
 						continue
 					}
 					const hash = ProjectReport.hashFromBinFile(new UnifiedPath(reportPath))
@@ -97,36 +97,36 @@ export default class ReportBackendStorageController implements Disposable {
 					console.debug('Error fetching URL:', error)
 					return
 				}
-	
+
 				const responseData = await response.json()
-				for (const hash in responseData ){
+				for (const hash in responseData) {
 					if (responseData[hash] === false) {
 						const reportPath = batchReportPathHashes.get(hash)
 						if (reportPath) {
 							let report
 							try {
-								report = ProjectReport.loadFromFile(new UnifiedPath(reportPath), 'bin', config)
-							} catch (e){
+								report = ProjectReport.loadFromFile(new UnifiedPath(reportPath), 'bin')
+							} catch (e) {
 								console.debug('Error loading report!', e)
 								continue
 							}
-							if (!report){
+							if (report === undefined) {
 								console.debug('Report not found!', reportPath)
 								continue
 							}
 							const shouldBeUploaded = await report.shouldBeStoredInRegistry()
-						
+
 							if (!shouldBeUploaded) {
 								this.setReportPathShouldNotBeStored(reportPath)
 								continue
 							}
-		
+
 							const result = await report.uploadToRegistry(config)
 							if (result === undefined) {
 								console.debug('upload failed! report path: ', report, ' url: ', url)
 								continue
 							}
-			
+
 							if (result.data.success === true ||
 								(result.data.success === false && result.data.error === 'REPORT_EXISTS')) {
 								result.data.success ? console.debug('Upload successful!', report) : console.debug('Report already exists!', report)
@@ -135,13 +135,13 @@ export default class ReportBackendStorageController implements Disposable {
 								console.debug('Upload failed!', result.data.error, ' report path: ', report, ' url: ', url)
 								continue
 							}
-						} 
-				} else if (responseData[hash] && responseData[hash] === true) {
+						}
+					} else if (responseData[hash] && responseData[hash] === true) {
 						this.markHashAsChecked(hash, url)
 					}
+				}
 			}
 		}
-	}
 	}
 
 }

@@ -19,13 +19,8 @@ export class ReportWebviewController implements Disposable {
 	public static async openJsonEditor(container: Container, filePath: string): Promise<void> {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
-			const inputPath = new UnifiedPath(filePath)
-			const config = WorkspaceUtils.autoResolveConfigFromPath(inputPath.dirName())
-			if (config === undefined) {
-				vscode.window.showErrorMessage(`Could not find a profiler config at ${inputPath.toPlatformString()}`)
-				return
-			}
-			const report = ProjectReportHelper.loadReport(inputPath, config)
+			const reportPath = new UnifiedPath(filePath)
+			const report = ProjectReportHelper.loadReport(reportPath)
 			if (report === null) {
 				return
 			}

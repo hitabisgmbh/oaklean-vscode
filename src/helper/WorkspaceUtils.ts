@@ -52,19 +52,30 @@ export default class WorkspaceUtils {
 		return config.getRootDir().join(filePath)
 	}
 
-	static resolveConfigFromFile(configPath: UnifiedPath): ProfilerConfig | undefined {
+	static resolveConfigFromFile(configPath: UnifiedPath): {
+		config?: ProfilerConfig,
+		error?: string
+	} {
 		try {
-			return ProfilerConfig.resolveFromFile(configPath)
-		} catch (e) {
-			return undefined
+			return {
+				config: ProfilerConfig.resolveFromFile(configPath)
+			}
+		} catch (e: any) {
+			return {
+				error: e.message
+			}
 		}
 	}
 
-	static autoResolveConfigFromPath(configPath: UnifiedPath): ProfilerConfig | undefined {
+	static autoResolveConfigFromReportPath(reportPath: UnifiedPath): ProfilerConfig | null {
 		try {
-			return ProfilerConfig.autoResolveFromPath(configPath)
+			return ProfilerConfig.autoResolveFromPath(reportPath.dirName())
 		} catch (e) {
-			return undefined
+			vscode.window.showErrorMessage(
+				`Error while loading the .oaklean config file for the report: ${reportPath.basename()}.` +
+				' Please make sure that the config file is present and has the correct format.'
+			)
+			return null
 		}
 	}
 

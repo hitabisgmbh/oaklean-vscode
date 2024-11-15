@@ -148,13 +148,11 @@ export default class TextDocumentController implements Disposable {
 
 	reportPathChanged(event: ReportPathChangeEvent) {
 		this.reportPath = event.reportPath
-		this.config = WorkspaceUtils.autoResolveConfigFromPath(this.reportPath.dirName())
-		if (this.config === undefined) {
-			vscode.window.showErrorMessage(
-				`Could not find a profiler config at ${this.reportPath.dirName().toPlatformString()}`)
-			return
+		const config = WorkspaceUtils.autoResolveConfigFromReportPath(this.reportPath)
+		if (config !== null) {
+			this.config = config
 		}
-		const report = ProjectReportHelper.loadReport(this.reportPath, this.config)
+		const report = ProjectReportHelper.loadReport(this.reportPath)
 		if (report === null) {
 			return
 		}
@@ -172,9 +170,13 @@ export default class TextDocumentController implements Disposable {
 
 	documentSaved(document: TextDocument) {
 		if (path.basename(document.uri.path).toLowerCase() === STATIC_CONFIG_FILENAME) {
-			const configPath = this.config?.filePath
-			if (configPath && document.uri.fsPath === configPath.toString()) {
-				const changedConfig = WorkspaceUtils.resolveConfigFromFile(configPath)
+			const savedConfigFilePath = new UnifiedPath(document.uri.path)
+			const { config: changedConfig, error } = WorkspaceUtils.resolveConfigFromFile(savedConfigFilePath)
+			if (changedConfig === undefined) {
+				vscode.window.showWarningMessage('Saved .oaklean config file has an invalid format: ' + error)
+			}
+			const currentLoadedConfigPath = this.config?.filePath
+			if (currentLoadedConfigPath && savedConfigFilePath.toString() === currentLoadedConfigPath.toString()) {
 				if (changedConfig) {
 					this.config = changedConfig
 				}
