@@ -79,19 +79,6 @@ export default class WorkspaceUtils {
 		}
 	}
 
-	static configRootPath(configPath: UnifiedPath, config: ProfilerConfig): UnifiedPath | undefined {
-		const root = config.getRootDir().toString()
-		const parentDir = path.dirname(configPath.toString())
-		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workSpaceDir) {
-			return undefined
-		}
-		const fullConfigPath = workSpaceDir.join(parentDir)
-		const absoluteRootPath = path.resolve(fullConfigPath.toString(), root)
-
-		return new UnifiedPath(absoluteRootPath)
-	}
-
 	static getProjectReportPathsForConfig(config: ProfilerConfig): string[] | undefined {
 		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workSpaceDir) {

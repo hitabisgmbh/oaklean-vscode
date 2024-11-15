@@ -257,16 +257,18 @@ export class Container {
 			)
 		)
 
-		vscode.commands.registerCommand('oaklean.openDynamicFile', (file: string) => {
-			const config = this._textDocumentController.config
-			if (!config){
-				return
-			}
-			const resolvedPath = WorkspaceUtils.getFullFilePath(config, file)
-			if (resolvedPath){
-				vscode.commands.executeCommand('vscode.open', vscode.Uri.file(resolvedPath.toPlatformString()))
-			}
-		})
+		this.context.subscriptions.push(
+			vscode.commands.registerCommand('oaklean.openDynamicFile', (file: string) => {
+				const config = this._textDocumentController.config
+				if (!config) {
+					return
+				}
+				const resolvedPath = WorkspaceUtils.getFullFilePath(config, file)
+				if (resolvedPath) {
+					vscode.commands.executeCommand('vscode.open', vscode.Uri.file(resolvedPath.toPlatformString()))
+				}
+			})
+		)
 
 		this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)
 		this.context.subscriptions.push(
