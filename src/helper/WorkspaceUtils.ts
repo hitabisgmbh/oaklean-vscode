@@ -13,7 +13,7 @@ export default class WorkspaceUtils {
 		return undefined
 	}
 
-	static getWorkspaceProfilerConfigPaths(): string[] {
+	static getWorkspaceProfilerConfigPaths(): UnifiedPath[] {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {
 			return []
@@ -21,7 +21,7 @@ export default class WorkspaceUtils {
 
 		const path = workspaceDir.join('/**/' + STATIC_CONFIG_FILENAME).toString()
 		const profilePaths = globSync(path)
-		return profilePaths
+		return profilePaths.map((profilePath) => new UnifiedPath(profilePath))
 	}
 
 	static getCPUProfilesFromWorkspace(): string[] {
@@ -36,7 +36,7 @@ export default class WorkspaceUtils {
 		return profilePaths
 	}
 
-	static getProjectReportFromWorkspace(): string[] {
+	static getProjectReportPathsFromWorkspace(): UnifiedPath[] {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()?.join('**', '*.oak')
 		console.log('workspaceDir', workspaceDir)
 		if (!workspaceDir) {
@@ -45,7 +45,7 @@ export default class WorkspaceUtils {
 
 		const result = globSync(workspaceDir.toString(), { ignore: ['**/node_modules/**'] })
 		PathUtils.sortFilePathArray(result)
-		return result
+		return result.map((reportPath) => new UnifiedPath(reportPath))
 	}
 
 	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath {

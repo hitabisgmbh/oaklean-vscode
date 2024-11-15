@@ -24,13 +24,13 @@ export default class SelectReport extends BaseCommand {
 	}
 
 	execute() {
-		const reportFilePaths = WorkspaceUtils.getProjectReportFromWorkspace()
+		const reportFilePaths = WorkspaceUtils.getProjectReportPathsFromWorkspace()
 		const quickPickOptions: QuickPickOptions = new Map()
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		for (const reportFilePath of reportFilePaths) {
-			quickPickOptions.set(reportFilePath, {
+			quickPickOptions.set(reportFilePath.toString(), {
 				selectionCallback: () => {
-					this.container.storage.storeWorkspace('reportPath', new UnifiedPath(reportFilePath))
+					this.container.storage.storeWorkspace('reportPath', reportFilePath)
 				}
 			})
 		}

@@ -45,14 +45,12 @@ export default class ReportBackendStorageController implements Disposable {
 		}
 		const hashKey = `reportHash.${`${url}${hash}`}`
 		return this.container.storage.get(hashKey) as boolean || false
-
 	}
 
 	async checkAndUploadReports() {
 		const configPaths = WorkspaceUtils.getWorkspaceProfilerConfigPaths()
 		for (const configPath of configPaths) {
-			const unifiedConfigPath = new UnifiedPath(configPath)
-			const { config } = WorkspaceUtils.resolveConfigFromFile(unifiedConfigPath)
+			const { config } = WorkspaceUtils.resolveConfigFromFile(configPath)
 
 			if (config === undefined || config.uploadEnabled() === false) {
 				continue
@@ -72,10 +70,12 @@ export default class ReportBackendStorageController implements Disposable {
 					const reportPath = batchReportPaths[j]
 					const shouldNotBeStored = this.reportPathShouldNotBeStored(reportPath)
 					if (shouldNotBeStored) {
+						console.debug('Report should not be stored!', reportPath)
 						continue
 					}
 					const hash = ProjectReport.hashFromBinFile(new UnifiedPath(reportPath))
 					if (hash === undefined || this.isHashChecked(hash, url)) {
+						console.debug('Hash already checked!', hash, reportPath)
 						continue
 					}
 					batchReportPathHashes.set(hash, reportPath)
@@ -123,16 +123,16 @@ export default class ReportBackendStorageController implements Disposable {
 
 							const result = await report.uploadToRegistry(config)
 							if (result === undefined) {
-								console.debug('upload failed! report path: ', report, ' url: ', url)
+								console.debug('upload failed! report path: ', reportPath, ' url: ', url)
 								continue
 							}
 
 							if (result.data.success === true ||
 								(result.data.success === false && result.data.error === 'REPORT_EXISTS')) {
-								result.data.success ? console.debug('Upload successful!', report) : console.debug('Report already exists!', report)
+								result.data.success ? console.debug('Upload successful!', reportPath) : console.debug('Report already exists!', reportPath)
 								this.markHashAsChecked(hash, url)
 							} else {
-								console.debug('Upload failed!', result.data.error, ' report path: ', report, ' url: ', url)
+								console.debug('Upload failed!', result.data.error, ' report path: ', reportPath, ' url: ', url)
 								continue
 							}
 						}

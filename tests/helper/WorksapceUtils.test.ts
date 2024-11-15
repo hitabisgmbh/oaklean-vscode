@@ -33,9 +33,11 @@ describe('WorkspaceUtils.getCPUProfilesFromWorkspace', () => {
 	})
 })
 
-describe('WorkspaceUtils.getProjectReportFromWorkspace', () => {
+describe('WorkspaceUtils.getProjectReportPathsFromWorkspace', () => {
 	it('should return the mocked value', () => {
-		expect(WorkspaceUtils.getProjectReportFromWorkspace()).toEqual([
+		expect(
+			WorkspaceUtils.getProjectReportPathsFromWorkspace().map((path) => path.toString())
+		).toEqual([
 			PROJECT_REPORT_PATH_004,
 			PROJECT_REPORT_PATH_005,
 			PROJECT_REPORT_PATH_001,

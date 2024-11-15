@@ -57,14 +57,16 @@ export const stub_getWorkspaceDirStub = () => {
 	return getWorkspaceDirStub
 }
 
-export const stub_getProjectReportFromWorkspaceStub = () => {
-	const getWorkspaceDirStub = sinon.stub(WorkspaceUtils, 'getProjectReportFromWorkspace')
+export const stub_getProjectReportPathsFromWorkspaceStub = () => {
+	const getWorkspaceDirStub = sinon.stub(WorkspaceUtils, 'getProjectReportPathsFromWorkspace')
 	getWorkspaceDirStub.returns(
-		[PROJECT_REPORT_PATH_001,
-			PROJECT_REPORT_PATH_002,
-			PROJECT_REPORT_PATH_003,
-			PROJECT_REPORT_PATH_004,
-			PROJECT_REPORT_PATH_005]
+		[
+			new UnifiedPath(PROJECT_REPORT_PATH_001),
+			new UnifiedPath(PROJECT_REPORT_PATH_002),
+			new UnifiedPath(PROJECT_REPORT_PATH_003),
+			new UnifiedPath(PROJECT_REPORT_PATH_004),
+			new UnifiedPath(PROJECT_REPORT_PATH_005)
+		]
 	)
 
 	return getWorkspaceDirStub
