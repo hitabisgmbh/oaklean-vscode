@@ -11,7 +11,7 @@ import { getImportanceColor } from '../system/color'
 import { GlyphChars } from '../constants/characters'
 import { PROFILE_PERCENT_PRECISION } from '../constants/profile'
 import { Container } from '../container'
-import { ExtendedSensorValueType, SensorValueTypeNames } from '../types/sensorValues'
+import { ExtendedSensorValueType, SensorValueType, SensorValueTypeNames } from '../types/sensorValues'
 import { Profile } from '../types/profile'
 import { Color } from '../types/color'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
@@ -96,17 +96,14 @@ export class TextDocumentHighlighter {
 			if (sourceNodeIndex === undefined) {
 				continue
 			}
-			const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
 			const locationOfFunction =
 				programStructureTreeOfFile.sourceLocationOfIdentifier(sourceNodeIndex.identifier)
 			if (!locationOfFunction) {
 				continue
 			}
 			const { beginLoc } = locationOfFunction
-			const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
-			const relativeToToal = total === 0 ? 0 : value / total
 			let message
-			let weigth
+			let weight: number
 			if (selectedSensorValueType === 'customFormula') {
 				const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 				const formula = sensorValueRepresentation.formula
@@ -118,12 +115,15 @@ export class TextDocumentHighlighter {
 				)
 				const formulaTotal = calcOrReturnSensorValue(
 					totalAndMaxMetaData.total.sensorValues, selectedSensorValueType, formula)
-				const relativeToToalForFormula = calculatedFormula / formulaTotal
+				const relativeToTotalForFormula = calculatedFormula / formulaTotal
 				message = `${formula}: ${formattedCalculatedFormula.value} ` +
-					`(${relativeToToalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
-				weigth = calculatedFormula / calcOrReturnSensorValue(
+					`(${relativeToTotalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
+				weight = calculatedFormula / calcOrReturnSensorValue(
 					totalAndMaxMetaData.max.sensorValues, selectedSensorValueType, formula)
 			} else {
+				const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
+				const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
+				const relativeToTotal = total === 0 ? 0 : value / total
 				const formattedValue = SensorValueFormatHelper.format(
 					value,
 					selectedSensorValueType
@@ -131,15 +131,15 @@ export class TextDocumentHighlighter {
 				message =
 					SensorValueTypeNames[selectedSensorValueType] +
 					`: ${formattedValue.value} ${formattedValue.unit} ` +
-					`(${relativeToToal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
-				weigth = value / totalAndMaxMetaData.max.sensorValues[selectedSensorValueType]
+					`(${relativeToTotal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
+				weight = value / totalAndMaxMetaData.max.sensorValues[selectedSensorValueType]
 			}
 
 			yield TextDocumentHighlighter.highlightLine(
 				editor,
 				beginLoc.line - 1,
 				message,
-				weigth,
+				weight,
 				sourceNodeMetaData.sensorValues,
 				profile
 			)
