@@ -1,4 +1,4 @@
-import { window, ExtensionContext } from 'vscode'
+import { window } from 'vscode'
 import type { Disposable, Terminal } from 'vscode'
 
 import { Container } from './container'

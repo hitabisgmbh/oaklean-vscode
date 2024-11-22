@@ -1,5 +1,3 @@
-import * as path from 'path'
-
 import vscode from 'vscode'
 import { sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'

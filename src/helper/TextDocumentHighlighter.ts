@@ -1,5 +1,3 @@
-import { text } from 'stream/consumers'
-
 import vscode, { TextEditor, TextEditorDecorationType } from 'vscode'
 import { SensorValues, UnifiedPath } from '@oaklean/profiler-core'
 

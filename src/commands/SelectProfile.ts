@@ -6,7 +6,6 @@ import { COMMAND_OPEN_SETTINGS, DOT, REQUEST_ADD_NEW_PROFILE } from '../constant
 import { Container } from '../container'
 import { Profile } from '../types/profile'
 import { APP_IDENTIFIER } from '../constants/app'
-import { ERROR_NO_PROFILE_FOUND } from '../constants/infoMessages'
 import QuickPick, { QuickPickOptions } from '../components/QuickPick'
 
 export enum CommandIdentifiers {
