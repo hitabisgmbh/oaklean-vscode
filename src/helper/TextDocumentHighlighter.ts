@@ -104,7 +104,7 @@ export class TextDocumentHighlighter {
 			}
 			const { beginLoc } = locationOfFunction
 			const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
-			const relativeToToal = total === 0 ? 0 : value / total
+			const relativeToToal = total === 0 ? 0 : value / total * 100
 			let message
 			let weigth
 			if (selectedSensorValueType === 'customFormula') {
@@ -118,7 +118,7 @@ export class TextDocumentHighlighter {
 				)
 				const formulaTotal = calcOrReturnSensorValue(
 					totalAndMaxMetaData.total.sensorValues, selectedSensorValueType, formula)
-				const relativeToToalForFormula = calculatedFormula / formulaTotal
+				const relativeToToalForFormula = calculatedFormula / formulaTotal * 100
 				message = `${formula}: ${formattedCalculatedFormula.value} ` +
 					`(${relativeToToalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weigth = calculatedFormula / calcOrReturnSensorValue(
