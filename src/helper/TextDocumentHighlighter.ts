@@ -94,15 +94,12 @@ export class TextDocumentHighlighter {
 			if (sourceNodeIndex === undefined) {
 				continue
 			}
-			const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
 			const locationOfFunction =
 				programStructureTreeOfFile.sourceLocationOfIdentifier(sourceNodeIndex.identifier)
 			if (!locationOfFunction) {
 				continue
 			}
 			const { beginLoc } = locationOfFunction
-			const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
-			const relativeToToal = total === 0 ? 0 : value / total * 100
 			let message
 			let weigth
 			if (selectedSensorValueType === 'customFormula') {
@@ -122,6 +119,9 @@ export class TextDocumentHighlighter {
 				weigth = calculatedFormula / calcOrReturnSensorValue(
 					totalAndMaxMetaData.max.sensorValues, selectedSensorValueType, formula)
 			} else {
+				const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
+				const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
+				const relativeToToal = total === 0 ? 0 : value / total * 100
 				const formattedValue = SensorValueFormatHelper.format(
 					value,
 					selectedSensorValueType

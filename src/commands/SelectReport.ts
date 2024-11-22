@@ -27,8 +27,12 @@ export default class SelectReport extends BaseCommand {
 		const reportFilePaths = WorkspaceUtils.getProjectReportPathsFromWorkspace()
 		const quickPickOptions: QuickPickOptions = new Map()
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
+		if (workspaceDir === undefined) {
+			vscode.window.showInformationMessage('Oaklean: No Workspace Opened')
+			return
+		}
 		for (const reportFilePath of reportFilePaths) {
-			quickPickOptions.set(reportFilePath.toString(), {
+			quickPickOptions.set(workspaceDir.pathTo(reportFilePath).toString(), {
 				selectionCallback: () => {
 					this.container.storage.storeWorkspace('reportPath', reportFilePath)
 				}
@@ -43,7 +47,7 @@ export default class SelectReport extends BaseCommand {
 
 		const currentReportPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
 		if (currentReportPath && workspaceDir) {
-			quickPick.setCurrentItem(currentReportPath.toString())
+			quickPick.setCurrentItem(workspaceDir.pathTo(currentReportPath).toString())
 		}
 		quickPick.show()
 		return quickPick

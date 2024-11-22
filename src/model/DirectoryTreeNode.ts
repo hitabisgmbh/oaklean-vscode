@@ -72,9 +72,9 @@ export class DirectoryTreeNode {
 		if (parent === null) {
 			return
 		}
-		for (const key of Object.keys(parent.measurement)) {
-			const siblingsSum = parent.children.reduce((sum, child) => sum + child.measurement[key], 0)
-			parent.measurement[key] = siblingsSum
+		for (const key of Object.keys(parent.measurement) as (keyof SensorValues)[]) {
+			const siblingsSum = parent.children.reduce((sum, child) => sum + (child.measurement[key] as number), 0)
+			parent.measurement[key] = siblingsSum as any
 		}
 
 		if (parent) {
