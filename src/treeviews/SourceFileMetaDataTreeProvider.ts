@@ -1,6 +1,4 @@
-import path from 'path'
-
-import vscode, { EventEmitter, Event, Uri } from 'vscode'
+import vscode, { EventEmitter, Event } from 'vscode'
 import {
 	NodeModule,
 	NodeModuleIdentifier_string,
@@ -99,6 +97,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 				proportion,
 				this.sensorValueRepresentation.selectedSensorValueType
 			)
+			this.displayedSensorValue = proportion
 			this.description = formattedValue.value + ' ' + formattedValue.unit
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.locallyRelative) {
@@ -161,19 +160,19 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		}
 		{
 			if (this.file) {
-			const	file = this.file.toPlatformString()
+				const file = this.file.toPlatformString()
 				this.command = this.createCommand(label, file)
 			}
 		}
 	}
 
-  private createCommand(label: string, file: string): vscode.Command {
-    return {
-      command: 'oaklean.openDynamicFile',
-      title: label,
-      arguments: [file]
-    }
-  }
+	private createCommand(label: string, file: string): vscode.Command {
+		return {
+			command: 'oaklean.openDynamicFile',
+			title: label,
+			arguments: [file]
+		}
+	}
 
 	calculateModulesTotal(node: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
 		sensorValueType: ExtendedSensorValueType, formula: string | undefined): number {
