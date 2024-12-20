@@ -29,23 +29,23 @@ describe('SelectReport', () => {
 	})
 
 	it('should show a QuickPick with report file paths', async () => {
-		const quickPick = command.execute()
-		const selectedOption = quickPick.optionsWithCallBacks.get(PROJECT_REPORT_PATH_001)
+		const quickPick = command.execute()!
+		const selectedOption = quickPick.optionsWithCallBacks.get('./profiles/session/001.oak')
 		selectedOption?.selectionCallback()
 
 		expect(container.storage.storeWorkspace).toBeCalled()
 
-		const quickPick2 = await command.execute()
-		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: PROJECT_REPORT_PATH_001 }])
+		const quickPick2 = await command.execute()!
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: './profiles/session/001.oak' }])
 	})
 
 	it('should have active item', async () => {
-		const quickPick = command.execute()
-		const selectedOption = quickPick.optionsWithCallBacks.get(PROJECT_REPORT_PATH_001)
+		const quickPick = command.execute()!
+		const selectedOption = quickPick.optionsWithCallBacks.get('./profiles/session/001.oak')
 		selectedOption?.selectionCallback()
 
-		const quickPick2 = await command.execute()
-		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: PROJECT_REPORT_PATH_001 }])
+		const quickPick2 = await command.execute()!
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: './profiles/session/001.oak' }])
 	})
 
 	it('should show a message when no reports are available', async () => {

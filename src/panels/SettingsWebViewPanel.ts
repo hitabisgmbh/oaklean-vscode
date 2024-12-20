@@ -11,7 +11,6 @@ import {
 } from '../protocols/settingsWebviewProtocol'
 import {
 	ExtendedSensorValueType,
-	ExtendedSensorValueTypeNames,
 	SensorValueTypeNames,
 	UnitPerSensorValue
 } from '../types/sensorValues'

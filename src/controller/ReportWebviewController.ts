@@ -2,7 +2,6 @@ import vscode, { Disposable } from 'vscode'
 import { UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
-import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 export class ReportWebviewController implements Disposable {

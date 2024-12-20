@@ -82,6 +82,7 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 				proportion,
 				this.sensorValueRepresentation.selectedSensorValueType
 			)
+			this.displayedSensorValue = proportion
 			this.description = formattedValue.value + ' ' + formattedValue.unit
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.locallyRelative) {

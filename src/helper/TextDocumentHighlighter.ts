@@ -1,5 +1,3 @@
-import { text } from 'stream/consumers'
-
 import vscode, { TextEditor, TextEditorDecorationType } from 'vscode'
 import { SensorValues, UnifiedPath } from '@oaklean/profiler-core'
 
@@ -118,7 +116,7 @@ export class TextDocumentHighlighter {
 				)
 				const formulaTotal = calcOrReturnSensorValue(
 					totalAndMaxMetaData.total.sensorValues, selectedSensorValueType, formula)
-				const relativeToTotalForFormula = calculatedFormula / formulaTotal
+				const relativeToTotalForFormula = calculatedFormula / formulaTotal * 100
 				message = `${formula}: ${formattedCalculatedFormula.value} ` +
 					`(${relativeToTotalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weight = calculatedFormula / calcOrReturnSensorValue(
@@ -126,7 +124,7 @@ export class TextDocumentHighlighter {
 			} else {
 				const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
 				const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
-				const relativeToTotal = total === 0 ? 0 : value / total
+				const relativeToTotal = total === 0 ? 0 : value / total * 100
 				const formattedValue = SensorValueFormatHelper.format(
 					value,
 					selectedSensorValueType

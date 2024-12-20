@@ -1,5 +1,3 @@
-import vscode from 'vscode'
-
 import BaseCommand from './BaseCommand'
 
 import { Container } from '../container'

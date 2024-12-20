@@ -4,13 +4,14 @@ All notable changes to the "Oaklean" extension will be documented in this file.
 
 # 0.1.2
 ### Bug fixes
-- Display an error message if the report version the user is attempting to load is not supported by the VSCode extension
-- The method view now updates correctly after loading a new report.
-- Fixed NaN values in the method view and the incorrect relative values in the inline view.
-- Fixed incorrect behavior when the project is nested within directories.
+- Display an error message if the report version the user attempts to load is not supported by the VSCode extension.
+- The method section now updates properly after a new report is loaded.
+- Fixed NaN values in the method section and corrected the relative values in the inline code highlighting.
+- Fixed an issue where the source file tree and method overview failed to open the correct file on click when the project was nested within directories.
+- Fixed a display issue with the percentage proportion in the inline code highlighting.
+
 ### Quality of Life improvements
 - Sensor Values are now displayed with only up to three decimal places for better readability
-- The configuration file is reloaded automatically when changes are detected.
 - Inline text now uses a dark font for light themes.
 
 # 0.1.1 - 2024-07-31

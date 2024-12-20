@@ -3,7 +3,6 @@ import { UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import { ReportWebviewPanel } from '../panels/ReportWebviewPanel'
-import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 export class ReportEditorProvider implements CustomEditorProvider {
