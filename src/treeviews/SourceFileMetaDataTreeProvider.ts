@@ -238,7 +238,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		const projectReport = this.container.textDocumentController.projectReport
 		if (projectReport) {
 			this.relativeRootDir = projectReport.relativeRootDir
-			this._originalSourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(projectReport, 'original')
+			this._originalSourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(projectReport)
 			this.includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
 			this.excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
 			this.sourceFileMetaDataTree = this._originalSourceFileMetaDataTree.filter(

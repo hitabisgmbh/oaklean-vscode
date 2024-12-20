@@ -30,7 +30,9 @@ import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 
 const VALID_EXTENSIONS_TO_PARSE = [
 	'.js',
-	'.ts'
+	'.jsx',
+	'.ts',
+	'.tsx'
 ]
 
 export type ProfileInfoOfFile = {
@@ -158,7 +160,11 @@ export default class TextDocumentController implements Disposable {
 		}
 		this.projectReport = report
 		if (this.projectReport) {
-			this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport, 'original')
+			try {
+				this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport)
+			} catch (e) {
+				this.sourceFileMetaDataTree = undefined
+			}
 		}
 		vscode.window.showInformationMessage(INFO_PROJECT_REPORT + this.reportPath.basename())
 		this.container.eventHandler.fireReportLoaded('ProjectReport')

@@ -76,14 +76,9 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		const methodLists: MethodList[] = []
 		if (this.report !== undefined) {
 			internMeasurements = this.report.intern
-			const reversedInternMapping = this.report.reversedInternMapping
 			for (const [pathID, sourceFileMetaData] of internMeasurements.entries()) {
 				if (sourceFileMetaData && sourceFileMetaData.pathIndex.file) {
-					const foundKey = reversedInternMapping.get(pathID)
-
-					const originalPathIndex = foundKey === undefined ?
-						undefined :
-						this.report.getPathIndexByID(foundKey)
+					const originalPathIndex = undefined
 
 					let lastCnt = 0
 					if (methodLists.length > 0) {

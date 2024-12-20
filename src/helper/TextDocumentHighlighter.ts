@@ -99,6 +99,9 @@ export class TextDocumentHighlighter {
 			const locationOfFunction =
 				programStructureTreeOfFile.sourceLocationOfIdentifier(sourceNodeIndex.identifier)
 			if (!locationOfFunction) {
+				if (sourceNodeIndex.presentInOriginalSourceCode) {
+					console.error('SourceNodeIndexNotFoundError', `Could not find location of function ${sourceNodeIndex.identifier}`)
+				}
 				continue
 			}
 			const { beginLoc } = locationOfFunction
