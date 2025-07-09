@@ -1,6 +1,5 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": [
 		"source.fixAll.eslint"
 	],
@@ -24,5 +23,8 @@
 	"editor.insertSpaces": false,
 	"editor.detectIndentation": false,
 	"javascript.preferences.quoteStyle": "single",
-	"typescript.preferences.quoteStyle": "single"
+	"typescript.preferences.quoteStyle": "single",
+	"editor.formatOnPaste": false,
+	"editor.formatOnSave": false,
+	"typescript.tsdk": "node_modules/typescript/lib",
 }

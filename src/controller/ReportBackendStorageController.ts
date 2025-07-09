@@ -1,5 +1,9 @@
 import vscode, { Disposable } from 'vscode'
-import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
+import {
+	ProjectReport,
+	RegistryHelper,
+	UnifiedPath
+} from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -121,7 +125,7 @@ export default class ReportBackendStorageController implements Disposable {
 								continue
 							}
 
-							const result = await report.uploadToRegistry(config)
+							const result = await RegistryHelper.uploadToRegistry(report, config)
 							if (result === undefined) {
 								console.debug('upload failed! report path: ', reportPath, ' url: ', url)
 								continue
