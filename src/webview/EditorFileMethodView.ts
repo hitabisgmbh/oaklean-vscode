@@ -1,12 +1,9 @@
 import {
-	PathIndex,
-	SourceFileMetaData,
-	SourceNodeIdentifierPart_string
-} from '@oaklean/profiler-core'
-import {
 	ISourceNodeIndex,
 	SourceNodeIndexType,
-	IPathIndex
+	IPathIndex,
+	ISourceFileMetaData,
+	SourceNodeIdentifierPart_string
 } from '@oaklean/profiler-core/dist/src/types'
 
 import { SensorValueFormatHelper } from '../helper/SensorValueFormatHelper'
@@ -22,8 +19,8 @@ export const vscode = acquireVsCodeApi()
 
 type ExtensionMessageEvent = {
 	data: {
-		methodList: SourceFileMetaData;
-		pathIndex: PathIndex;
+		methodList: ISourceFileMetaData;
+		pathIndex: IPathIndex;
 		command: EditorFileMethodViewCommands.createMethodList;
 		sensorValueRepresentation: SensorValueRepresentation;
 	};
@@ -43,14 +40,14 @@ const handleExtensionMessages = (event: ExtensionMessageEvent) => {
 	const { methodList, pathIndex, command, sensorValueRepresentation } = event.data
 	switch (command) {
 		case EditorFileMethodViewCommands.createMethodList:
-			createMethodTree(methodList, pathIndex as IPathIndex, sensorValueRepresentation)
+			createMethodTree(methodList, pathIndex, sensorValueRepresentation)
 			break
 	}
 
 }
 
 function createMethodTree(
-	methodList: SourceFileMetaData,
+	methodList: ISourceFileMetaData,
 	pathIndex: IPathIndex,
 	sensorValueRepresentation: SensorValueRepresentation
 ) {
@@ -73,7 +70,7 @@ const postToProvider = (message: EditorFileMethodViewProtocol_ChildToParent) => 
 }
 
 function createHtmlFromTree(
-	methodList: SourceFileMetaData,
+	methodList: ISourceFileMetaData,
 	parentElement: HTMLElement,
 	sensorValueRepresentation: SensorValueRepresentation,
 	pathIndex?: IPathIndex,
@@ -122,7 +119,7 @@ function createHtmlFromTree(
 			identifierContainer.appendChild(identifier)
 			if (sensorValueRepresentation !== undefined && sourceNodeIndex_child.id) {
 				selectedSensorValueType = sensorValueRepresentation.selectedSensorValueType
-				const sensorValues = methodList.functions[sourceNodeIndex_child.id].sensorValues
+				const sensorValues = (methodList.functions || {})[sourceNodeIndex_child.id].sensorValues
 				let sensorValue
 				if (selectedSensorValueType === SensorValueTypeNames.customFormula && sensorValues) {
 					const formula = sensorValueRepresentation.formula

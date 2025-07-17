@@ -46,13 +46,13 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		}
 
 		this._view.webview.onDidReceiveMessage(
-			(message: { command: 'open', identifier: string }) => {
-				if (message.command === 'open') {
+			(message: { command: EditorFileMethodViewCommands, identifier: string }) => {
+				if (message.command === EditorFileMethodViewCommands.open) {
 					const identifier = message.identifier
 					if (identifier) {
 						this.openMethodInEditor(identifier)
 					}
-				} else if (message.command === 'initMethods') {
+				} else if (message.command === EditorFileMethodViewCommands.initMethods) {
 					this.createMethodList()
 				}
 			}
@@ -65,7 +65,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		this.createMethodList()
 	}
 
-	getMethodList() {
+	getSourceFileMetaData() {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!this.editor || !workspaceDir) {
 			return
@@ -100,21 +100,18 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 	}
 
 	createMethodList() {
-		const methodList = this.getMethodList()
-		if (methodList) {
-			const sensorValueRepresentation =
+		const sourceFileMetaData = this.getSourceFileMetaData()
+		if (sourceFileMetaData === undefined) {
+			return
+		}
+		const sensorValueRepresentation =
 				this._container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-			if (methodList?.pathIndex.file !== undefined) {
-				const pathIndex = methodList.pathIndex
-				this.postMessageToWebview({
-					command: EditorFileMethodViewCommands.createMethodList,
-					methodList, pathIndex, sensorValueRepresentation
-				})
-			}
-		} else {
+		if (sourceFileMetaData.pathIndex.file !== undefined) {
 			this.postMessageToWebview({
 				command: EditorFileMethodViewCommands.createMethodList,
-				methodList: undefined, pathIndex: undefined, sensorValueRepresentation: undefined
+				sourceFileMetaData: sourceFileMetaData.toJSON(),
+				pathIndex: sourceFileMetaData.pathIndex.toJSON(),
+				sensorValueRepresentation
 			})
 		}
 	}
@@ -162,12 +159,14 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 
 	selectedSensorValueTypeChanged(event: SelectedSensorValueRepresentationChangeEvent) {
 		const sensorValueRepresentation = event.sensorValueRepresentation
-		const methodList = this.getMethodList()
-		if (methodList?.pathIndex.file !== undefined) {
-			const pathIndex = methodList.pathIndex
+		const sourceFileMetaData = this.getSourceFileMetaData()
+		if (sourceFileMetaData?.pathIndex.file !== undefined) {
+			const pathIndex = sourceFileMetaData.pathIndex
 			this.postMessageToWebview({
 				command: EditorFileMethodViewCommands.createMethodList,
-				methodList, pathIndex, sensorValueRepresentation
+				sourceFileMetaData: sourceFileMetaData.toJSON(),
+				pathIndex: pathIndex.toJSON(),
+				sensorValueRepresentation
 			})
 		}
 	}
@@ -181,17 +180,20 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		const htmlContent = `<!DOCTYPE html>
         <html lang="en">
           <head>
-			<meta charset="UTF-8">
-			<meta name="viewport" content="width=device-width,initial-scale=1.0">
-			<meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource}; 
-			style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-			<link rel="stylesheet" href="${stylesUri}">
-			<link rel="stylesheet" href="${codiconsUri}">
+						<meta charset="UTF-8">
+						<meta name="viewport" content="width=device-width,initial-scale=1.0">
+						<meta
+							http-equiv="Content-Security-Policy"
+							content="default-src 'none'; font-src ${webview.cspSource}; 
+								style-src ${webview.cspSource}; script-src 'nonce-${nonce}';"
+						>
+						<link rel="stylesheet" href="${stylesUri}">
+						<link rel="stylesheet" href="${codiconsUri}">
             <title>Files Methods</title>
           </head>
           <body>
-		  	<div id="method-list"></div>
-          <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
+		  			<div id="method-list"></div>
+          	<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
           </body>
         </html>
     `
