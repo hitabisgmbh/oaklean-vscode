@@ -1,12 +1,12 @@
 import * as vscode from 'vscode'
-import { SourceNodeIdentifier_string, ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
+import { SourceNodeIdentifier_string, UnifiedPath } from '@oaklean/profiler-core'
 import { TextEditor } from 'vscode'
 
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
-import { SelectedSensorValueRepresentationChangeEvent, TextEditorChangeEvent } from '../helper/EventHandler'
+import { TextEditorChangeEvent } from '../helper/EventHandler'
 import { EditorFileMethodViewProtocol_ParentToChild, EditorFileMethodViewCommands } from '../protocols/editorFileMethodViewProtocol'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider {
@@ -15,13 +15,12 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 	private _view?: vscode.WebviewView
 	_container: Container
 	editor: TextEditor | undefined
-	report: ProjectReport | undefined
 	constructor(private readonly _extensionUri: vscode.Uri,
 		container: Container) {
 		this._container = container
 		this._container.eventHandler.onTextEditorChange(this.textEditorChanged.bind(this))
-		this._container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
-		this._container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
+		this._container.eventHandler.onSelectedSensorValueTypeChange(this.refresh.bind(this))
+		this._container.eventHandler.onReportLoaded(this.refresh.bind(this))
 	}
 
 	public resolveWebviewView(
@@ -33,7 +32,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 		this._view.onDidChangeVisibility(() => {
 			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 				this._extensionUri)
-			this.createMethodList()
+			this.refresh()
 		})
 		webviewView.webview.options = {
 			// Enable scripts in the webview
@@ -53,7 +52,7 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 						this.openMethodInEditor(identifier)
 					}
 				} else if (message.command === EditorFileMethodViewCommands.initMethods) {
-					this.createMethodList()
+					this.refresh()
 				}
 			}
 		)
@@ -61,34 +60,18 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 			this._extensionUri)
 	}
 
-	reportLoaded() {
-		this.createMethodList()
-	}
-
 	getSourceFileMetaData() {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!this.editor || !workspaceDir) {
 			return
 		}
-		const reportFilePath = this._container.storage.getWorkspace('reportPath') as string
-
-		if (reportFilePath) {
-			const sourceFilePath = new UnifiedPath(this.editor.document.fileName)
-			this.report = this._container.textDocumentController.projectReport
-			const sourceFileMetaData = this.report?.getMetaDataFromFile(
-				new UnifiedPath(reportFilePath.toString()),
-				new UnifiedPath(sourceFilePath.toString())
-			)
-
-			return sourceFileMetaData
-		}
+		const filePathRelativeToWorkspace = workspaceDir.pathTo(this.editor.document.fileName)
+		return this._container.textDocumentController.getSourceFileMetaData(filePathRelativeToWorkspace)
 	}
 
 	public postMessageToWebview(message: EditorFileMethodViewProtocol_ParentToChild) {
 		this._view?.webview.postMessage(message)
 	}
-
-
 
 	textEditorChanged(event: TextEditorChangeEvent) {
 		this.setEditor(event.editor)
@@ -96,10 +79,10 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 
 	setEditor(editor: TextEditor) {
 		this.editor = editor
-		this.createMethodList()
+		this.refresh()
 	}
 
-	createMethodList() {
+	refresh() {
 		const sourceFileMetaData = this.getSourceFileMetaData()
 		if (sourceFileMetaData === undefined) {
 			return
@@ -154,20 +137,6 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 			}
 		} catch (error) {
 			console.error(`Could not open file: ${error}`)
-		}
-	}
-
-	selectedSensorValueTypeChanged(event: SelectedSensorValueRepresentationChangeEvent) {
-		const sensorValueRepresentation = event.sensorValueRepresentation
-		const sourceFileMetaData = this.getSourceFileMetaData()
-		if (sourceFileMetaData?.pathIndex.file !== undefined) {
-			const pathIndex = sourceFileMetaData.pathIndex
-			this.postMessageToWebview({
-				command: EditorFileMethodViewCommands.createMethodList,
-				sourceFileMetaData: sourceFileMetaData.toJSON(),
-				pathIndex: pathIndex.toJSON(),
-				sensorValueRepresentation
-			})
 		}
 	}
 

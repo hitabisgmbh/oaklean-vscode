@@ -13,10 +13,9 @@ import {
 	SourceFileMetaData,
 	ProgramStructureTree,
 	TypescriptParser,
-	ProfilerConfig
+	ProfilerConfig,
+	STATIC_CONFIG_FILENAME
 } from '@oaklean/profiler-core'
-import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
-
 
 import {
 	ReportPathChangeEvent,
@@ -107,7 +106,9 @@ export default class TextDocumentController implements Disposable {
 		return this.programStructureTreePerDocument[fileName.toString()]
 	}
 
-	getSourceFileMetaData(fileName: UnifiedPath): SourceFileMetaData | undefined {
+	getSourceFileMetaData(
+		filePathRelativeToWorkspace: UnifiedPath
+	): SourceFileMetaData | undefined {
 		if (!this.reportPath || !this.projectReport) {
 			return undefined
 		}
@@ -119,9 +120,9 @@ export default class TextDocumentController implements Disposable {
 
 		let reportToRequest: Report = this.projectReport
 		let reportPath = this.reportPath
-		let filePath = workspaceDir.join(fileName)
+		let filePath = workspaceDir.join(filePathRelativeToWorkspace)
 
-		const nodeModulePath = NodeModuleUtils.getParentModuleFromPath(fileName)
+		const nodeModulePath = NodeModuleUtils.getParentModuleFromPath(filePathRelativeToWorkspace)
 		if (nodeModulePath) {
 			const nodeModule = NodeModule.fromNodeModulePath(workspaceDir.join(nodeModulePath))
 
@@ -134,8 +135,8 @@ export default class TextDocumentController implements Disposable {
 
 					// pretend there is a config file within the node module
 					// this needs to be done, since all paths are resolved relative to the config file
-					reportPath = workspaceDir.join(nodeModulePath).join('gdkit.json')
-					filePath = nodeModulePath.pathTo(fileName)
+					reportPath = workspaceDir.join(nodeModulePath).join(STATIC_CONFIG_FILENAME)
+					filePath = nodeModulePath.pathTo(filePathRelativeToWorkspace)
 				}
 			}
 		}
