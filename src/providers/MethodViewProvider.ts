@@ -31,7 +31,6 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	public static readonly viewType = 'methodView'
 	private _view?: vscode.WebviewView
-	report: ProjectReport | undefined
 	_container: Container
 	constructor(private readonly _extensionUri: vscode.Uri, container: Container) {
 		this._container = container
@@ -71,23 +70,18 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	fillMethodView() {
-		this.report = this._container.textDocumentController.projectReport
-		let internMeasurements: ModelMap<PathID_number, SourceFileMetaData> | undefined
+		const projectReport = this._container.textDocumentController.projectReport
+		if (projectReport === undefined) {
+			return
+		}
 		const methodLists: MethodList[] = []
-		if (this.report !== undefined) {
-			internMeasurements = this.report.intern
-			for (const [pathID, sourceFileMetaData] of internMeasurements.entries()) {
-				if (sourceFileMetaData && sourceFileMetaData.pathIndex.file) {
-					const originalPathIndex = undefined
-
-					let lastCnt = 0
-					if (methodLists.length > 0) {
-						lastCnt = methodLists[methodLists.length - 1].lastCnt
-					}
-					const methodList = new MethodList(sourceFileMetaData, lastCnt, originalPathIndex)
-					methodLists.push(methodList)
-				}
+		for (const [pathID, sourceFileMetaData] of projectReport.intern.entries()) {
+			let lastCnt = 0
+			if (methodLists.length > 0) {
+				lastCnt = methodLists[methodLists.length - 1].lastCnt
 			}
+			const methodList = new MethodList(sourceFileMetaData, lastCnt)
+			methodLists.push(methodList)
 		}
 		const sensorValueRepresentation = this._container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 		const includedFilterPath = this._container.storage.getWorkspace('includedFilterPath') as string

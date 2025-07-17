@@ -1,10 +1,9 @@
 import globToRegExp from 'glob-to-regexp'
-import { SensorValues, SourceNodeIdentifier_string } from '@oaklean/profiler-core'
+import { SensorValues } from '@oaklean/profiler-core'
 import { provideVSCodeDesignSystem, allComponents } from '@vscode/webview-ui-toolkit'
 
 import { SensorValueFormatHelper } from '../helper/SensorValueFormatHelper'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
-import { Method } from '../types/method'
 import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
 import { MethodViewCommands } from '../types/methodViewCommands'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from '../types/sensorValueRepresentation'
@@ -47,160 +46,178 @@ const postToProvider = (message: MethodViewProtocol_ChildToParent) => {
 }
 
 const handleExtensionMessages = (message: ExtensionMessageEvent) => {
-	const { methodList, sensorValueRepresentation, type, filterPaths,
-		sortDirection, fileSensorValues } = message.data
-	let path: string
-	let parts: string[]
-	let filename: string
-	let methods: Method[]
-	let selectedSensorValueType: ExtendedSensorValueType = defaultSensorValueRepresentation().selectedSensorValueType
-	const contentDiv = document.getElementById('content')
-	const fileAndMethods = document.createElement('div')
-	const fileDiv = document.createElement('div')
-	const methodContainer = document.createElement('div')
-	const icon = document.createElement('div')
-	const totalSensorValueSpan = document.createElement('span')
-	let fileName
-	let firstFunctionCounter
-	let filesTotalSensorValue = 0
+	const {
+		methodList,
+		sensorValueRepresentation,
+		type,
+		filterPaths,
+		sortDirection,
+		fileSensorValues
+	} = message.data
 	switch (type) {
 		case MethodViewMessageTypes.displayMethods:
-			fileName = document.createElement('span')
-			path = methodList.path
-			parts = path.split('/')
-			filename = parts[parts.length - 1]
-			fileName.className = 'fileName'
-			methods = methodList.methods
-			fileAndMethods.className = 'fileAndMethods'
-			firstFunctionCounter = methods.length > 0 ? methods[0].functionCounter : ''
-			fileAndMethods.setAttribute('data-firstFunctionCounter', firstFunctionCounter)
-			fileAndMethods.setAttribute('data-filename', filename)
-			fileAndMethods.setAttribute('data-fileSensorValues', JSON.stringify(fileSensorValues))
-			fileAndMethods.setAttribute('data-path', path)
-			fileName.textContent = filename + ' (' + methods.length + ')'
-			fileDiv.className = 'files hoverable clickable'
-			fileDiv.setAttribute('data-path', path)
-			fileDiv.title = path
-			icon.className = 'codicon codicon-chevron-down icon'
-			fileDiv.appendChild(fileName)
-			fileDiv.prepend(icon)
-			methodContainer.className = 'methodContainer methods' + firstFunctionCounter
-			if (contentDiv !== null) {
-				contentDiv.appendChild(fileAndMethods)
-				fileAndMethods.appendChild(fileDiv)
-				fileAndMethods.appendChild(methodContainer)
-				fileAndMethods.appendChild(fileDiv)
-				fileAndMethods.appendChild(methodContainer)
-			}
-			if (sensorValueRepresentation !== undefined) {
-				selectedSensorValueType = sensorValueRepresentation.selectedSensorValueType
-			}
-
-			fileDiv.addEventListener('click', function () {
-				const methodElements = document.getElementsByClassName('methods' + firstFunctionCounter) as HTMLCollectionOf<HTMLElement>
-				if (methodElements.length !== 0) {
-					if (methodElements[0].style.display === 'none') {
-						methodElements[0].style.display = 'block'
-						icon.classList.remove('codicon-chevron-right')
-						icon.classList.add('codicon-chevron-down')
-					} else {
-						methodElements[0].style.display = 'none'
-						icon.classList.remove('codicon-chevron-down')
-						icon.classList.add('codicon-chevron-right')
-					}
-				}
-			})
-
-			methods.forEach((method) => {
-				const methodElement = document.createElement('p')
-				let sensorValue
-				if (selectedSensorValueType === SensorValueTypeNames.customFormula) {
-					const formula = sensorValueRepresentation.formula
-					sensorValue = calcOrReturnSensorValue(method.sensorValues, selectedSensorValueType, formula)
-				} else {
-					sensorValue = method.sensorValues[selectedSensorValueType] ? method.sensorValues[selectedSensorValueType] : '0'
-				}
-				filesTotalSensorValue += parseFloat(sensorValue)
-				const shortenedFuntionName =
-					MethodIdentifierHelper.getShortenedIdentifier(method.functionName as SourceNodeIdentifier_string)
-				methodElement.className = 'hoverable methods methodElement clickable ' + filename
-				methodElement.setAttribute('data-functionName', shortenedFuntionName)
-				methodElement.setAttribute('data-functionCounter', String(method.functionCounter))
-				methodElement.setAttribute('data-sensorvalues', JSON.stringify(method.sensorValues))
-				methodElement.setAttribute('data-selected-sensorvalue', sensorValue)
-				methodElement.setAttribute('data-identifier', method.identifier)
-				const functionNameSpan = document.createElement('span')
-				functionNameSpan.innerHTML = shortenedFuntionName
-				functionNameSpan.className = 'functionName'
-
-				sensorValue = parseFloat(sensorValue).toString()
-				const sensorValueSpan = document.createElement('span')
-				const formattedSensorValue = SensorValueFormatHelper.format(
-					sensorValue,
-					selectedSensorValueType
-				)
-				sensorValueSpan.textContent = ' ' + formattedSensorValue.value + ' ' + formattedSensorValue.unit
-				sensorValueSpan.className = 'sensorValue'
-
-				const functionCounterSpan = document.createElement('span')
-				functionCounterSpan.textContent = ' ' + method.functionCounter
-				functionCounterSpan.className = 'functionCounter'
-
-				methodElement.appendChild(functionNameSpan)
-				methodElement.appendChild(sensorValueSpan)
-				methodElement.appendChild(functionCounterSpan)
-
-				if (methodContainer !== null) {
-					methodContainer.appendChild(methodElement)
-					methodElement.addEventListener('click', function () {
-						const identifier = methodElement.getAttribute('data-identifier')
-						const filePath = fileDiv.getAttribute('data-path')
-						if (identifier !== null && filePath !== null) {
-							postToProvider({
-								command: MethodViewCommands.openMethod,
-								identifier,
-								filePath
-							})
-						}
-					})
-
-				}
-			})
-			fileAndMethods.setAttribute('data-total-selected-sensorvalue', filesTotalSensorValue.toString())
-			if (selectedSensorValueType && selectedSensorValueType === SensorValueTypeNames.customFormula) {
-				totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue
-			} else {
-				const formattedFilesTotalSensorValue = SensorValueFormatHelper.format(
-					filesTotalSensorValue,
-					selectedSensorValueType
-				)
-				totalSensorValueSpan.textContent = ' ' + formattedFilesTotalSensorValue.value + ' ' + formattedFilesTotalSensorValue.unit
-			}
-			totalSensorValueSpan.className = 'sensorValue'
-			fileDiv.appendChild(totalSensorValueSpan)
-			if (filterPaths !== undefined) {
-				filterMethod(fileAndMethods, filterPaths)
-			}
-
+			displayMethods(
+				methodList,
+				fileSensorValues,
+				sensorValueRepresentation,
+				filterPaths
+			)
 			break
 		case MethodViewMessageTypes.sensorValueTypeChange:
-			updateSensorValue(sensorValueRepresentation.selectedSensorValueType,
-				sensorValueRepresentation.formula)
+			updateSensorValue(
+				sensorValueRepresentation.selectedSensorValueType,
+				sensorValueRepresentation.formula
+			)
 			break
 		case MethodViewMessageTypes.filterPathChange:
-			if (filterPaths !== undefined) {
-				filterHTMLELements(filterPaths)
-			}
-
+			filterHTMLELements(filterPaths)
 			break
 		case MethodViewMessageTypes.sortDirectionChange:
 			changeSortDirection(sortDirection)
 			break
 		case MethodViewMessageTypes.clear:
-			if (contentDiv !== null) {
-				contentDiv.innerHTML = ''
-			}
+			clearMethodView()
 			break
+	}
+}
+
+function displayMethods(
+	methodList: MethodList,
+	fileSensorValues: SensorValues,
+	sensorValueRepresentation: SensorValueRepresentation,
+	filterPaths: FilterPaths
+) {
+	const fileName = document.createElement('span')
+	const fileAndMethods = document.createElement('div')
+	const fileDiv = document.createElement('div')
+	const icon = document.createElement('div')
+	const methodContainer = document.createElement('div')
+	const contentDiv = document.getElementById('content')
+	const totalSensorValueSpan = document.createElement('span')
+
+	let selectedSensorValueType: ExtendedSensorValueType = defaultSensorValueRepresentation().selectedSensorValueType
+	let filesTotalSensorValue = 0
+
+	const path = methodList.path
+	const parts = path.split('/')
+	const filename = parts[parts.length - 1]
+	fileName.className = 'fileName'
+	const methods = methodList.methods
+	fileAndMethods.className = 'fileAndMethods'
+	const firstFunctionCounter = methods.length > 0 ? methods[0].functionCounter.toString() : ''
+	fileAndMethods.setAttribute('data-firstFunctionCounter', firstFunctionCounter)
+	fileAndMethods.setAttribute('data-filename', filename)
+	fileAndMethods.setAttribute('data-fileSensorValues', JSON.stringify(fileSensorValues))
+	fileAndMethods.setAttribute('data-path', path)
+	fileName.textContent = filename + ' (' + methods.length + ')'
+	fileDiv.className = 'files hoverable clickable'
+	fileDiv.setAttribute('data-path', path)
+	fileDiv.title = path
+	icon.className = 'codicon codicon-chevron-down icon'
+	fileDiv.appendChild(fileName)
+	fileDiv.prepend(icon)
+	methodContainer.className = 'methodContainer methods' + firstFunctionCounter
+	if (contentDiv !== null) {
+		contentDiv.appendChild(fileAndMethods)
+		fileAndMethods.appendChild(fileDiv)
+		fileAndMethods.appendChild(methodContainer)
+		fileAndMethods.appendChild(fileDiv)
+		fileAndMethods.appendChild(methodContainer)
+	}
+	if (sensorValueRepresentation !== undefined) {
+		selectedSensorValueType = sensorValueRepresentation.selectedSensorValueType
+	}
+
+	fileDiv.addEventListener('click', function () {
+		const methodElements = document.getElementsByClassName('methods' + firstFunctionCounter) as HTMLCollectionOf<HTMLElement>
+		if (methodElements.length !== 0) {
+			if (methodElements[0].style.display === 'none') {
+				methodElements[0].style.display = 'block'
+				icon.classList.remove('codicon-chevron-right')
+				icon.classList.add('codicon-chevron-down')
+			} else {
+				methodElements[0].style.display = 'none'
+				icon.classList.remove('codicon-chevron-down')
+				icon.classList.add('codicon-chevron-right')
+			}
+		}
+	})
+
+	methods.forEach((method) => {
+		const methodElement = document.createElement('p')
+		let sensorValue
+		if (selectedSensorValueType === SensorValueTypeNames.customFormula) {
+			const formula = sensorValueRepresentation.formula
+			sensorValue = calcOrReturnSensorValue(method.sensorValues, selectedSensorValueType, formula)
+		} else {
+			sensorValue = method.sensorValues[selectedSensorValueType] ? method.sensorValues[selectedSensorValueType] : '0'
+		}
+		filesTotalSensorValue += parseFloat(sensorValue)
+		const shortenedFunctionName = MethodIdentifierHelper.getShortenedIdentifier(method.sourceNodeIdentifierPart)
+		methodElement.className = 'hoverable methods methodElement clickable ' + filename
+		methodElement.setAttribute('data-functionName', shortenedFunctionName)
+		methodElement.setAttribute('data-functionCounter', String(method.functionCounter))
+		methodElement.setAttribute('data-sensorvalues', JSON.stringify(method.sensorValues))
+		methodElement.setAttribute('data-selected-sensorvalue', sensorValue)
+		methodElement.setAttribute('data-identifier', method.identifier)
+		const functionNameSpan = document.createElement('span')
+		functionNameSpan.innerHTML = shortenedFunctionName
+		functionNameSpan.className = 'functionName'
+
+		sensorValue = parseFloat(sensorValue).toString()
+		const sensorValueSpan = document.createElement('span')
+		const formattedSensorValue = SensorValueFormatHelper.format(
+			sensorValue,
+			selectedSensorValueType
+		)
+		sensorValueSpan.textContent = ' ' + formattedSensorValue.value + ' ' + formattedSensorValue.unit
+		sensorValueSpan.className = 'sensorValue'
+
+		const functionCounterSpan = document.createElement('span')
+		functionCounterSpan.textContent = ' ' + method.functionCounter
+		functionCounterSpan.className = 'functionCounter'
+
+		methodElement.appendChild(functionNameSpan)
+		methodElement.appendChild(sensorValueSpan)
+		methodElement.appendChild(functionCounterSpan)
+
+		if (methodContainer !== null) {
+			methodContainer.appendChild(methodElement)
+			methodElement.addEventListener('click', function () {
+				const identifier = methodElement.getAttribute('data-identifier')
+				const filePath = fileDiv.getAttribute('data-path')
+				if (identifier !== null && filePath !== null) {
+					postToProvider({
+						command: MethodViewCommands.openMethod,
+						identifier,
+						filePath
+					})
+				}
+			})
+
+		}
+	})
+	fileAndMethods.setAttribute('data-total-selected-sensorvalue', filesTotalSensorValue.toString())
+	if (selectedSensorValueType && selectedSensorValueType === SensorValueTypeNames.customFormula) {
+		totalSensorValueSpan.textContent = ' ' + filesTotalSensorValue
+	} else {
+		const formattedFilesTotalSensorValue = SensorValueFormatHelper.format(
+			filesTotalSensorValue,
+			selectedSensorValueType
+		)
+		totalSensorValueSpan.textContent = ' ' + formattedFilesTotalSensorValue.value + ' ' + formattedFilesTotalSensorValue.unit
+	}
+	totalSensorValueSpan.className = 'sensorValue'
+	fileDiv.appendChild(totalSensorValueSpan)
+	if (filterPaths !== undefined) {
+		filterMethod(fileAndMethods, filterPaths)
+	}
+}
+
+function clearMethodView() {
+	const contentDiv = document.getElementById('content')
+	if (contentDiv !== null) {
+		contentDiv.innerHTML = ''
 	}
 }
 
