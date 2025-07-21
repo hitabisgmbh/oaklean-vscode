@@ -8,7 +8,7 @@ describe('MethodIdentifierHelper', () => {
 		it('should return the correct shortened identifier', () => {
 			const identifier = '{function:testFunction}' as SourceNodeIdentifierPart_string
 			const result = MethodIdentifierHelper.getShortenedIdentifier(identifier)
-			expect(result).toBe('(f)&nbsp;testFunction')
+			expect(result).toBe('(f) testFunction')
 		})
 
 		it('should return null if identifier is not valid', () => {
