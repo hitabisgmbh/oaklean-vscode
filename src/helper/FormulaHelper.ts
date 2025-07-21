@@ -2,7 +2,8 @@
 import * as math from 'mathjs'
 import { ISensorValues } from '@oaklean/profiler-core/dist/src/types'
 
-import { ExtendedSensorValueType, SensorValueTypeNames } from '../types/sensorValues'
+import { SensorValueTypeNames } from '../types/sensorValues'
+import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
 let vscode: any
 if (typeof process !== 'undefined' && process !== undefined && process.env.RUNNING_IN_EXTENSION) {
@@ -43,18 +44,19 @@ function returnSensorValue(sensorValues: ISensorValues, sensorValueName: keyof I
 
 export function calcOrReturnSensorValue(
 	sensorValues: ISensorValues,
-	sensorValueName: ExtendedSensorValueType,
-	formula: string | undefined
+	sensorValueRepresentation: SensorValueRepresentation,
 ): number {
 	let result = 0
-	if (sensorValueName === 'customFormula' && formula) {
+	const { selectedSensorValueType, formula } = sensorValueRepresentation
+
+	if (selectedSensorValueType === 'customFormula' && formula) {
 		const assembledFormula = deconstructFormula(sensorValues, formula)
 		if (!assembledFormula) {
 			throw new Error('assembledFormula is wrong')
 		}
 		result = math.evaluate(assembledFormula)
 	} else {
-		result = returnSensorValue(sensorValues, sensorValueName as keyof ISensorValues)
+		result = returnSensorValue(sensorValues, selectedSensorValueType as keyof ISensorValues)
 	}
 	return result
 }
@@ -65,11 +67,11 @@ export function checkFormulaValidity(formula: string | undefined): boolean {
 		return false
 	}
 	const variables = formula.match(variablePattern)
-	let undefinedValues = ''
+	const undefinedValues = []
 	if (variables !== null) {
 		for (const variable of variables) {
-			if (!(variable in SensorValueTypeNames)) {
-				undefinedValues += ` ${variable},`
+			if (SensorValueTypeNames[variable as keyof typeof SensorValueTypeNames] === undefined) {
+				undefinedValues.push(variable)
 			}
 		}
 	} else {
@@ -77,10 +79,8 @@ export function checkFormulaValidity(formula: string | undefined): boolean {
 	}
 
 	if (undefinedValues.length > 0) {
-		const trimmedUndefinedValues = undefinedValues.slice(0, undefinedValues.length - 1)
-		if (typeof process !== 'undefined' && process !== undefined && process.env.RUNNING_IN_EXTENSION) {
-			vscode.window.showErrorMessage(
-				`There are no sensor values for the variables: ${trimmedUndefinedValues}.`)
+		if (vscode !== undefined) {
+			vscode.window.showErrorMessage(`There are no sensor values for the variables: ${undefinedValues.join(', ')}.`)
 		}
 
 		return false

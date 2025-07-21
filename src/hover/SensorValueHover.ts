@@ -1,15 +1,33 @@
 import * as vscode from 'vscode'
-import { SensorValues } from '@oaklean/profiler-core'
+import {
+	SourceNodeMetaData,
+	SourceNodeMetaDataType
+} from '@oaklean/profiler-core'
 
-import { SensorValueTypeNames, ExtendedSensorValueType } from '../types/sensorValues'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { SensorValueFormatHelper } from '../helper/SensorValueFormatHelper'
+// Types
+import {
+	SensorValueTypeNames,
+	ExtendedSensorValueType
+} from '../types/sensorValues'
+import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+
 export default class SensorValueHover {
-	private sensorValues: SensorValues
-	private formula: string | undefined
-	constructor(sensorValues: SensorValues, formula: string | undefined) {
-		this.formula = formula
-		this.sensorValues = sensorValues
+	private sourceNodeMetaData: SourceNodeMetaData<
+		| SourceNodeMetaDataType.SourceNode
+		| SourceNodeMetaDataType.LangInternalSourceNode
+	>
+	private _sensorValueRepresentation: SensorValueRepresentation
+	constructor(
+		sourceNodeMetaData: SourceNodeMetaData<
+			| SourceNodeMetaDataType.SourceNode
+			| SourceNodeMetaDataType.LangInternalSourceNode
+		>,
+		sensorValueRepresentation: SensorValueRepresentation
+	) {
+		this._sensorValueRepresentation = sensorValueRepresentation
+		this.sourceNodeMetaData = sourceNodeMetaData
 	}
 
 	provideHover(): vscode.ProviderResult<vscode.Hover> {
@@ -17,31 +35,25 @@ export default class SensorValueHover {
 		contents.appendMarkdown('|type|value|unit| \n')
 		contents.appendMarkdown('|---|---|---| \n')
 
-		for (const [
-			sensorValueType,
-			sensorValueName
-		] of Object.entries(SensorValueTypeNames) as [ExtendedSensorValueType, string][]) {
-			if (sensorValueType === 'customFormula') {
-				if (this.formula) {
-					const calculatedFormula = calcOrReturnSensorValue(
-						this.sensorValues, sensorValueName, this.formula)
-					const formattedCalculatedFormula = SensorValueFormatHelper.format(
-						calculatedFormula,
-						sensorValueType
-					)
-					contents.appendMarkdown(
-						`|${this.formula}|${formattedCalculatedFormula.value}| \n`
-					)
+		for (const [sensorValueType, sensorValueName] of Object.entries(
+			SensorValueTypeNames
+		) as [ExtendedSensorValueType, ExtendedSensorValueType][]) {
+			const sensorValue = calcOrReturnSensorValue(
+				this.sourceNodeMetaData.sensorValues,
+				{
+					...this._sensorValueRepresentation,
+					selectedSensorValueType: sensorValueType
 				}
-			} else {
-				const formattedSensorValue = SensorValueFormatHelper.format(
-					this.sensorValues[sensorValueType],
-					sensorValueType
-				)
-				contents.appendMarkdown(
-					`|${sensorValueName}|${formattedSensorValue.value}|${formattedSensorValue.unit}| \n`
-				)
-			}
+			)
+
+			const formattedSensorValue = SensorValueFormatHelper.format(
+				sensorValue,
+				sensorValueType
+			)
+
+			contents.appendMarkdown(
+				`|${sensorValueName}|${formattedSensorValue.value}|${formattedSensorValue.unit}| \n`
+			)
 		}
 		return new vscode.Hover(contents)
 	}

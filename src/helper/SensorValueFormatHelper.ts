@@ -2,7 +2,7 @@ import {
 	ExtendedSensorValueType,
 	SensorUnits,
 	EnergyConsumptionSensorValueTypes,
-	UnitPerSensorValue
+	UnitPerSensorValue,
 } from '../types/sensorValues'
 
 const DECIMALS_TO_ROUND = 3

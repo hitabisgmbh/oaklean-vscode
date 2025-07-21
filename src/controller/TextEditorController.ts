@@ -1,5 +1,5 @@
 import vscode, { Disposable, TextEditor, TextEditorDecorationType } from 'vscode'
-import { SensorValues } from '@oaklean/profiler-core'
+import { SourceNodeMetaData, SourceNodeMetaDataType } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import { ReportLoadedEvent, ProgramStructureTreeChangeEvent, TextEditorChangeEvent, SelectedSensorValueRepresentationChangeEvent, ToggleLineAnnotationsChangeEvent } from '../helper/EventHandler'
@@ -98,23 +98,27 @@ export default class TextEditorController implements Disposable {
 		// Get the decorations from TextDocumentHighlighter
 		const decorations = TextDocumentHighlighter.lineAnnotationsByReport(
 			this.editor,
-			this._sensorValueRepresentation.selectedSensorValueType,
+			this._sensorValueRepresentation,
 			filePathRelativeToWorkspace,
 			this.container
 		)
 		const hoverObjects: {
 			decoration: TextEditorDecorationType;
-			decorationRange: vscode.Range; sensorValues: SensorValues;
+			decorationRange: vscode.Range;
+			sourceNodeMetaData: SourceNodeMetaData<
+			SourceNodeMetaDataType.SourceNode |
+			SourceNodeMetaDataType.LangInternalSourceNode
+			>;
 		}[] = []
 
 		// Apply the new decorations and store TextEditorDecorationType instances
-		for (const { decoration, decorationRange, sensorValues } of decorations) {
+		for (const { decoration, decorationRange, sourceNodeMetaData } of decorations) {
 			this.textDecorations.push(decoration)
 			this.editor.setDecorations(decoration, [decorationRange])
 			const hoverObject = {
 				decoration,
 				decorationRange,
-				sensorValues,
+				sourceNodeMetaData,
 			}
 			hoverObjects.push(hoverObject)
 		}
@@ -125,7 +129,7 @@ export default class TextEditorController implements Disposable {
 		const language = filePathRelativeToWorkspace.toString().slice(-3) === '.ts' ? 'typescript' : 'javascript'
 		this.sensorValueHoverProvider = vscode.languages.registerHoverProvider(
 			{ scheme: 'file', language },
-			new SensorValueHoverProvider(hoverObjects, this._sensorValueRepresentation.formula)
+			new SensorValueHoverProvider(hoverObjects, this._sensorValueRepresentation)
 		)
 	}
 
