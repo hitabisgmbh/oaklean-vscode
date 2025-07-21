@@ -1,8 +1,8 @@
-import { IPathIndex, ISourceFileMetaData } from '@oaklean/profiler-core'
-
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 
 export enum EditorFileMethodViewCommands {
+	clearMethodList = 'clear-method-list',
 	createMethodList = 'create-method-list',
 	open = 'open',
 	initMethods = 'initMethods'
@@ -14,7 +14,8 @@ export type EditorFileMethodViewProtocol_ChildToParent =
 
 export type EditorFileMethodViewProtocol_ParentToChild = {
 	command: EditorFileMethodViewCommands.createMethodList;
-	sourceFileMetaData: ISourceFileMetaData,
-	pathIndex: IPathIndex,
+	sourceFileMethodTree: ISourceFileMethodTree,
 	sensorValueRepresentation: SensorValueRepresentation
+} | {
+	command: EditorFileMethodViewCommands.clearMethodList
 }

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { SourceNodeIdentifier_string, UnifiedPath } from '@oaklean/profiler-core'
+import { SourceNodeIdentifier_string } from '@oaklean/profiler-core'
 import { TextEditor } from 'vscode'
 
 import { getNonce } from '../utilities/getNonce'
@@ -9,6 +9,7 @@ import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { TextEditorChangeEvent } from '../helper/EventHandler'
 import { EditorFileMethodViewProtocol_ParentToChild, EditorFileMethodViewCommands } from '../protocols/editorFileMethodViewProtocol'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider {
 
 	public static readonly viewType = 'editorFileMethodView'
@@ -85,18 +86,20 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 	refresh() {
 		const sourceFileMetaData = this.getSourceFileMetaData()
 		if (sourceFileMetaData === undefined) {
+			this.postMessageToWebview({
+				command: EditorFileMethodViewCommands.clearMethodList
+			})
 			return
 		}
+		const sourceFileMethodTree = SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
+
 		const sensorValueRepresentation =
 				this._container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-		if (sourceFileMetaData.pathIndex.file !== undefined) {
-			this.postMessageToWebview({
-				command: EditorFileMethodViewCommands.createMethodList,
-				sourceFileMetaData: sourceFileMetaData.toJSON(),
-				pathIndex: sourceFileMetaData.pathIndex.toJSON(),
-				sensorValueRepresentation
-			})
-		}
+		this.postMessageToWebview({
+			command: EditorFileMethodViewCommands.createMethodList,
+			sourceFileMethodTree: sourceFileMethodTree.toJSON(),
+			sensorValueRepresentation
+		})
 	}
 
 	async openMethodInEditor(identifier: string) {
@@ -143,9 +146,11 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
 	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {
 		// Use a nonce to only allow specific scripts to be run
 		const nonce = getNonce()
-		const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'EditorFileMethodView.js'])
-		const stylesUri = getUri(webview, extensionUri, ['dist', 'webview', 'editorFileMethodView.css'])
+		const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'webpack', 'EditorFileMethodView.js'])
+		const stylesUri = getUri(webview, extensionUri, ['dist', 'webview', 'webpack', 'EditorFileMethodView.css'])
+		const vendorsUri = getUri(webview, extensionUri, ['dist', 'webview', 'webpack', 'vendors.js'])
 		const codiconsUri = getUri(webview, extensionUri, ['dist', 'webview', 'codicons', 'codicon.css'])
+
 		const htmlContent = `<!DOCTYPE html>
         <html lang="en">
           <head>
@@ -161,8 +166,9 @@ export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider 
             <title>Files Methods</title>
           </head>
           <body>
-		  			<div id="method-list"></div>
-          	<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
+						<div id="root"></div>
+						<script type="module" nonce="${nonce}" src="${vendorsUri}"></script>
+						<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
           </body>
         </html>
     `

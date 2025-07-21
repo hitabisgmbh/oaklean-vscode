@@ -9,8 +9,7 @@
 		],
 		"sourceMap": true,
 		"moduleResolution": "node",
-		"jsx": "react",
-		"jsxFactory": "h",
+		"jsx": "react-jsx",
 		"strict": true, /* enable all strict type-checking options */
 		"esModuleInterop": true,
 		 /* Completeness */
