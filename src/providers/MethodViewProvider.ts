@@ -1,9 +1,5 @@
 import * as vscode from 'vscode'
 import {
-	ModelMap,
-	PathID_number,
-	ProjectReport,
-	SourceFileMetaData,
 	SourceNodeIdentifier_string,
 	UnifiedPath
 } from '@oaklean/profiler-core'
@@ -28,6 +24,7 @@ import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 
 export class MethodViewProvider implements vscode.WebviewViewProvider {
+	private subscriptions: vscode.Disposable[] = []
 
 	public static readonly viewType = 'methodView'
 	private _view?: vscode.WebviewView
@@ -38,6 +35,10 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		container.eventHandler.onFilterPathChange(this.filterPathChange.bind(this))
 		container.eventHandler.onSortDirectionChange(this.sortDirectionChange.bind(this))
 		container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
+	}
+
+	dispose() {
+		this.subscriptions.forEach((d) => d.dispose())
 	}
 
 	public resolveWebviewView(
@@ -54,16 +55,18 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 				this._extensionUri
 			]
 		}
-		this._view.webview.onDidReceiveMessage(
-			(message: MethodViewProtocol_ChildToParent) => {
-				if (message.command === MethodViewCommands.openMethod) {
-					const identifier = message.identifier
-					const filePath = message.filePath
-					this.openMethodInEditor(identifier, filePath)
-				} else if (message.command === MethodViewCommands.initMethods) {
-					this.fillMethodView()
+		this.subscriptions.push(
+			this._view.webview.onDidReceiveMessage(
+				(message: MethodViewProtocol_ChildToParent) => {
+					if (message.command === MethodViewCommands.openMethod) {
+						const identifier = message.identifier
+						const filePath = message.filePath
+						this.openMethodInEditor(identifier, filePath)
+					} else if (message.command === MethodViewCommands.initMethods) {
+						this.fillMethodView()
+					}
 				}
-			}
+			)
 		)
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, this._extensionUri)
 

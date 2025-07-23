@@ -9,57 +9,86 @@ import { Container } from '../container'
 import { ReportWebViewProtocol_ChildToParent } from '../protocols/reportWebviewProtocol'
 import { ReportWebviewController } from '../controller/ReportWebviewController'
 
-
-
-
 export class ReportWebviewPanel {
-	private static currentPanel: ReportWebviewPanel | undefined
-	private _panel: vscode.WebviewPanel | undefined
-	private _disposables: vscode.Disposable[] = []
+	private _disposable: vscode.Disposable
+
+	private _panel: vscode.WebviewPanel
 	private container: Container
+	private filePath: string
 	private fileName: string
 	private static panels: Map<string, ReportWebviewPanel> = new Map()
 
 	constructor(container: Container, document: ProjectReport, filePath: string) {
 		this.container = container
+		this.filePath = filePath
 		this.fileName = path.basename(filePath)
 
-		this._panel = vscode.window.createWebviewPanel(
-			'Report',
-			this.fileName,
-			vscode.ViewColumn.One,
-			{
-				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(this.container.context.extensionUri, 'dist', 'webview')],
-				retainContextWhenHidden: true
-			}
-		)
-		this._panel.webview.html = this._getWebviewContent(
-			document,
-			this._panel.webview,
-			this.container.context.extensionUri,
-			filePath
-		)
-		this._panel.webview.onDidReceiveMessage(
-			(message: ReportWebViewProtocol_ChildToParent) => {
-				switch (message.command) {
-					case 'openFile':
-						ReportWebviewController.openJsonEditor(this.container, message.filePath)
-						break
+		this._disposable = vscode.Disposable.from(
+			(this._panel = vscode.window.createWebviewPanel(
+				'Report',
+				this.fileName,
+				vscode.ViewColumn.One,
+				{
+					enableScripts: true,
+					localResourceRoots: [
+						vscode.Uri.joinPath(
+							this.container.context.extensionUri,
+							'dist',
+							'webview'
+						)
+					],
+					retainContextWhenHidden: true
 				}
-			}
+			)),
+			this._panel.webview.onDidReceiveMessage(
+				this.receiveMessageFromWebview.bind(this),
+				this._panel.onDidDispose(() => this.dispose())
+			)
 		)
-		this._panel.onDidDispose(() => this.dispose(filePath))
+		this.updateContent(document, filePath)
 	}
 
+	public postMessageToWebview(message: ReportWebViewProtocol_ChildToParent) {
+		if (this._panel) {
+			this._panel.webview.postMessage(message)
+		}
+	}
 
-	private _getWebviewContent(data: ProjectReport, webview: vscode.Webview,
-		extensionUri: vscode.Uri, filePath: string): string {
+	receiveMessageFromWebview(message: ReportWebViewProtocol_ChildToParent) {
+		switch (message.command) {
+			case 'openFile':
+				ReportWebviewController.openJsonEditor(this.container, message.filePath)
+				break
+		}
+	}
+
+	private _getWebviewContent(
+		data: ProjectReport,
+		webview: vscode.Webview,
+		extensionUri: vscode.Uri,
+		filePath: string
+	): string {
 		const nonce = getNonce()
-		const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'ReportWebview.js'])
-		const styleUri = getUri(webview, extensionUri, ['dist', 'webview', 'stylesReportPage.css'])
+		const webviewUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'ReportWebview.js'
+		])
+		const styleUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'stylesReportPage.css'
+		])
 
-		const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }
+		const dateOptions = {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false
+		}
 
 		const commitHash = data.executionDetails.commitHash
 		const timestamp = data.executionDetails.timestamp
@@ -82,14 +111,23 @@ export class ReportWebviewPanel {
 		const uncommittedChanges = data.executionDetails.uncommittedChanges
 		const nodeVersion = data.executionDetails.languageInformation.version
 		const origin = data.executionDetails.origin
-		const os = data.executionDetails.systemInformation.os.platform + ', ' +
-			data.executionDetails.systemInformation.os.distro + ', ' +
-			data.executionDetails.systemInformation.os.release + ', ' +
+		const os =
+			data.executionDetails.systemInformation.os.platform +
+			', ' +
+			data.executionDetails.systemInformation.os.distro +
+			', ' +
+			data.executionDetails.systemInformation.os.release +
+			', ' +
 			data.executionDetails.systemInformation.os.arch
 		const runtime = data.executionDetails.runTimeOptions.v8.cpu.sampleInterval
-		const sensorInterface = data.executionDetails.runTimeOptions.sensorInterface === undefined ? 'None' : data.executionDetails.runTimeOptions.sensorInterface?.type + ' (type) , ' +
-			data.executionDetails.runTimeOptions.sensorInterface?.options.sampleInterval + ' (sampleInterval)'
-
+		const sensorInterface =
+			data.executionDetails.runTimeOptions.sensorInterface === undefined
+				? 'None'
+				: data.executionDetails.runTimeOptions.sensorInterface?.type +
+				' (type) , ' +
+				data.executionDetails.runTimeOptions.sensorInterface?.options
+						.sampleInterval +
+				' (sampleInterval)'
 
 		return /*HTML*/ `
         <!DOCTYPE html>
@@ -98,7 +136,9 @@ export class ReportWebviewPanel {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
             <meta http-equiv="Content-Security-Policy" 
-            content="default-src 'none'; script-src 'nonce-${nonce}';style-src ${webview.cspSource} 'unsafe-inline';">
+            content="default-src 'none'; script-src 'nonce-${nonce}';style-src ${
+			webview.cspSource
+		} 'unsafe-inline';">
             <link rel="stylesheet" href="${styleUri}">
         </head>
         <body>
@@ -133,23 +173,19 @@ export class ReportWebviewPanel {
     `
 	}
 
-	public postMessageToWebview(message: ReportWebViewProtocol_ChildToParent) {
-		if (this._panel) {
-			this._panel.webview.postMessage(message)
-		}
-	}
-
-	public static render(container: Container, data: ProjectReport, filePath: string) {
-		if (ReportWebviewPanel.panels.has(filePath)) {
-			const panel = ReportWebviewPanel.panels.get(filePath)
-			if (panel?._panel) {
-				panel._panel.reveal()
-				panel.updateContent(data, filePath)
-				return panel
-			}
+	public static render(
+		container: Container,
+		data: ProjectReport,
+		filePath: string
+	) {
+		let panel = ReportWebviewPanel.panels.get(filePath)
+		if (panel !== undefined) {
+			panel._panel.reveal()
+			panel.updateContent(data, filePath)
+			return panel
 		}
 
-		const panel = new ReportWebviewPanel(container, data, filePath)
+		panel = new ReportWebviewPanel(container, data, filePath)
 		ReportWebviewPanel.panels.set(filePath, panel)
 		return panel
 	}
@@ -165,20 +201,8 @@ export class ReportWebviewPanel {
 		}
 	}
 
-	public dispose(filePath: string) {
-		ReportWebviewPanel.currentPanel = undefined
-		ReportWebviewPanel.panels.delete(filePath)
-
-		if (this._panel !== undefined) {
-			this._panel.dispose()
-		}
-
-		while (this._disposables.length) {
-			const disposable = this._disposables.pop()
-			if (disposable) {
-				disposable.dispose()
-			}
-		}
+	public dispose() {
+		ReportWebviewPanel.panels.delete(this.filePath)
+		this._disposable.dispose()
 	}
-
 }

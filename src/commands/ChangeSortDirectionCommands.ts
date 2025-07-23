@@ -20,6 +20,7 @@ export enum ContextOptions {
 }
 
 export default class ChangeSortDirectionCommands extends BaseCommand {
+	private _disposable: vscode.Disposable
 	container: Container
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 	private _direction: SortDirection
@@ -29,10 +30,16 @@ export default class ChangeSortDirectionCommands extends BaseCommand {
 		this.container = container
 		this._treeDataProvider = treeDataProvider
 		this._direction = direction
+		this._disposable = vscode.Disposable.from()
+
 		container.storage.storeWorkspace('sortDirection', SortDirection.default)
 		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDefault, true)
 		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDesc, false)
 		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionAsc, false)
+	}
+
+	dispose() {
+		this._disposable.dispose()
 	}
 
 	getIdentifier(): CommandIdentifiers {

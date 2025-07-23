@@ -10,7 +10,6 @@ import {
 import { Container } from '../container'
 import { ReportLoadedEvent, SelectedSensorValueRepresentationChangeEvent, SortDirectionChangeEvent } from '../helper/EventHandler'
 import { ValueRepresentationType } from '../types/valueRepresentationTypes'
-import { ExtendedSensorValueType } from '../types/sensorValues'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { SortDirection } from '../types/sortDirection'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from '../types/sensorValueRepresentation'
@@ -173,6 +172,8 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 }
 
 export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<SourceFileMetaDataTreeNode> {
+	private _disposable: vscode.Disposable
+	
 	container: Container
 	_originalSourceFileMetaDataTree: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined
 	sourceFileMetaDataTree: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined
@@ -190,9 +191,6 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 	constructor(container: Container) {
 		this.container = container
 		this.loadFromProjectReport()
-		this.container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
-		this.container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
-		this.container.eventHandler.onSortDirectionChange(this.sortDirectionChanged.bind(this))
 		const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 		if (sensorValueRepresentation === undefined) {
 			this.sensorValueRepresentation = defaultSensorValueRepresentation()
@@ -200,6 +198,15 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 			this.sensorValueRepresentation = sensorValueRepresentation
 		}
 
+		this._disposable = vscode.Disposable.from(
+			this.container.eventHandler.onReportLoaded(this.reportLoaded.bind(this)),
+			this.container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this)),
+			this.container.eventHandler.onSortDirectionChange(this.sortDirectionChanged.bind(this))	
+		)
+	}
+
+	dispose() {
+		this._disposable.dispose()
 	}
 
 	sortDirectionChanged(event: SortDirectionChangeEvent) {

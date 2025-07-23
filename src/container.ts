@@ -178,9 +178,7 @@ export class Container {
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
 		// TreeViews
-		this._treeDataProvider = new SourceFileMetaDataTreeProvider(
-			this
-		)
+		this.context.subscriptions.push(this._treeDataProvider = new SourceFileMetaDataTreeProvider(this))
 		this.context.subscriptions.push(
 			vscode.window.registerTreeDataProvider(
 				'SourceFileMetaDataTree',
@@ -194,66 +192,89 @@ export class Container {
 		)
 
 		// Commands
-		this._selectReportCommand = new SelectReport(this)
+		this.context.subscriptions.push(this._selectReportCommand = new SelectReport(this))
 		this.context.subscriptions.push(this._selectReportCommand.register())
 
-		this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
+		this.context.subscriptions.push(
+			this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
+		)
 		this.context.subscriptions.push(this._selectReportFromContextMenuCommand.register())
 
-		this._selectValueRepresentationCommand = new SelectValueRepresentationCommand(this, this._treeDataProvider)
+		this.context.subscriptions.push(
+			this._selectValueRepresentationCommand = new SelectValueRepresentationCommand(this, this._treeDataProvider)
+		)
 		this.context.subscriptions.push(this._selectValueRepresentationCommand.register())
 
-		this._selectSensorValueTypeCommand = new SelectSensorValueTypeCommand(this, this._treeDataProvider)
+		this.context.subscriptions.push(
+			this._selectSensorValueTypeCommand = new SelectSensorValueTypeCommand(this, this._treeDataProvider)
+		)
 		this.context.subscriptions.push(this._selectSensorValueTypeCommand.register())
 
-
-		this._selectProfileCommand = new SelectProfileCommand(this)
+		this.context.subscriptions.push(
+			this._selectProfileCommand = new SelectProfileCommand(this)
+		)
 		this.context.subscriptions.push(this._selectProfileCommand.register())
 
-		this._disableLineAnnotationsCommand = new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.disable)
+		this.context.subscriptions.push(
+			this._disableLineAnnotationsCommand =
+				new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.disable)
+		)
 		this.context.subscriptions.push(this._disableLineAnnotationsCommand.register())
 
-		this._enableLineAnnotationsCommand = new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.enable)
+		this.context.subscriptions.push(
+			this._enableLineAnnotationsCommand =
+				new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.enable)
+		)
 		this.context.subscriptions.push(this._enableLineAnnotationsCommand.register())
 
-		this._changeSortDirectionAscToDescCommand = new ChangeSortDirectionCommands(
-			this,
-			this._treeDataProvider,
-			SortDirection.desc
+		this.context.subscriptions.push(
+			this._changeSortDirectionAscToDescCommand = new ChangeSortDirectionCommands(
+				this,
+				this._treeDataProvider,
+				SortDirection.desc
+			)
 		)
-		this._changeSortDirectionDescToDefaultCommand = new ChangeSortDirectionCommands(
-			this,
-			this._treeDataProvider,
-			SortDirection.default
+		this.context.subscriptions.push(
+			this._changeSortDirectionDescToDefaultCommand = new ChangeSortDirectionCommands(
+				this,
+				this._treeDataProvider,
+				SortDirection.default
+			)
 		)
-		this._changeSortDirectionDefaultToAscCommand = new ChangeSortDirectionCommands(
-			this,
-			this._treeDataProvider,
-			SortDirection.asc
+		this.context.subscriptions.push(
+			this._changeSortDirectionDefaultToAscCommand = new ChangeSortDirectionCommands(
+				this,
+				this._treeDataProvider,
+				SortDirection.asc
+			)
 		)
 		this.context.subscriptions.push(this._changeSortDirectionAscToDescCommand.register())
 		this.context.subscriptions.push(this._changeSortDirectionDescToDefaultCommand.register())
 		this.context.subscriptions.push(this._changeSortDirectionDefaultToAscCommand.register())
 
-		this._filterCommand = new FilterCommand(this, this._treeDataProvider)
+		this.context.subscriptions.push(this._filterCommand = new FilterCommand(this, this._treeDataProvider))
 		this.context.subscriptions.push(this._filterCommand.register())
 
 		//webview providers
-		this._methodViewProvider = new MethodViewProvider(this.context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._methodViewProvider = new MethodViewProvider(this.context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				MethodViewProvider.viewType, this._methodViewProvider
 			))
 
-		this._filterViewProvider = new FilterViewProvider(this.context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._filterViewProvider = new FilterViewProvider(this.context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				FilterViewProvider.viewType, this._filterViewProvider
 			))
-		this._reportEditorProvider = new ReportEditorProvider(this)
+		this.context.subscriptions.push(this._reportEditorProvider = new ReportEditorProvider(this))
 		this.context.subscriptions.push(
 			vscode.window.registerCustomEditorProvider(
-				'oaklean.oak', this.reportEditorProvider
+				'oaklean.oak', this._reportEditorProvider
 			)
 		)
 
@@ -270,13 +291,17 @@ export class Container {
 			})
 		)
 
-		this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				EditorFileMethodViewProvider.viewType, this._editorFileMethodViewProvider
 			))
 
-		this._graphicalViewProvider = new GraphicalViewProvider(context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._graphicalViewProvider = new GraphicalViewProvider(context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				GraphicalViewProvider.viewType, this._graphicalViewProvider

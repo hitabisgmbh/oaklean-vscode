@@ -7,21 +7,38 @@ import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { TextEditorChangeEvent } from '../helper/EventHandler'
-import { EditorFileMethodViewProtocol_ParentToChild, EditorFileMethodViewCommands } from '../protocols/editorFileMethodViewProtocol'
+import {
+	EditorFileMethodViewProtocol_ParentToChild,
+	EditorFileMethodViewCommands
+} from '../protocols/editorFileMethodViewProtocol'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
-export class EditorFileMethodViewProvider implements vscode.WebviewViewProvider {
+export class EditorFileMethodViewProvider
+	implements vscode.WebviewViewProvider {
+	private subscriptions: vscode.Disposable[] = []
 
 	public static readonly viewType = 'editorFileMethodView'
 	private _view?: vscode.WebviewView
 	_container: Container
 	editor: TextEditor | undefined
-	constructor(private readonly _extensionUri: vscode.Uri,
-		container: Container) {
+	constructor(
+		private readonly _extensionUri: vscode.Uri,
+		container: Container
+	) {
 		this._container = container
-		this._container.eventHandler.onTextEditorChange(this.textEditorChanged.bind(this))
-		this._container.eventHandler.onSelectedSensorValueTypeChange(this.refresh.bind(this))
-		this._container.eventHandler.onReportLoaded(this.refresh.bind(this))
+		this.subscriptions = [
+			this._container.eventHandler.onTextEditorChange(
+				this.textEditorChanged.bind(this)
+			),
+			this._container.eventHandler.onSelectedSensorValueTypeChange(
+				this.refresh.bind(this)
+			),
+			this._container.eventHandler.onReportLoaded(this.refresh.bind(this)),
+		]
+	}
+	dispose() {
+		this.subscriptions.forEach((d) => d.dispose())
+		this.subscriptions = []
 	}
 
 	public resolveWebviewView(
