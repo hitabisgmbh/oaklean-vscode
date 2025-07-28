@@ -1,23 +1,29 @@
 import { FilterPaths } from '../types/FilterPaths'
-import { MethodViewCommands } from '../types/methodViewCommands'
-import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
-import { SortDirection } from '../types/sortDirection'
-import { MethodList } from '../model/MethodList'
+import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 
-export type MethodViewProtocol_ChildToParent = {
-	command: MethodViewCommands;
-	identifier: string;
-	filePath: string;
-} | { command: MethodViewCommands.initMethods }
+export enum MethodViewCommands {
+	clearMethodList = 'clear-method-list',
+	createMethodList = 'create-method-list',
+	open = 'open',
+	initMethods = 'initMethods'
+}
 
+export type MethodViewProtocol_ChildToParent =
+	| {
+			command: MethodViewCommands.open
+			identifier: string
+			filePath: string
+	}
+	| { command: MethodViewCommands.initMethods }
 
 export type MethodViewProtocol_ParentToChild =
-	| { type: MethodViewMessageTypes.sortDirectionChange, sortDirection: SortDirection }
-	| { type: MethodViewMessageTypes.sensorValueTypeChange, sensorValueRepresentation: SensorValueRepresentation }
-	| { type: MethodViewMessageTypes.filterPathChange, filterPaths: FilterPaths }
 	| {
-		type: MethodViewMessageTypes.displayMethods, methodList: MethodList,
-		sensorValueRepresentation: SensorValueRepresentation, filterPaths: FilterPaths
+			command: MethodViewCommands.createMethodList
+			methodTrees: Record<string, {
+				fileName: string
+				tree: ISourceFileMethodTree
+			}>
+			sensorValueRepresentation: SensorValueRepresentation
 	}
-	| { type: MethodViewMessageTypes.clear }
+	| { command: MethodViewCommands.clearMethodList }

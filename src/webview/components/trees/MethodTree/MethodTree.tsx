@@ -7,9 +7,7 @@ import React from 'react'
 
 import './MethodTree.css'
 import { MethodTreeEntry } from './MethodTreeEntry'
-import { TreeViewHeader } from './TreeViewHeader'
 
-import { CodiconButton } from '../../buttons/CodiconButton'
 import {
 	EditorFileMethodViewCommands,
 	EditorFileMethodViewProtocol_ChildToParent
@@ -40,23 +38,15 @@ const IDENTIFIER_TYPE_CODICONS: Record<ProgramStructureTreeType, string> = {
 }
 
 export interface MethodTreeProps {
+	filePath: string,
 	sourceFileMethodTree: ISourceFileMethodTree
 	sensorValueRepresentation: SensorValueRepresentation
 	postToProvider: (message: EditorFileMethodViewProtocol_ChildToParent) => void
-	flat: boolean
+	showNPIOSC: boolean
+	flatMode: boolean
 }
 
 export function MethodTree({ props }: { props?: MethodTreeProps }) {
-	const [
-		flatMode,
-		setFlatMode
-	] = React.useState(props?.flat || false)
-
-	const [
-		showNonPresentInOriginalSourceCode,
-		setShowNonPresentInOriginalSourceCode
-	] = React.useState(false)
-
 	let i = 0
 	if (props === undefined) {
 		return <div className="method-tree">No data available for this file</div>
@@ -64,32 +54,11 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 
 	return (
 		<div className="method-tree">
-			<TreeViewHeader buttons={
-				<>
-					<CodiconButton codiconName={
-						flatMode ?
-							'codicon-list-flat' :
-							'codicon-list-tree'}
-						onClick={() => {
-							setFlatMode((prev) => !prev)
-						}}
-						title='Show flat/tree view of the methods'
-					></CodiconButton>
-					<CodiconButton codiconName={
-					showNonPresentInOriginalSourceCode ?
-						'codicon-eye' :
-						'codicon-eye-closed'}
-					onClick={() => {
-						setShowNonPresentInOriginalSourceCode((prev) => !prev)
-					}}
-					title='Show/Hide source locations that existed only during runtime'
-					></CodiconButton>
-				</>
-			}/>
 			{Object.entries(props.sourceFileMethodTree.children).map(
 				([identifierPart, child]) =>
 					renderNode(
-						showNonPresentInOriginalSourceCode,
+						props.showNPIOSC,
+						props.flatMode,
 						[identifierPart as SourceNodeIdentifierPart_string],
 						child,
 						props.sensorValueRepresentation
@@ -99,14 +68,15 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 	)
 
 	function renderNode(
-		showNonPresentInOriginalSourceCode: boolean,
+		showNPIOSC: boolean,
+		flatMode: boolean,
 		identifierRoute: SourceNodeIdentifierPart_string[],
 		sourceFileMethodTree: ISourceFileMethodTree,
-		sensorValueRepresentation: SensorValueRepresentation
+		sensorValueRepresentation: SensorValueRepresentation,
 	): React.JSX.Element {
 		if (
 			sourceFileMethodTree.presentInOriginalSourceCode === false &&
-			!showNonPresentInOriginalSourceCode
+			!showNPIOSC
 		) {
 			return <></>
 		}
@@ -123,7 +93,8 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 					{Object.entries(sourceFileMethodTree.children).map(
 						([identifierPart, child]) =>
 							renderNode(
-								showNonPresentInOriginalSourceCode,
+								showNPIOSC,
+								flatMode,
 								[
 									...identifierRoute,
 									identifierPart as SourceNodeIdentifierPart_string
@@ -163,6 +134,7 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 			<MethodTreeEntry
 				onClick={() => {
 					props?.postToProvider({
+						filePath: props.filePath,
 						command: EditorFileMethodViewCommands.open,
 						identifier: identifierRoute.join('.')
 					})
@@ -189,7 +161,8 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 					<TreeView nodeLabel={identifierLabel} itemClassName="row">
 						{children.map(([childIdentifierPart, child]) =>
 							renderNode(
-								showNonPresentInOriginalSourceCode,
+								showNPIOSC,
+								flatMode,
 								[
 									...identifierRoute,
 									childIdentifierPart as SourceNodeIdentifierPart_string

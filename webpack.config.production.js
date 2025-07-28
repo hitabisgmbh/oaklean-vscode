@@ -8,6 +8,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
 	entry: {
 		EditorFileMethodView: './src/webview/EditorFileMethodView/main.tsx', // Entry point for React app
+		MethodView: './src/webview/MethodView/main.tsx', // Entry point for React app
 	},
   devtool: 'source-map',
   output: {

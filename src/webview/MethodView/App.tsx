@@ -3,12 +3,12 @@ import { provideVSCodeDesignSystem, allComponents } from '@vscode/webview-ui-too
 
 import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
-	EditorFileMethodViewCommands,
-	EditorFileMethodViewProtocol_ChildToParent,
-	EditorFileMethodViewProtocol_ParentToChild
-} from '../../protocols/editorFileMethodViewProtocol'
+	MethodViewCommands,
+	MethodViewProtocol_ParentToChild
+} from '../../protocols/methodViewProtocol'
 import { ISourceFileMethodTree } from '../../types/model/SourceFileMethodTree'
 import { SensorValueRepresentation } from '../../types/sensorValueRepresentation'
+import TreeView from '../components/trees/Treeview'
 import { TreeViewHeader } from '../components/trees/MethodTree/TreeViewHeader'
 import { CodiconButton } from '../components/buttons/CodiconButton'
 
@@ -19,12 +19,15 @@ provideVSCodeDesignSystem().register(allComponents)
 
 export const vscode = acquireVsCodeApi()
 
-function postToProvider(message: EditorFileMethodViewProtocol_ChildToParent){
+function postToProvider(message: { command: string }){
 	vscode.postMessage(message)
 }
 
 type Props = {
-	sourceFileMethodTree: ISourceFileMethodTree,
+	methodTrees: Record<string, {
+		fileName: string
+		tree: ISourceFileMethodTree
+	}>,
 	sensorValueRepresentation: SensorValueRepresentation
 }
 
@@ -32,39 +35,39 @@ export function App() {
 	const [props, setProps] = useState<Props>()
 
 	function handleExtensionMessages(message: {
-		data: EditorFileMethodViewProtocol_ParentToChild
+		data: MethodViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case EditorFileMethodViewCommands.createMethodList:
+			case MethodViewCommands.createMethodList:
 				setProps({
-					sourceFileMethodTree: message.data.sourceFileMethodTree,
+					methodTrees: message.data.methodTrees,
 					sensorValueRepresentation: message.data.sensorValueRepresentation
 				})
 				break
-			case EditorFileMethodViewCommands.clearMethodList:
+			case MethodViewCommands.clearMethodList:
 				setProps(undefined)
 				break
 		}
 	}
 
-	const [
-		flatMode,
-		setFlatMode
-	] = useState(false)
-
-	const [
-		showNPIOSC,
-		setShowNPIOSC
-	] = useState(false)
-
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
-		postToProvider({ command: EditorFileMethodViewCommands.initMethods })
+		postToProvider({ command: MethodViewCommands.initMethods })
 
 		return () => {
 			window.removeEventListener('message', handleExtensionMessages)
 		}
 	}, [])
+
+	const [
+		flatMode,
+		setFlatMode
+	] = useState(true)
+
+	const [
+		showNPIOSC,
+		setShowNPIOSC
+	] = useState(false)
 
 	return (
 		<>
@@ -90,14 +93,20 @@ export function App() {
 					></CodiconButton>
 				</>
 			}/>
-			<MethodTree props={props !== undefined ? {
-				showNPIOSC,
-				flatMode,
-				filePath: '',
-				sourceFileMethodTree: props.sourceFileMethodTree,
-				sensorValueRepresentation: props.sensorValueRepresentation,
-				postToProvider
-			} : undefined}/>
+			{props === undefined ? undefined : Object.entries(props.methodTrees || {}).map(([path, entry]) => {
+				return (
+					<TreeView nodeLabel={entry.fileName} itemClassName="row">
+						<MethodTree props={{
+							flatMode,
+							showNPIOSC: showNPIOSC,
+							filePath: path,
+							sourceFileMethodTree: entry.tree,
+							sensorValueRepresentation: props.sensorValueRepresentation,
+							postToProvider
+						}}/>
+					</TreeView>
+				)
+			})}
 		</>
 	)
 }

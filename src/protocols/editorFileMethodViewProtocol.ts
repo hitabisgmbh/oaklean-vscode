@@ -9,13 +9,19 @@ export enum EditorFileMethodViewCommands {
 }
 
 export type EditorFileMethodViewProtocol_ChildToParent =
-	{ command: EditorFileMethodViewCommands.open, identifier: string } |
-	{ command: EditorFileMethodViewCommands.initMethods }
+	| {
+			command: EditorFileMethodViewCommands.open
+			identifier: string
+			filePath: string
+	}
+	| { command: EditorFileMethodViewCommands.initMethods }
 
-export type EditorFileMethodViewProtocol_ParentToChild = {
-	command: EditorFileMethodViewCommands.createMethodList;
-	sourceFileMethodTree: ISourceFileMethodTree,
-	sensorValueRepresentation: SensorValueRepresentation
-} | {
-	command: EditorFileMethodViewCommands.clearMethodList
-}
+export type EditorFileMethodViewProtocol_ParentToChild =
+	| {
+			command: EditorFileMethodViewCommands.createMethodList
+			sourceFileMethodTree: ISourceFileMethodTree
+			sensorValueRepresentation: SensorValueRepresentation
+	}
+	| {
+			command: EditorFileMethodViewCommands.clearMethodList
+	}
