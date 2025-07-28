@@ -1,3 +1,5 @@
+import './CodiconButton.css'
+
 type CodiconButtonProps = {
 	codiconName: string,
 	title?: string,
@@ -7,7 +9,7 @@ type CodiconButtonProps = {
 export function CodiconButton({ codiconName, title, onClick }: CodiconButtonProps) {
 	return (
 		<div
-			className={`button codicon ${codiconName}`}
+			className={`codicon-button button codicon ${codiconName}`}
 			title={title}
 			onClick={onClick}
 		></div>

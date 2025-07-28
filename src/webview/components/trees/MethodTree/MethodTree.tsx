@@ -43,9 +43,15 @@ export interface MethodTreeProps {
 	sourceFileMethodTree: ISourceFileMethodTree
 	sensorValueRepresentation: SensorValueRepresentation
 	postToProvider: (message: EditorFileMethodViewProtocol_ChildToParent) => void
+	flat: boolean
 }
 
 export function MethodTree({ props }: { props?: MethodTreeProps }) {
+	const [
+		flatMode,
+		setFlatMode
+	] = React.useState(props?.flat || false)
+
 	const [
 		showNonPresentInOriginalSourceCode,
 		setShowNonPresentInOriginalSourceCode
@@ -58,8 +64,18 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 
 	return (
 		<div className="method-tree">
-			<TreeViewHeader>
-				<CodiconButton codiconName={
+			<TreeViewHeader buttons={
+				<>
+					<CodiconButton codiconName={
+						flatMode ?
+							'codicon-list-flat' :
+							'codicon-list-tree'}
+						onClick={() => {
+							setFlatMode((prev) => !prev)
+						}}
+						title='Show flat/tree view of the methods'
+					></CodiconButton>
+					<CodiconButton codiconName={
 					showNonPresentInOriginalSourceCode ?
 						'codicon-eye' :
 						'codicon-eye-closed'}
@@ -67,8 +83,9 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 						setShowNonPresentInOriginalSourceCode((prev) => !prev)
 					}}
 					title='Show/Hide source locations that existed only during runtime'
-				></CodiconButton>
-			</TreeViewHeader>
+					></CodiconButton>
+				</>
+			}/>
 			{Object.entries(props.sourceFileMethodTree.children).map(
 				([identifierPart, child]) =>
 					renderNode(
@@ -99,7 +116,8 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 		}
 		const identifierPart = identifierRoute[identifierRoute.length - 1]
 
-		if (identifierPart === '{root}') {
+		const children = Object.entries(sourceFileMethodTree.children || {})
+		if (identifierPart === '{root}' || (flatMode && children.length > 0)) {
 			return (
 				<>
 					{Object.entries(sourceFileMethodTree.children).map(
@@ -158,7 +176,7 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 			/>
 		)
 
-		const children = Object.entries(sourceFileMethodTree.children || {})
+		
 		if (children.length === 0) {
 			return (
 				<div key={i++} className="leaf-node row" data-name={identifierPart}>

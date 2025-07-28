@@ -1,4 +1,4 @@
-.treeViewHeader {
+.tree-view-header {
 	height: 16px;
 	display: flex;
 	align-items: center;
@@ -7,7 +7,6 @@
 	padding: 5px 0;
 }
 
-.treeViewHeader div {
+.tree-view-header .header-buttons {
 	margin-left: auto;
-	cursor: pointer;
 }
