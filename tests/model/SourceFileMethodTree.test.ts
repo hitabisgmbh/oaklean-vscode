@@ -69,45 +69,52 @@ describe('SourceFileMethodThree', () => {
 		const instance = SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
 
 		expect(instance.toJSON()).toEqual({
-			presentInOriginalSourceCode: false,
+			pioscChildrenCount: 1,
 			sourceNodeMetaData: undefined,
 			children: {
 				'{root}': {
-					presentInOriginalSourceCode: true,
+					pioscChildrenCount: 1,
+					piosc: true,
 					sourceNodeMetaData: undefined,
 					children: {
 						'{class:Test}': {
-							presentInOriginalSourceCode: true,
+							pioscChildrenCount: 1,
+							piosc: true,
 							sourceNodeMetaData: undefined,
 							children: {
 								'{method:upsert}': {
-									presentInOriginalSourceCode: true,
+									pioscChildrenCount: 2,
+									piosc: true,
 									sourceNodeMetaData: undefined,
 									children: {
 										'{functionExpression:test}': {
-											presentInOriginalSourceCode: true,
+											pioscChildrenCount: 0,
+											piosc: true,
 											sourceNodeMetaData: sourceNodeMetaData1.toJSON(),
 											children: {}
 										},
 										'{scope:(if:0)}': {
+											pioscChildrenCount: 1,
 											sourceNodeMetaData: undefined,
-											presentInOriginalSourceCode: true,
+											piosc: true,
 											children: {
 												'{scope:(then)}': {
-													presentInOriginalSourceCode: false,
+													pioscChildrenCount: 0,
 													children: {
 														'{functionExpression:(anonymous:0)}': {
-															presentInOriginalSourceCode: false,
+															pioscChildrenCount: 0,
 															sourceNodeMetaData: sourceNodeMetaData2.toJSON(),
 															children: {}
 														}
 													}
 												},
 												'{scope:(else)}': {
-													presentInOriginalSourceCode: true,
+													piosc: true,
+													pioscChildrenCount: 1,
 													children: {
 														'{functionExpression:(anonymous:0)}': {
-															presentInOriginalSourceCode: true,
+															piosc: true,
+															pioscChildrenCount: 0,
 															sourceNodeMetaData: sourceNodeMetaData3.toJSON(),
 															children: {}
 														}

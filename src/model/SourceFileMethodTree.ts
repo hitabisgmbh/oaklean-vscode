@@ -15,7 +15,8 @@ export class SourceFileMethodTree {
 		| SourceNodeMetaDataType.SourceNode
 		| SourceNodeMetaDataType.LangInternalSourceNode
 	>
-	presentInOriginalSourceCode = false
+	pioscChildrenCount = 0
+	piosc?: true
 	parent: SourceFileMethodTree | undefined
 	children: Map<SourceNodeIdentifierPart_string, SourceFileMethodTree>
 
@@ -74,7 +75,10 @@ export class SourceFileMethodTree {
 			this.children.set(identifierPart, child)
 		}
 		if (presentInOriginalSourceCode) {
-			child.presentInOriginalSourceCode = true
+			if (!child.piosc) {
+				this.pioscChildrenCount++
+				child.piosc = true	
+			}
 		}
 		child.addChild(identifierParts, presentInOriginalSourceCode, sourceNodeMetaData)
 	}
@@ -85,7 +89,8 @@ export class SourceFileMethodTree {
 			children[key] = child.toJSON()
 		}
 		return {
-			presentInOriginalSourceCode: this.presentInOriginalSourceCode,
+			piosc: this.piosc,
+			pioscChildrenCount: this.pioscChildrenCount,
 			sourceNodeMetaData: this.sourceNodeMetaData?.toJSON(),
 			children
 		}

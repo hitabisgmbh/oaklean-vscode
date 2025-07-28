@@ -75,7 +75,7 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 		sensorValueRepresentation: SensorValueRepresentation,
 	): React.JSX.Element {
 		if (
-			sourceFileMethodTree.presentInOriginalSourceCode === false &&
+			sourceFileMethodTree.piosc === undefined &&
 			!showNPIOSC
 		) {
 			return <></>
@@ -140,9 +140,7 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 					})
 				}}
 				labelCodicon={labelIcon}
-				showNPIOSCMarker={
-					!sourceFileMethodTree.presentInOriginalSourceCode
-				}
+				showNPIOSCMarker={sourceFileMethodTree.piosc === undefined}
 				labelText={labelText}
 				sensorValueString={sensorValueString}
 			/>

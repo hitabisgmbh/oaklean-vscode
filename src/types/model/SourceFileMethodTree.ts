@@ -9,6 +9,7 @@ export type ISourceFileMethodTree = {
 		| SourceNodeMetaDataType.SourceNode
 		| SourceNodeMetaDataType.LangInternalSourceNode
 	>
-	presentInOriginalSourceCode: boolean
+	piosc?: true
+	pioscChildrenCount: number
 	children: Record<SourceNodeIdentifierPart_string, ISourceFileMethodTree>
 }

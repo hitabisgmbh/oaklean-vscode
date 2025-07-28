@@ -94,6 +94,10 @@ export function App() {
 				</>
 			}/>
 			{props === undefined ? undefined : Object.entries(props.methodTrees || {}).map(([path, entry]) => {
+				if (entry.tree.pioscChildrenCount === 0 && !showNPIOSC) {
+					return undefined
+				}
+
 				return (
 					<TreeView nodeLabel={entry.fileName} itemClassName="row">
 						<MethodTree props={{
