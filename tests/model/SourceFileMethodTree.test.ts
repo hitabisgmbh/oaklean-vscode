@@ -66,80 +66,48 @@ const sourceNodeMetaData3 = sourceFileMetaData.createOrGetSourceNodeMetaData(
 
 describe('SourceFileMethodThree', () => {
 	test('should create the correct tree with all nodes', () => {
-		const instance = SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData, false)
+		const instance = SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
 
 		expect(instance.toJSON()).toEqual({
+			presentInOriginalSourceCode: false,
 			sourceNodeMetaData: undefined,
 			children: {
 				'{root}': {
+					presentInOriginalSourceCode: true,
 					sourceNodeMetaData: undefined,
 					children: {
 						'{class:Test}': {
+							presentInOriginalSourceCode: true,
 							sourceNodeMetaData: undefined,
 							children: {
 								'{method:upsert}': {
+									presentInOriginalSourceCode: true,
 									sourceNodeMetaData: undefined,
 									children: {
 										'{functionExpression:test}': {
+											presentInOriginalSourceCode: true,
 											sourceNodeMetaData: sourceNodeMetaData1.toJSON(),
 											children: {}
 										},
 										'{scope:(if:0)}': {
 											sourceNodeMetaData: undefined,
+											presentInOriginalSourceCode: true,
 											children: {
 												'{scope:(then)}': {
+													presentInOriginalSourceCode: false,
 													children: {
 														'{functionExpression:(anonymous:0)}': {
+															presentInOriginalSourceCode: false,
 															sourceNodeMetaData: sourceNodeMetaData2.toJSON(),
 															children: {}
 														}
 													}
 												},
 												'{scope:(else)}': {
+													presentInOriginalSourceCode: true,
 													children: {
 														'{functionExpression:(anonymous:0)}': {
-															sourceNodeMetaData: sourceNodeMetaData3.toJSON(),
-															children: {}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		})
-	})
-
-	test('should create the correct tree with onlyPresentInOriginalSourceCode', () => {
-		const instance = SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData, true)
-
-		expect(instance.toJSON()).toEqual({
-			sourceNodeMetaData: undefined,
-			children: {
-				'{root}': {
-					sourceNodeMetaData: undefined,
-					children: {
-						'{class:Test}': {
-							sourceNodeMetaData: undefined,
-							children: {
-								'{method:upsert}': {
-									sourceNodeMetaData: undefined,
-									children: {
-										'{functionExpression:test}': {
-											sourceNodeMetaData: sourceNodeMetaData1.toJSON(),
-											children: {}
-										},
-										'{scope:(if:0)}': {
-											sourceNodeMetaData: undefined,
-											children: {
-												'{scope:(else)}': {
-													children: {
-														'{functionExpression:(anonymous:0)}': {
+															presentInOriginalSourceCode: true,
 															sourceNodeMetaData: sourceNodeMetaData3.toJSON(),
 															children: {}
 														}
