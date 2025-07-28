@@ -1,0 +1,26 @@
+.method-tree-entry {
+	display: flex;
+	align-items: center;
+	flex: 1;
+}
+
+.method-tree-entry .npiosc-marker {
+	color: rgb(145, 145, 145);
+	margin-left: 5px;
+}
+
+.method-tree-entry .text {
+	padding-left: 5px;
+	line-height: 22px;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.method-tree-entry .icon {
+	display: inline-block;
+}
+
+.method-tree-entry .sensorValue {
+	color: rgb(145, 145, 145);
+	margin-left: auto;
+}

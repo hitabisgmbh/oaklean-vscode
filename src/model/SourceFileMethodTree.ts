@@ -15,6 +15,8 @@ export class SourceFileMethodTree {
 		| SourceNodeMetaDataType.SourceNode
 		| SourceNodeMetaDataType.LangInternalSourceNode
 	>
+	presentInOriginalSourceCode = false
+	parent: SourceFileMethodTree | undefined
 	children: Map<SourceNodeIdentifierPart_string, SourceFileMethodTree>
 
 	constructor(
@@ -32,35 +34,31 @@ export class SourceFileMethodTree {
 	}
 
 	static fromSourceFileMetaData(
-		sourceFileMetaData: SourceFileMetaData,
-		onlyPresentInOriginalSourceCode = true
+		sourceFileMetaData: SourceFileMetaData
 	): SourceFileMethodTree {
 		const root = new SourceFileMethodTree(true, '' as SourceNodeIdentifierPart_string, undefined)
-		root.addSourceFileMetaData(sourceFileMetaData, onlyPresentInOriginalSourceCode)
+		root.addSourceFileMetaData(sourceFileMetaData)
 		return root
 	}
 
 	addSourceFileMetaData(
-		sourceFileMetaData: SourceFileMetaData,
-		onlyPresentInOriginalSourceCode = true
+		sourceFileMetaData: SourceFileMetaData
 	) {
 		for (const sourceNodeMetaData of sourceFileMetaData.functions.values()) {
-			if (onlyPresentInOriginalSourceCode && !sourceNodeMetaData.presentInOriginalSourceCode) {
-				continue
-			}
 			const identifierParts = SourceNodeIdentifierHelper.split(
 				sourceNodeMetaData.sourceNodeIndex.identifier
 			)
-			this.addChild(identifierParts, sourceNodeMetaData)
+			this.addChild(identifierParts, sourceNodeMetaData.presentInOriginalSourceCode, sourceNodeMetaData)
 		}
 	}
 
 	addChild(
 		identifierParts: SourceNodeIdentifierPart_string[],
-		sourceNodeMetaData?: SourceNodeMetaData<
+		presentInOriginalSourceCode: boolean,
+		sourceNodeMetaData: SourceNodeMetaData<
 			| SourceNodeMetaDataType.SourceNode
 			| SourceNodeMetaDataType.LangInternalSourceNode
-		>
+		>,
 	) {
 		const identifierPart = identifierParts.shift()
 		if (identifierPart === undefined) {
@@ -72,9 +70,13 @@ export class SourceFileMethodTree {
 		let child = this.children.get(identifierPart)
 		if (child === undefined) {
 			child = new SourceFileMethodTree(false, identifierPart, undefined)
+			child.parent = this
 			this.children.set(identifierPart, child)
 		}
-		child.addChild(identifierParts, sourceNodeMetaData)
+		if (presentInOriginalSourceCode) {
+			child.presentInOriginalSourceCode = true
+		}
+		child.addChild(identifierParts, presentInOriginalSourceCode, sourceNodeMetaData)
 	}
 
 	toJSON(): ISourceFileMethodTree {
@@ -83,6 +85,7 @@ export class SourceFileMethodTree {
 			children[key] = child.toJSON()
 		}
 		return {
+			presentInOriginalSourceCode: this.presentInOriginalSourceCode,
 			sourceNodeMetaData: this.sourceNodeMetaData?.toJSON(),
 			children
 		}

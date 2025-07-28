@@ -1,0 +1,12 @@
+.method-tree .leaf-node {
+	margin-left: 16px;
+}
+
+.method-tree .row {
+	line-height: 22px;
+}
+
+.method-tree .row:hover {
+	background-color: var(--vscode-list-hoverBackground);
+	cursor: pointer;
+}

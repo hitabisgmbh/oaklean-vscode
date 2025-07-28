@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { provideVSCodeDesignSystem, allComponents } from '@vscode/webview-ui-toolkit'
 
-import { MethodTree } from './components/MethodTree'
-
+import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
 	EditorFileMethodViewCommands,
 	EditorFileMethodViewProtocol_ChildToParent,

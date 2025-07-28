@@ -279,7 +279,8 @@
 		"profiler-core:update": "npm update @oaklean/profiler-core",
 		"clean": "npx rimraf ./dist",
 		"vscode:prepublish": "npm run bundle -- --minify",
-		"build-webview": "node esbuild-webview.js && npx webpack --config webpack.config.js",
+		"build-webview": "node esbuild-webview.js && npx webpack --config webpack.config.production.js",
+		"build-webview-watch": "npx webpack --config webpack.config.development.js --watch",
 		"build": "npm run clean && npx cross-env NODE_ENV=production npx tsc -p ./ && npm run build-webview",
 		"bundle": "npm run clean && npx cross-env NODE_ENV=production node esbuild-extension.js && npm run build-webview",
 		"watch": "npx tsc -watch -p ./",
@@ -298,7 +299,6 @@
 		"@types/proxyquire": "^1.3.28",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
-		"@types/react-treeview": "^0.4.6",
 		"@types/sinon": "^10.0.14",
 		"@types/vscode": "^1.77.0",
 		"@typescript-eslint/eslint-plugin": "^5.53.0",
@@ -334,7 +334,6 @@
 		"object-hash": "^3.0.0",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
-		"react-treeview": "^0.4.7",
 		"source-map": "^0.7.4"
 	}
 }

@@ -5,16 +5,22 @@ import {
 import { SourceNodeIdentifierHelper } from '@oaklean/profiler-core/dist/src/helper/SourceNodeIdentifierHelper'
 import React from 'react'
 
+import './MethodTree.css'
+import { MethodTreeEntry } from './MethodTreeEntry'
+import { TreeViewHeader } from './TreeViewHeader'
+
+import { CodiconButton } from '../../buttons/CodiconButton'
 import {
 	EditorFileMethodViewCommands,
 	EditorFileMethodViewProtocol_ChildToParent
-} from '../../../protocols/editorFileMethodViewProtocol'
-import { calcOrReturnSensorValue } from '../../../helper/FormulaHelper'
-import { SensorValueFormatHelper } from '../../../helper/SensorValueFormatHelper'
-import TreeView from '../../components/Treeview'
-import { ISourceFileMethodTree } from '../../../types/model/SourceFileMethodTree'
-import { SensorValueRepresentation } from '../../../types/sensorValueRepresentation'
-import './MethodTree.css'
+} from '../../../../protocols/editorFileMethodViewProtocol'
+import { calcOrReturnSensorValue } from '../../../../helper/FormulaHelper'
+import { SensorValueFormatHelper } from '../../../../helper/SensorValueFormatHelper'
+import TreeView from '../Treeview'
+import { ISourceFileMethodTree } from '../../../../types/model/SourceFileMethodTree'
+import { SensorValueRepresentation } from '../../../../types/sensorValueRepresentation'
+
+
 
 const IDENTIFIER_TYPE_CODICONS: Record<ProgramStructureTreeType, string> = {
 	[ProgramStructureTreeType.Root]: 'codicon-symbol-namespace',
@@ -35,21 +41,38 @@ const IDENTIFIER_TYPE_CODICONS: Record<ProgramStructureTreeType, string> = {
 
 export interface MethodTreeProps {
 	sourceFileMethodTree: ISourceFileMethodTree
-	sensorValueRepresentation: SensorValueRepresentation,
+	sensorValueRepresentation: SensorValueRepresentation
 	postToProvider: (message: EditorFileMethodViewProtocol_ChildToParent) => void
 }
 
 export function MethodTree({ props }: { props?: MethodTreeProps }) {
+	const [
+		showNonPresentInOriginalSourceCode,
+		setShowNonPresentInOriginalSourceCode
+	] = React.useState(false)
+
 	let i = 0
 	if (props === undefined) {
-		return <div className='methodTreeView'>No data available for this file</div>
+		return <div className="method-tree">No data available for this file</div>
 	}
 
 	return (
-		<div className='methodTreeView'>
+		<div className="method-tree">
+			<TreeViewHeader>
+				<CodiconButton codiconName={
+					showNonPresentInOriginalSourceCode ?
+						'codicon-eye' :
+						'codicon-eye-closed'}
+					onClick={() => {
+						setShowNonPresentInOriginalSourceCode((prev) => !prev)
+					}}
+					title='Show/Hide source locations that existed only during runtime'
+				></CodiconButton>
+			</TreeViewHeader>
 			{Object.entries(props.sourceFileMethodTree.children).map(
 				([identifierPart, child]) =>
 					renderNode(
+						showNonPresentInOriginalSourceCode,
 						[identifierPart as SourceNodeIdentifierPart_string],
 						child,
 						props.sensorValueRepresentation
@@ -59,12 +82,20 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 	)
 
 	function renderNode(
+		showNonPresentInOriginalSourceCode: boolean,
 		identifierRoute: SourceNodeIdentifierPart_string[],
 		sourceFileMethodTree: ISourceFileMethodTree,
 		sensorValueRepresentation: SensorValueRepresentation
 	): React.JSX.Element {
+		if (
+			sourceFileMethodTree.presentInOriginalSourceCode === false &&
+			!showNonPresentInOriginalSourceCode
+		) {
+			return <></>
+		}
+
 		if (identifierRoute.length === 0) {
-			return <div className='methodTreeView'>No identifier provided</div>
+			return <div className="method-tree">No identifier provided</div>
 		}
 		const identifierPart = identifierRoute[identifierRoute.length - 1]
 
@@ -74,7 +105,11 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 					{Object.entries(sourceFileMethodTree.children).map(
 						([identifierPart, child]) =>
 							renderNode(
-								[...identifierRoute, identifierPart as SourceNodeIdentifierPart_string],
+								showNonPresentInOriginalSourceCode,
+								[
+									...identifierRoute,
+									identifierPart as SourceNodeIdentifierPart_string
+								],
 								child,
 								sensorValueRepresentation
 							)
@@ -85,9 +120,12 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 
 		const result =
 			SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(identifierPart)
-		
+
 		const labelText = result?.name || 'UNKNOWN'
-		const labelIcon = result?.type !== undefined ? IDENTIFIER_TYPE_CODICONS[result.type] : 'codicon-question'
+		const labelIcon =
+			result?.type !== undefined
+				? IDENTIFIER_TYPE_CODICONS[result.type]
+				: 'codicon-question'
 
 		let sensorValueString: string | undefined = undefined
 
@@ -104,41 +142,40 @@ export function MethodTree({ props }: { props?: MethodTreeProps }) {
 		}
 
 		const identifierLabel = (
-			<div className='identifierLabel' onClick={() => {
-				props?.postToProvider({
-					command: EditorFileMethodViewCommands.open,
-					identifier: identifierRoute.join('.')
-				})
-			}}>
-				<span className={`icon codicon ${labelIcon}`}></span>
-				<span className='text'>{labelText}</span>
-				{sensorValueString ? (
-					<>
-						<span className='sensorValue'>{sensorValueString}</span>
-					</>
-				) : (
-					''
-				)}
-			</div>
+			<MethodTreeEntry
+				onClick={() => {
+					props?.postToProvider({
+						command: EditorFileMethodViewCommands.open,
+						identifier: identifierRoute.join('.')
+					})
+				}}
+				labelCodicon={labelIcon}
+				showNPIOSCMarker={
+					!sourceFileMethodTree.presentInOriginalSourceCode
+				}
+				labelText={labelText}
+				sensorValueString={sensorValueString}
+			/>
 		)
 
 		const children = Object.entries(sourceFileMethodTree.children || {})
 		if (children.length === 0) {
 			return (
-				<div key={i++} className='leafNode row' data-name={identifierPart}>
+				<div key={i++} className="leaf-node row" data-name={identifierPart}>
 					{identifierLabel}
 				</div>
 			)
 		} else {
 			return (
 				<div data-name={identifierPart} key={i++}>
-					<TreeView
-						nodeLabel={identifierLabel}
-						itemClassName='row'
-					>
+					<TreeView nodeLabel={identifierLabel} itemClassName="row">
 						{children.map(([childIdentifierPart, child]) =>
 							renderNode(
-								[...identifierRoute, childIdentifierPart as SourceNodeIdentifierPart_string],
+								showNonPresentInOriginalSourceCode,
+								[
+									...identifierRoute,
+									childIdentifierPart as SourceNodeIdentifierPart_string
+								],
 								child,
 								sensorValueRepresentation
 							)

@@ -50,5 +50,5 @@ module.exports = {
       chunks: 'all',
       name: 'vendors', // creates a vendors.js
     },
-  },
+  }
 }

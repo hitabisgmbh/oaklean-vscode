@@ -34,8 +34,10 @@ export class EditorFileMethodViewProvider
 				this.refresh.bind(this)
 			),
 			this._container.eventHandler.onReportLoaded(this.refresh.bind(this)),
+			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this))
 		]
 	}
+
 	dispose() {
 		this.subscriptions.forEach((d) => d.dispose())
 		this.subscriptions = []
@@ -47,11 +49,13 @@ export class EditorFileMethodViewProvider
 		_token: vscode.CancellationToken
 	) {
 		this._view = webviewView
-		this._view.onDidChangeVisibility(() => {
-			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
-				this._extensionUri)
-			this.refresh()
-		})
+		this.subscriptions.push(
+			this._view.onDidChangeVisibility(this.hardRefresh.bind(this)),
+			this._view.webview.onDidReceiveMessage(
+				this.receiveMessageFromWebview.bind(this)
+			)
+		)
+
 		webviewView.webview.options = {
 			// Enable scripts in the webview
 			enableScripts: true,
@@ -62,20 +66,10 @@ export class EditorFileMethodViewProvider
 			]
 		}
 
-		this._view.webview.onDidReceiveMessage(
-			(message: { command: EditorFileMethodViewCommands, identifier: string }) => {
-				if (message.command === EditorFileMethodViewCommands.open) {
-					const identifier = message.identifier
-					if (identifier) {
-						this.openMethodInEditor(identifier)
-					}
-				} else if (message.command === EditorFileMethodViewCommands.initMethods) {
-					this.refresh()
-				}
-			}
+		webviewView.webview.html = this._getHtmlForWebview(
+			webviewView.webview,
+			this._extensionUri
 		)
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
-			this._extensionUri)
 	}
 
 	getSourceFileMetaData() {
@@ -83,11 +77,31 @@ export class EditorFileMethodViewProvider
 		if (!this.editor || !workspaceDir) {
 			return
 		}
-		const filePathRelativeToWorkspace = workspaceDir.pathTo(this.editor.document.fileName)
-		return this._container.textDocumentController.getSourceFileMetaData(filePathRelativeToWorkspace)
+		const filePathRelativeToWorkspace = workspaceDir.pathTo(
+			this.editor.document.fileName
+		)
+		return this._container.textDocumentController.getSourceFileMetaData(
+			filePathRelativeToWorkspace
+		)
 	}
 
-	public postMessageToWebview(message: EditorFileMethodViewProtocol_ParentToChild) {
+	receiveMessageFromWebview(message: {
+		command: EditorFileMethodViewCommands
+		identifier: string
+	}) {
+		if (message.command === EditorFileMethodViewCommands.open) {
+			const identifier = message.identifier
+			if (identifier) {
+				this.openMethodInEditor(identifier)
+			}
+		} else if (message.command === EditorFileMethodViewCommands.initMethods) {
+			this.refresh()
+		}
+	}
+
+	public postMessageToWebview(
+		message: EditorFileMethodViewProtocol_ParentToChild
+	) {
 		this._view?.webview.postMessage(message)
 	}
 
@@ -100,6 +114,17 @@ export class EditorFileMethodViewProvider
 		this.refresh()
 	}
 
+	hardRefresh() {
+		if (this._view === undefined) {
+			return
+		}
+		this._view.webview.html = this._getHtmlForWebview(
+			this._view.webview,
+			this._extensionUri
+		)
+		this.refresh()
+	}
+
 	refresh() {
 		const sourceFileMetaData = this.getSourceFileMetaData()
 		if (sourceFileMetaData === undefined) {
@@ -108,10 +133,12 @@ export class EditorFileMethodViewProvider
 			})
 			return
 		}
-		const sourceFileMethodTree = SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
+		const sourceFileMethodTree =
+			SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
 
-		const sensorValueRepresentation =
-				this._container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+		const sensorValueRepresentation = this._container.storage.getWorkspace(
+			'sensorValueRepresentation'
+		) as SensorValueRepresentation
 		this.postMessageToWebview({
 			command: EditorFileMethodViewCommands.createMethodList,
 			sourceFileMethodTree: sourceFileMethodTree.toJSON(),
@@ -124,7 +151,9 @@ export class EditorFileMethodViewProvider
 		if (!this.editor || !workspaceDir) {
 			return
 		}
-		const filePathRelativeToWorkspace = workspaceDir.pathTo(this.editor.document.fileName)
+		const filePathRelativeToWorkspace = workspaceDir.pathTo(
+			this.editor.document.fileName
+		)
 		const absolutePath = this.editor.document.fileName
 		const uri = vscode.Uri.file(absolutePath?.toString() || '')
 		try {
@@ -133,40 +162,68 @@ export class EditorFileMethodViewProvider
 				if (document) {
 					const programStructureTreeOfFile =
 						this._container.textDocumentController.getProgramStructureTreeOfFile(
-							filePathRelativeToWorkspace)
+							filePathRelativeToWorkspace
+						)
 					let position
 					if (programStructureTreeOfFile) {
-						const loc =
-							programStructureTreeOfFile.sourceLocationOfIdentifier(
-								identifier as SourceNodeIdentifier_string)
+						const loc = programStructureTreeOfFile.sourceLocationOfIdentifier(
+							identifier as SourceNodeIdentifier_string
+						)
 						if (loc) {
-							position = new vscode.Position(loc.beginLoc.line - 1, loc.beginLoc.column)
+							position = new vscode.Position(
+								loc.beginLoc.line - 1,
+								loc.beginLoc.column
+							)
 						}
 					}
 					if (position) {
-						await vscode.window.showTextDocument(document,
-							{ selection: new vscode.Range(position, position) })
+						await vscode.window.showTextDocument(document, {
+							selection: new vscode.Range(position, position)
+						})
 					} else {
 						await vscode.window.showTextDocument(document)
 					}
-
 				}
-
 			} else {
-				console.error(`Could not find file: ${filePathRelativeToWorkspace.toString()}`)
+				console.error(
+					`Could not find file: ${filePathRelativeToWorkspace.toString()}`
+				)
 			}
 		} catch (error) {
 			console.error(`Could not open file: ${error}`)
 		}
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {
+	private _getHtmlForWebview(
+		webview: vscode.Webview,
+		extensionUri: vscode.Uri
+	) {
 		// Use a nonce to only allow specific scripts to be run
 		const nonce = getNonce()
-		const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'webpack', 'EditorFileMethodView.js'])
-		const stylesUri = getUri(webview, extensionUri, ['dist', 'webview', 'webpack', 'EditorFileMethodView.css'])
-		const vendorsUri = getUri(webview, extensionUri, ['dist', 'webview', 'webpack', 'vendors.js'])
-		const codiconsUri = getUri(webview, extensionUri, ['dist', 'webview', 'codicons', 'codicon.css'])
+		const webviewUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'EditorFileMethodView.js'
+		])
+		const stylesUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'EditorFileMethodView.css'
+		])
+		const vendorsUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'vendors.js'
+		])
+		const codiconsUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'codicons',
+			'codicon.css'
+		])
 
 		const htmlContent = `<!DOCTYPE html>
         <html lang="en">
@@ -184,8 +241,8 @@ export class EditorFileMethodViewProvider
           </head>
           <body>
 						<div id="root"></div>
-						<script type="module" nonce="${nonce}" src="${vendorsUri}"></script>
-						<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
+						<script nonce="${nonce}" src="${vendorsUri}"></script>
+						<script nonce="${nonce}" src="${webviewUri}"></script>
           </body>
         </html>
     `
@@ -193,4 +250,3 @@ export class EditorFileMethodViewProvider
 		return htmlContent
 	}
 }
-
