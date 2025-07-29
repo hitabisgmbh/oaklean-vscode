@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { provideVSCodeDesignSystem, allComponents } from '@vscode/webview-ui-toolkit'
+import {
+	provideVSCodeDesignSystem,
+	allComponents
+} from '@vscode/webview-ui-toolkit'
 
 import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
@@ -11,7 +14,7 @@ import { ISourceFileMethodTree } from '../../types/model/SourceFileMethodTree'
 import { SensorValueRepresentation } from '../../types/sensorValueRepresentation'
 import { TreeViewHeader } from '../components/trees/MethodTree/TreeViewHeader'
 import { CodiconButton } from '../components/buttons/CodiconButton'
-
+import { SensorValueFormatHelper } from '../../helper/SensorValueFormatHelper'
 
 declare const acquireVsCodeApi: any
 
@@ -19,12 +22,12 @@ provideVSCodeDesignSystem().register(allComponents)
 
 export const vscode = acquireVsCodeApi()
 
-function postToProvider(message: EditorFileMethodViewProtocol_ChildToParent){
+function postToProvider(message: EditorFileMethodViewProtocol_ChildToParent) {
 	vscode.postMessage(message)
 }
 
 type Props = {
-	sourceFileMethodTree: ISourceFileMethodTree,
+	sourceFileMethodTree: ISourceFileMethodTree
 	sensorValueRepresentation: SensorValueRepresentation
 }
 
@@ -47,15 +50,9 @@ export function App() {
 		}
 	}
 
-	const [
-		flatMode,
-		setFlatMode
-	] = useState(false)
+	const [flatMode, setFlatMode] = useState(false)
 
-	const [
-		showNPIOSC,
-		setShowNPIOSC
-	] = useState(false)
+	const [showNPIOSC, setShowNPIOSC] = useState(false)
 
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
@@ -68,36 +65,49 @@ export function App() {
 
 	return (
 		<>
-			<TreeViewHeader buttons={
-				<>
-					<CodiconButton codiconName={
-						flatMode ?
-							'codicon-list-flat' :
-							'codicon-list-tree'}
-						onClick={() => {
-							setFlatMode((prev) => !prev)
-						}}
-						title='Show flat/tree view of the methods'
-					></CodiconButton>
-					<CodiconButton codiconName={
-					showNPIOSC ?
-						'codicon-eye' :
-						'codicon-eye-closed'}
-					onClick={() => {
-						setShowNPIOSC((prev) => !prev)
-					}}
-					title='Show/Hide source locations that existed only during runtime'
-					></CodiconButton>
-				</>
-			}/>
-			<MethodTree props={props !== undefined ? {
-				showNPIOSC,
-				flatMode,
-				filePath: '',
-				sourceFileMethodTree: props.sourceFileMethodTree,
-				sensorValueRepresentation: props.sensorValueRepresentation,
-				postToProvider
-			} : undefined}/>
+			<TreeViewHeader
+				leftSection={
+					<div>
+						{props === undefined
+							? ''
+							: SensorValueFormatHelper.formatSensorValueType(
+									props.sensorValueRepresentation
+							)}
+					</div>
+				}
+				rightSection={
+					<>
+						<CodiconButton
+							codiconName={flatMode ? 'codicon-list-flat' : 'codicon-list-tree'}
+							onClick={() => {
+								setFlatMode((prev) => !prev)
+							}}
+							title="Show flat/tree view of the methods"
+						></CodiconButton>
+						<CodiconButton
+							codiconName={showNPIOSC ? 'codicon-eye' : 'codicon-eye-closed'}
+							onClick={() => {
+								setShowNPIOSC((prev) => !prev)
+							}}
+							title="Show/Hide source locations that existed only during runtime"
+						></CodiconButton>
+					</>
+				}
+			/>
+			<MethodTree
+				props={
+					props !== undefined
+						? {
+								showNPIOSC,
+								flatMode,
+								filePath: '',
+								sourceFileMethodTree: props.sourceFileMethodTree,
+								sensorValueRepresentation: props.sensorValueRepresentation,
+								postToProvider
+						  }
+						: undefined
+				}
+			/>
 		</>
 	)
 }

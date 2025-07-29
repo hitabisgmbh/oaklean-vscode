@@ -1,14 +1,18 @@
 import './TreeViewHeader.css'
 
 type TreeViewHeaderProps = {
-	buttons: React.ReactNode
+	leftSection?: React.ReactNode,
+	rightSection?: React.ReactNode
 }
 
-export function TreeViewHeader({ buttons }: TreeViewHeaderProps) {
+export function TreeViewHeader({ leftSection, rightSection }: TreeViewHeaderProps) {
 	return (
 		<div className='tree-view-header'>
-			<div className='header-buttons'>
-				{buttons}
+			<div className='left-section'>
+				{leftSection}
+			</div>
+			<div className='right-section'>
+				{rightSection}
 			</div>
 		</div>
 	)
