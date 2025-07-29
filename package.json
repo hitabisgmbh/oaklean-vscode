@@ -119,16 +119,6 @@
 			"measurementsPanel": [
 				{
 					"type": "webview",
-					"id": "graphicalView",
-					"name": "GraphicalView",
-					"contextualTitle": "Measurements",
-					"initialSize": 5,
-					"when": "!greendevelopertoolkit:disabled",
-					"visibility": "visible",
-					"icon": "$(law)"
-				},
-				{
-					"type": "webview",
 					"id": "editorFileMethodView",
 					"name": "Methods",
 					"contextualTitle": "Measurements",

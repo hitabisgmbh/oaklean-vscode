@@ -104,7 +104,7 @@ export function App() {
 								sourceFileMethodTree: props.sourceFileMethodTree,
 								sensorValueRepresentation: props.sensorValueRepresentation,
 								postToProvider
-						  }
+						}
 						: undefined
 				}
 			/>
