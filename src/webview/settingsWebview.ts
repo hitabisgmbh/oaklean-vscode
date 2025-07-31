@@ -303,22 +303,22 @@ function handleCustomFormula() {
 }
 
 export function handleFormulaInputChange() {
-	const dropdownValue = document.getElementById(ID_MEASUREMENT) as Dropdown
-	const customFormulaInput = document.getElementById(ID_FORMULA_TEXT_FIELD) as HTMLInputElement
+	// const dropdownValue = document.getElementById(ID_MEASUREMENT) as Dropdown
+	// const customFormulaInput = document.getElementById(ID_FORMULA_TEXT_FIELD) as HTMLInputElement
 
-	// Get the profile from the workspace storage
-	const profile: Profile = this.container.storage.getWorkspace(`profile.${dropdownValue.value}`)
+	// // Get the profile from the workspace storage
+	// const profile: Profile = this.container.storage.getWorkspace(`profile.${dropdownValue.value}`)
 
-	// If the profile exists, update the formula
-	if (profile !== undefined && profile !== null) {
-		profile.formula = customFormulaInput.value
+	// // If the profile exists, update the formula
+	// if (profile !== undefined && profile !== null) {
+	// 	profile.formula = customFormulaInput.value
 
-		// Save the updated profile to the workspace storage
-		this.container.storage.storeWorkspace(`profile.${dropdownValue.value}`, profile)
-	} else {
-		vscode.window.showErrorMessage(ERROR_INPUT_MISSING)
-		return
-	}
+	// 	// Save the updated profile to the workspace storage
+	// 	this.container.storage.storeWorkspace(`profile.${dropdownValue.value}`, profile)
+	// } else {
+	// 	vscode.window.showErrorMessage(ERROR_INPUT_MISSING)
+	// 	return
+	// }
 }
 
 function handleDefaultValues() {

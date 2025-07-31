@@ -102,7 +102,14 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		const webviewUri = getUri(webview, extensionUri, [
 			'dist',
 			'webview',
+			'webpack',
 			'FilterView.js'
+		])
+		const vendorsUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'vendors.js'
 		])
 		const stylesUri = getUri(webview, extensionUri, [
 			'dist',
@@ -127,7 +134,8 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		  placeholder="e.g. *.ts, src/**/include" value="${includedFilterPath}">Included files path</vscode-text-field>
 		  <vscode-text-field id="excludePath" class="include-exclude-field" 
 		  placeholder="e.g. *.ts, src/**/exclude" value="${excludedFilterPath}">Excluded files path</vscode-text-field>
-          <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
+					<script nonce="${nonce}" src="${vendorsUri}"></script>
+					<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
           </body>
         </html>
     `

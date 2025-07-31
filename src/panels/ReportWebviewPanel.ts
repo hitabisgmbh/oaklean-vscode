@@ -72,7 +72,14 @@ export class ReportWebviewPanel {
 		const webviewUri = getUri(webview, extensionUri, [
 			'dist',
 			'webview',
+			'webpack',
 			'ReportWebview.js'
+		])
+		const vendorsUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'vendors.js'
 		])
 		const styleUri = getUri(webview, extensionUri, [
 			'dist',
@@ -167,6 +174,7 @@ export class ReportWebviewPanel {
 					</table>
 				</div>
 			</div>
+			<script nonce="${nonce}" src="${vendorsUri}"></script>
 			<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
         </body>
         </html>

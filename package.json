@@ -43,8 +43,8 @@
 		"onLanguage:javascript",
 		"workspaceContains:**/.oaklean"
 	],
-	"main": "./dist/extension.js",
-	"browser": "./dist/extension.js",
+	"main": "./dist/extension/extension.js",
+	"browser": "./dist/extension/extension.js",
 	"contributes": {
 		"configuration": {
 			"title": "oaklean",
@@ -271,13 +271,9 @@
 	},
 	"scripts": {
 		"profiler-core:update": "npm update @oaklean/profiler-core",
-		"clean": "npx rimraf ./dist",
-		"vscode:prepublish": "npm run bundle -- --minify",
-		"build-webview": "node esbuild-webview.js && npx webpack --config webpack.config.production.js",
-		"build-webview-watch": "npx webpack --config webpack.config.development.js --watch",
-		"build": "npm run clean && npx cross-env NODE_ENV=production npx tsc -p ./ && npm run build-webview",
-		"bundle": "npm run clean && npx cross-env NODE_ENV=production node esbuild-extension.js && npm run build-webview",
-		"watch": "npx tsc -watch -p ./",
+		"vscode:prepublish": "npm run build",
+		"build": "npx cross-env NODE_ENV=production npx webpack --config webpack.config.js",
+		"watch": "npx cross-env NODE_ENV=development npx webpack --config webpack.config.js",
 		"lint": "npx eslint --fix .",
 		"test": "npx jest --coverage",
 		"package": "npx vsce package",
@@ -300,15 +296,13 @@
 		"@vscode/test-electron": "^2.2.3",
 		"@vscode/vsce": "^2.26.1",
 		"concurrently": "^8.0.1",
+		"copy-webpack-plugin": "^13.0.0",
 		"cross-env": "^7.0.3",
 		"css-loader": "^7.1.2",
-		"esbuild": "^0.19.11",
-		"esbuild-plugin-copy": "^2.1.1",
 		"eslint": "^8.34.0",
 		"eslint-plugin-import": "^2.27.5",
 		"jest": "^29.4.3",
 		"mini-css-extract-plugin": "^2.9.2",
-		"rimraf": "^4.4.1",
 		"sinon": "^15.0.4",
 		"style-loader": "^4.0.0",
 		"ts-jest": "^29.1.0",
@@ -316,7 +310,8 @@
 		"ts-node": "^10.9.1",
 		"typescript": "^4.9.5",
 		"webpack": "^5.100.2",
-		"webpack-cli": "^6.0.1"
+		"webpack-cli": "^6.0.1",
+		"webpack-node-externals": "^3.0.0"
 	},
 	"dependencies": {
 		"@vscode/codicons": "^0.0.35",

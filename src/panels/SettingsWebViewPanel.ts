@@ -93,7 +93,13 @@ export class SettingsWebViewPanel {
 	}
 
 	private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, profile: Profile) {
-		const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'settingsWebview.js'])
+		const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'webpack', 'settingsWebview.js'])
+		const vendorsUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'vendors.js'
+		])
 		const stylesUri = getUri(webview, extensionUri, ['dist', 'webview', 'stylesSettingsPage.css'])
 		const codiconsUri = getUri(webview, extensionUri, ['dist', 'webview', 'codicons', 'codicon.css'])
 		const nonce = getNonce()
@@ -199,6 +205,7 @@ export class SettingsWebViewPanel {
                 </vscode-panel-view>
               </vscode-panels>
             </section>
+						<script nonce="${nonce}" src="${vendorsUri}"></script>
             <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
           </body>
           </html>
