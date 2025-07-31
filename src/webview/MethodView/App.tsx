@@ -15,6 +15,7 @@ import TreeView from '../components/trees/Treeview'
 import { TreeViewHeader } from '../components/trees/MethodTree/TreeViewHeader'
 import { CodiconButton } from '../components/buttons/CodiconButton'
 import { SensorValueFormatHelper } from '../../helper/SensorValueFormatHelper'
+import { SortDirection } from '../../types/sortDirection'
 
 declare const acquireVsCodeApi: any
 
@@ -110,9 +111,10 @@ export function App() {
 						return (
 							<TreeView nodeLabel={entry.fileName} itemClassName="row">
 								<MethodTree
-									props={{
-										flatMode,
-										showNPIOSC: showNPIOSC,
+									sortDirection={SortDirection.default}
+									flatMode={flatMode}
+									showNPIOSC={showNPIOSC}
+									data={{
 										filePath: path,
 										sourceFileMethodTree: entry.tree,
 										sensorValueRepresentation: props.sensorValueRepresentation,

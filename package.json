@@ -211,6 +211,10 @@
 		},
 		"commands": [
 			{
+				"command": "oaklean.themeColorViewer.show",
+				"title": "[DEV] Oaklean: Show Theme Colors"
+			},
+			{
 				"command": "oaklean.settings",
 				"category": "Oaklean",
 				"title": "Settings"

@@ -9,6 +9,7 @@ module.exports = {
 	entry: {
 		EditorFileMethodView: './src/webview/EditorFileMethodView/main.tsx', // Entry point for React app
 		MethodView: './src/webview/MethodView/main.tsx', // Entry point for React app
+		ThemeColorViewer: './src/webview/ThemeColorViewer/main.tsx', // Entry point for Theme Color Viewer
 	},
   devtool: 'source-map',
   output: {

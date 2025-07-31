@@ -207,19 +207,24 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
 						<meta
 							http-equiv="Content-Security-Policy"
-							content="default-src 'none'; font-src ${webview.cspSource}; 
-								style-src ${webview.cspSource}; script-src 'nonce-${nonce}';"
+							content="
+								default-src 'none';
+								font-src ${webview.cspSource};
+								style-src 'unsafe-inline' ${webview.cspSource};
+								style-src-elem 'unsafe-inline' ${webview.cspSource};
+								script-src 'nonce-${nonce}';
+							"
 						>
 						<link rel="stylesheet" href="${stylesUri}">
 						<link rel="stylesheet" href="${codiconsUri}">
             <title>Methods</title>
           </head>
-          <body>
+					<body>
 						<div id="root"></div>
 						<script nonce="${nonce}" src="${vendorsUri}"></script>
 						<script nonce="${nonce}" src="${webviewUri}"></script>
-						</body>
-					</html>
+					</body>
+				</html>
     `
 
 		return htmlContent

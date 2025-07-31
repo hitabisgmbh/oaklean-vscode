@@ -10,6 +10,7 @@ import { SourceFileMetaDataTreeProvider } from './treeviews/SourceFileMetaDataTr
 import SelectValueRepresentationCommand from './commands/SelectValueRepresentationCommand'
 import SelectSensorValueTypeCommand from './commands/SelectSensorValueTypeCommand'
 import ChangeSortDirectionCommands from './commands/ChangeSortDirectionCommands'
+import ThemeColorViewerCommands from './commands/ThemeColorViewerCommands'
 import SettingsWebviewController from './controller/SettingsWebviewController'
 import { ReportWebviewController } from './controller/ReportWebviewController'
 import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction } from './commands/ToggleLineAnnotationCommands'
@@ -122,6 +123,11 @@ export class Container {
 		return this._enableLineAnnotationsCommand
 	}
 
+	private readonly _showThemeColorViewerCommand: ThemeColorViewerCommands
+	get showThemeColorViewerCommand() {
+		return this._showThemeColorViewerCommand
+	}
+
 	private readonly _filterCommand: FilterCommand
 	get filterCommand() {
 		return this._filterCommand
@@ -192,6 +198,8 @@ export class Container {
 		)
 
 		// Commands
+		this.context.subscriptions.push(this._showThemeColorViewerCommand = new ThemeColorViewerCommands(this))
+		this.context.subscriptions.push(this._showThemeColorViewerCommand.register())
 		this.context.subscriptions.push(this._selectReportCommand = new SelectReport(this))
 		this.context.subscriptions.push(this._selectReportCommand.register())
 

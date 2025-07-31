@@ -5,7 +5,8 @@ type MethodTreeEntryProps = {
 	labelCodicon: string
 	labelText: string
 	showNPIOSCMarker?: boolean
-	sensorValueString?: string
+	sensorValue?: string
+	sensorValueUnit?: string
 }
 
 export function MethodTreeEntry({
@@ -13,7 +14,8 @@ export function MethodTreeEntry({
 	labelCodicon,
 	labelText,
 	showNPIOSCMarker,
-	sensorValueString
+	sensorValue,
+	sensorValueUnit
 }: MethodTreeEntryProps) {
 	return (
 		<div className="method-tree-entry" onClick={onClick}>
@@ -25,13 +27,12 @@ export function MethodTreeEntry({
 					title="This source location was only available during runtime"
 				></span>
 			) : undefined}
-			{sensorValueString ? (
-				<>
-					<span className="sensorValue">{sensorValueString}</span>
-				</>
-			) : (
-				''
-			)}
+			<>
+				<span className="sensorValue">
+					<span className="self" title='value of this node'>{sensorValue}</span>
+					<span className="unit"> {sensorValueUnit}</span>
+				</span>
+			</>
 		</div>
 	)
 }

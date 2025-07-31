@@ -225,6 +225,10 @@ export class EditorFileMethodViewProvider
 			'codicon.css'
 		])
 
+		const mediaPath = getUri(webview, extensionUri, [
+			'media'
+		])
+
 		const htmlContent = `<!DOCTYPE html>
         <html lang="en">
           <head>
@@ -232,12 +236,21 @@ export class EditorFileMethodViewProvider
 						<meta name="viewport" content="width=device-width,initial-scale=1.0">
 						<meta
 							http-equiv="Content-Security-Policy"
-							content="default-src 'none'; font-src ${webview.cspSource}; 
-								style-src ${webview.cspSource}; script-src 'nonce-${nonce}';"
+							content="
+								default-src 'none';
+								font-src ${webview.cspSource};
+								img-src ${webview.cspSource};
+								style-src 'unsafe-inline' ${webview.cspSource};
+								style-src-elem 'unsafe-inline' ${webview.cspSource};
+								script-src 'nonce-${nonce}';
+							"
 						>
 						<link rel="stylesheet" href="${stylesUri}">
 						<link rel="stylesheet" href="${codiconsUri}">
             <title>Files Methods</title>
+						<script nonce="${nonce}">
+							window.__MEDIA_PATH__ = "${mediaPath}";
+						</script>
           </head>
           <body>
 						<div id="root"></div>

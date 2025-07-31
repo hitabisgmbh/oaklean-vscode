@@ -15,6 +15,8 @@ import { SensorValueRepresentation } from '../../types/sensorValueRepresentation
 import { TreeViewHeader } from '../components/trees/MethodTree/TreeViewHeader'
 import { CodiconButton } from '../components/buttons/CodiconButton'
 import { SensorValueFormatHelper } from '../../helper/SensorValueFormatHelper'
+import { SortButton } from '../components/buttons/SortButton'
+import { SortDirection } from '../../types/sortDirection'
 
 declare const acquireVsCodeApi: any
 
@@ -50,8 +52,8 @@ export function App() {
 		}
 	}
 
+	const [sortDirection, setSortDirection] = useState(SortDirection.default)
 	const [flatMode, setFlatMode] = useState(false)
-
 	const [showNPIOSC, setShowNPIOSC] = useState(false)
 
 	useEffect(() => {
@@ -77,6 +79,7 @@ export function App() {
 				}
 				rightSection={
 					<>
+						<SortButton sortDirection={sortDirection} setSortDirection={setSortDirection}/>
 						<CodiconButton
 							codiconName={flatMode ? 'codicon-list-flat' : 'codicon-list-tree'}
 							onClick={() => {
@@ -95,11 +98,12 @@ export function App() {
 				}
 			/>
 			<MethodTree
-				props={
+				showNPIOSC={showNPIOSC}
+				flatMode={flatMode}
+				sortDirection={sortDirection}
+				data={
 					props !== undefined
 						? {
-								showNPIOSC,
-								flatMode,
 								filePath: '',
 								sourceFileMethodTree: props.sourceFileMethodTree,
 								sensorValueRepresentation: props.sensorValueRepresentation,

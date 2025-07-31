@@ -1,0 +1,12 @@
+.image-button {
+	width: 16px;
+	height: 16px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	cursor: pointer;
+	padding: 1px;
+}
+
+.image-button:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
