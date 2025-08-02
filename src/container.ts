@@ -14,7 +14,6 @@ import ThemeColorViewerCommands from './commands/ThemeColorViewerCommands'
 import SettingsWebviewController from './controller/SettingsWebviewController'
 import { ReportWebviewController } from './controller/ReportWebviewController'
 import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction } from './commands/ToggleLineAnnotationCommands'
-import FilterCommand from './commands/FilterCommand'
 import { MethodViewProvider } from './providers/MethodViewProvider'
 import { FilterViewProvider } from './providers/FilterViewProvider'
 import SelectProfileCommand from './commands/SelectProfile'
@@ -128,10 +127,6 @@ export class Container {
 		return this._showThemeColorViewerCommand
 	}
 
-	private readonly _filterCommand: FilterCommand
-	get filterCommand() {
-		return this._filterCommand
-	}
 	private readonly _treeDataProvider: SourceFileMetaDataTreeProvider
 	get treeDataProvider() {
 		return this._treeDataProvider
@@ -259,9 +254,6 @@ export class Container {
 		this.context.subscriptions.push(this._changeSortDirectionAscToDescCommand.register())
 		this.context.subscriptions.push(this._changeSortDirectionDescToDefaultCommand.register())
 		this.context.subscriptions.push(this._changeSortDirectionDefaultToAscCommand.register())
-
-		this.context.subscriptions.push(this._filterCommand = new FilterCommand(this, this._treeDataProvider))
-		this.context.subscriptions.push(this._filterCommand.register())
 
 		//webview providers
 		this.context.subscriptions.push(

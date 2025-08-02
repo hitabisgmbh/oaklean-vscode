@@ -142,7 +142,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
-		refresh() {
+	refresh() {
 		const projectReport = this._container.textDocumentController.projectReport
 		if (projectReport === undefined) {
 			return

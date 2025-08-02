@@ -78,7 +78,7 @@ const extensionConfig = {
 const webviewConfig = {
 	...baseConfig,
 	entry: {
-		FilterView: './src/webview/FilterView.ts',
+		FilterView: './src/webview/FilterView/main.tsx',
 		ReportWebview: './src/webview/ReportWebview.ts',
 		settingsWebview: './src/webview/settingsWebview.ts',
 		EditorFileMethodView: './src/webview/EditorFileMethodView/main.tsx',

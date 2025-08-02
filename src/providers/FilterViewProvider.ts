@@ -3,9 +3,11 @@ import * as vscode from 'vscode'
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
-import FilterCommand from '../commands/FilterCommand'
-import { FilterViewCommands } from '../types/filterViewCommands'
-import { FilterViewProtocol_ChildToParent } from '../protocols/filterViewProtocol'
+import {
+	FilterViewCommands,
+	FilterViewProtocol_ChildToParent,
+	FilterViewProtocol_ParentToChild
+} from '../protocols/filterViewProtocol'
 
 export class FilterViewProvider implements vscode.WebviewViewProvider {
 	private subscriptions: vscode.Disposable[] = []
@@ -19,10 +21,63 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		container: Container
 	) {
 		this._container = container
+		this.subscriptions = [
+			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this))
+		]
 	}
 
 	dispose() {
 		this.subscriptions.forEach((d) => d.dispose())
+	}
+
+	public postMessageToWebview(message: FilterViewProtocol_ParentToChild) {
+		this._view?.webview.postMessage(message)
+	}
+
+	hardRefresh() {
+		if (this._view === undefined) {
+			return
+		}
+		this._view.webview.html = this._getHtmlForWebview(
+			this._view.webview,
+			this._extensionUri
+		)
+		this.refresh()
+	}
+
+	refresh() {
+		const includedFilterPath =
+			(this._container.storage.getWorkspace('includedFilterPath') as string) ||
+			''
+		const excludedFilterPath =
+			(this._container.storage.getWorkspace('excludedFilterPath') as string) ||
+			''
+
+		this.postMessageToWebview({
+			command: FilterViewCommands.renderFilterView,
+			filePaths: {
+				includedFilterPath,
+				excludedFilterPath
+			}
+		})
+	}
+
+	receiveMessageFromWebview(message: FilterViewProtocol_ChildToParent) {
+		if (message.command === FilterViewCommands.viewLoaded) {
+			this.refresh()
+			}
+
+		if (message.command === FilterViewCommands.filterPathsEdited) {
+			this._container.storage.storeWorkspace(
+				'includedFilterPath',
+				message.filePaths.includedFilterPath
+			)
+
+			this._container.storage.storeWorkspace(
+				'excludedFilterPath',
+				message.filePaths.excludedFilterPath
+			)
+		}
 	}
 
 	public resolveWebviewView(
@@ -31,48 +86,7 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		_token: vscode.CancellationToken
 	) {
 		this._view = webviewView
-		const filterCommand: FilterCommand = this._container.filterCommand
-		let includedFilterPath =
-			(this._container.storage.getWorkspace('includedFilterPath') as string) ||
-			''
-		let excludedFilterPath =
-			(this._container.storage.getWorkspace('excludedFilterPath') as string) ||
-			''
 
-		this.subscriptions.push(
-			this._view.webview.onDidReceiveMessage(
-				(message: FilterViewProtocol_ChildToParent) => {
-					if (message.command === FilterViewCommands.includedPathChange) {
-						this._container.storage.storeWorkspace(
-							'includedFilterPath',
-							message.text
-						)
-						includedFilterPath = message.text
-						filterCommand.filter(message.command, message.text)
-					} else if (
-						message.command === FilterViewCommands.excludedPathChange
-					) {
-						this._container.storage.storeWorkspace(
-							'excludedFilterPath',
-							message.text
-						)
-						excludedFilterPath = message.text
-						filterCommand.filter(message.command, message.text)
-					}
-				}
-			)
-		)
-
-		this.subscriptions.push(
-			this._view.onDidChangeVisibility(() => {
-				webviewView.webview.html = this._getHtmlForWebview(
-					webviewView.webview,
-					this._extensionUri,
-					includedFilterPath,
-					excludedFilterPath
-				)
-			})
-		)
 		webviewView.webview.options = {
 			// Enable scripts in the webview
 			enableScripts: true,
@@ -83,19 +97,21 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 			]
 		}
 
+		this.subscriptions.push(
+			this._view.webview.onDidReceiveMessage(
+				this.receiveMessageFromWebview.bind(this)
+			)
+		)
+		
 		webviewView.webview.html = this._getHtmlForWebview(
 			webviewView.webview,
-			this._extensionUri,
-			includedFilterPath,
-			excludedFilterPath
+			this._extensionUri
 		)
 	}
 
 	private _getHtmlForWebview(
 		webview: vscode.Webview,
-		extensionUri: vscode.Uri,
-		includedFilterPath?: string,
-		excludedFilterPath?: string
+		extensionUri: vscode.Uri
 	) {
 		// Use a nonce to only allow specific scripts to be run
 		const nonce = getNonce()
@@ -114,28 +130,31 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		const stylesUri = getUri(webview, extensionUri, [
 			'dist',
 			'webview',
-			'filterView.css'
+			'webpack',
+			'FilterView.css'
 		])
 		const htmlContent = `<!DOCTYPE html>
         <html lang="en">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
-						<meta http-equiv="Content-Security-Policy"
-						content="default-src 'none'; 
-						style-src ${webview.cspSource} 'unsafe-inline';
-						script-src 'nonce-${nonce}';">
+						<meta
+							http-equiv="Content-Security-Policy"
+							content="
+								default-src 'none';
+								font-src ${webview.cspSource};
+								style-src 'unsafe-inline' ${webview.cspSource};
+								style-src-elem 'unsafe-inline' ${webview.cspSource};
+								script-src 'nonce-${nonce}';
+							"
+						>
 						<link rel="stylesheet" href="${stylesUri}">
             <title>Filter</title>
           </head>
           <body>
-          <vscode-input-box placeholder="Add path..."></vscode-input-box>
-          <vscode-text-field id="includePath" class="include-exclude-field" 
-		  placeholder="e.g. *.ts, src/**/include" value="${includedFilterPath}">Included files path</vscode-text-field>
-		  <vscode-text-field id="excludePath" class="include-exclude-field" 
-		  placeholder="e.g. *.ts, src/**/exclude" value="${excludedFilterPath}">Excluded files path</vscode-text-field>
-					<script nonce="${nonce}" src="${vendorsUri}"></script>
-					<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
+						<div id="root"></div>
+						<script nonce="${nonce}" src="${vendorsUri}"></script>
+						<script nonce="${nonce}" src="${webviewUri}"></script>
           </body>
         </html>
     `
