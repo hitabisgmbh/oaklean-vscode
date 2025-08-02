@@ -67,15 +67,16 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 			this.refresh()
 			}
 
-		if (message.command === FilterViewCommands.filterPathsEdited) {
+		if (message.command === FilterViewCommands.includedFilterPathEdited) {
 			this._container.storage.storeWorkspace(
 				'includedFilterPath',
-				message.filePaths.includedFilterPath
+				message.includedFilterPath
 			)
-
+		}
+		if (message.command === FilterViewCommands.excludedFilterPathEdited) {
 			this._container.storage.storeWorkspace(
 				'excludedFilterPath',
-				message.filePaths.excludedFilterPath
+				message.excludedFilterPath
 			)
 		}
 	}

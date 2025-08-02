@@ -3,14 +3,18 @@ import { FilterPaths } from '../types/FilterPaths'
 export enum FilterViewCommands {
 	viewLoaded = 'viewLoaded',
 	renderFilterView = 'renderFilterView',
-	filterPathsEdited = 'filterPathsEdited',
+	includedFilterPathEdited = 'includedFilterPathEdited',
+	excludedFilterPathEdited = 'excludedFilterPathEdited',
 }
 
 export type FilterViewProtocol_ChildToParent = {
 	command: FilterViewCommands.viewLoaded;
 } | {
-	command: FilterViewCommands.filterPathsEdited;
-	filePaths: FilterPaths
+	command: FilterViewCommands.includedFilterPathEdited;
+	includedFilterPath: string
+}| {
+	command: FilterViewCommands.excludedFilterPathEdited;
+	excludedFilterPath: string
 }
 
 export type FilterViewProtocol_ParentToChild = {

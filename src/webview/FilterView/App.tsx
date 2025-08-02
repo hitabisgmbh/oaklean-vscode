@@ -16,6 +16,9 @@ function postToProvider(message: FilterViewProtocol_ChildToParent) {
 	vscode.postMessage(message)
 }
 
+let debounceTimer: NodeJS.Timeout | null = null
+const DEBOUNCE_DELAY = 200
+
 export function App() {
 	// Local state to manage the text inputs
 	const [includedFilterPath, setIncludedFilterPath] = useState('')
@@ -47,27 +50,27 @@ export function App() {
 		return function (e: any) {
 			if (e.target) {
 				const newVal = (e.target as HTMLInputElement).value
-				const filePaths = {
-					includedFilterPath,
-					excludedFilterPath
+				if (debounceTimer) {
+					clearTimeout(debounceTimer)
 				}
 				if (type === 'included') {
-					filePaths.includedFilterPath = newVal
 					setIncludedFilterPath(newVal)
+					debounceTimer = setTimeout(() => {
+						postToProvider({
+							command: FilterViewCommands.includedFilterPathEdited,
+							includedFilterPath: newVal
+						})
+					}, DEBOUNCE_DELAY)
 				}
 				if (type === 'excluded') {
-					filePaths.excludedFilterPath = newVal
 					setExcludedFilterPath(newVal)
+					debounceTimer = setTimeout(() => {
+						postToProvider({
+							command: FilterViewCommands.excludedFilterPathEdited,
+							excludedFilterPath: newVal
+						})
+					}, DEBOUNCE_DELAY)
 				}
-
-				postToProvider({
-					command: FilterViewCommands.filterPathsEdited,
-					filePaths: filePaths
-				})
-				console.log({
-					command: FilterViewCommands.filterPathsEdited,
-					filePaths: filePaths
-				})
 			}
 		}
 	}
