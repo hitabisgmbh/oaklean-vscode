@@ -10,7 +10,7 @@ import { TextEditorChangeEvent } from '../helper/EventHandler'
 import {
 	EditorFileMethodViewProtocol_ParentToChild,
 	EditorFileMethodViewCommands
-} from '../protocols/editorFileMethodViewProtocol'
+} from '../protocols/EditorFileMethodViewProtocol'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 export class EditorFileMethodViewProvider

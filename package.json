@@ -132,12 +132,13 @@
 		"customEditors": [
 			{
 				"viewType": "oaklean.oak",
-				"displayName": "Preport Editor",
+				"displayName": "Project Report Viewer",
 				"selector": [
 					{
 						"filenamePattern": "*.oak"
 					}
-				]
+				],
+				"priority": "default"
 			}
 		],
 		"menus": {

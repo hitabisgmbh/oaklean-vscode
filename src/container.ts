@@ -12,7 +12,6 @@ import SelectSensorValueTypeCommand from './commands/SelectSensorValueTypeComman
 import ChangeSortDirectionCommands from './commands/ChangeSortDirectionCommands'
 import ThemeColorViewerCommands from './commands/ThemeColorViewerCommands'
 import SettingsCommand from './commands/SettingsCommand'
-import { ReportWebviewController } from './controller/ReportWebviewController'
 import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction } from './commands/ToggleLineAnnotationCommands'
 import { MethodViewProvider } from './providers/MethodViewProvider'
 import { FilterViewProvider } from './providers/FilterViewProvider'
@@ -30,11 +29,6 @@ export class Container {
 	static #instance: Container | undefined
 	static get instance(): Container | undefined {
 		return Container.#instance
-	}
-
-	private readonly _reportWebviewController: ReportWebviewController
-	get reportWebviewController() {
-		return this._reportWebviewController
 	}
 
 	private _reportBackendStorageController: ReportBackendStorageController
@@ -174,7 +168,6 @@ export class Container {
 		this.context.subscriptions.push((this._textEditorController = new TextEditorController(this)))
 		this.context.subscriptions.push((this._textDocumentController = new TextDocumentController(this)))
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
-		this.context.subscriptions.push((this._reportWebviewController = new ReportWebviewController(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
 		// TreeViews
@@ -275,7 +268,12 @@ export class Container {
 		this.context.subscriptions.push(this._reportEditorProvider = new ReportEditorProvider(this))
 		this.context.subscriptions.push(
 			vscode.window.registerCustomEditorProvider(
-				'oaklean.oak', this._reportEditorProvider
+				'oaklean.oak', this._reportEditorProvider, {
+					webviewOptions: {
+						retainContextWhenHidden: true
+					},
+					supportsMultipleEditorsPerDocument: false
+				}
 			)
 		)
 

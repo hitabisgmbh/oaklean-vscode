@@ -7,7 +7,7 @@ import {
 	FilterViewCommands,
 	FilterViewProtocol_ChildToParent,
 	FilterViewProtocol_ParentToChild
-} from '../protocols/filterViewProtocol'
+} from '../protocols/FilterViewProtocol'
 
 export class FilterViewProvider implements vscode.WebviewViewProvider {
 	private subscriptions: vscode.Disposable[] = []

@@ -1,4 +1,3 @@
-import { FilterPaths } from '../types/FilterPaths'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 

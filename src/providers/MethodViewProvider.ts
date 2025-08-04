@@ -11,7 +11,7 @@ import {
 	MethodViewCommands,
 	MethodViewProtocol_ChildToParent,
 	MethodViewProtocol_ParentToChild
-} from '../protocols/methodViewProtocol'
+} from '../protocols/MethodViewProtocol'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
