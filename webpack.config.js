@@ -79,7 +79,7 @@ const webviewConfig = {
 	...baseConfig,
 	entry: {
 		FilterView: './src/webview/FilterView/main.tsx',
-		ReportWebview: './src/webview/ReportWebview.ts',
+		ReportEditorView: './src/webview/ReportEditorView/main.tsx',
 		SettingsView: './src/webview/SettingsView/main.tsx',
 		EditorFileMethodView: './src/webview/EditorFileMethodView/main.tsx',
 		MethodView: './src/webview/MethodView/main.tsx',
@@ -124,13 +124,6 @@ const webviewConfig = {
 				{
 					from: path.resolve(__dirname, 'node_modules/@vscode/codicons/dist'),
 					to: path.resolve(__dirname, 'dist/webview/codicons')
-				},
-				{
-					from: path.resolve(__dirname, 'src/webview/styles'),
-					to: path.resolve(__dirname, 'dist/webview'),
-					globOptions: {
-						ignore: ['**/*.!(css)'] // only .css files
-					}
 				}
 			]
 		})

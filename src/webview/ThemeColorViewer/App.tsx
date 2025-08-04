@@ -11,9 +11,9 @@ export const vscode = acquireVsCodeApi()
 
 export function App() {
 	const [searchTerm, setSearchTerm] = useState('')
-	const [groupedColors, setGroupedColors] = useState<Record<string, IColorData[]>>(
-		{}
-	)
+	const [groupedColors, setGroupedColors] = useState<
+		Record<string, IColorData[]>
+	>({})
 
 	useEffect(() => {
 		const themeColors = (window as any).__THEME_COLORS__ as IColorData[]
@@ -45,36 +45,43 @@ export function App() {
 					borderRadius: '4px',
 					border: '1px solid var(--vscode-input-border)',
 					backgroundColor: 'var(--vscode-input-background)',
-					color: 'var(--vscode-input-foreground)',
+					color: 'var(--vscode-input-foreground)'
 				}}
 			/>
 			<div style={styles.grid}>
-				{Object.entries(groupedColors).filter(([group, groupColors]) =>
-					group.toLowerCase().includes(searchTerm.toLowerCase()) ||
-					groupColors.some(color =>
-						color.key.toLowerCase().includes(searchTerm.toLowerCase())
+				{Object.entries(groupedColors)
+					.filter(
+						([group, groupColors]) =>
+							group.toLowerCase().includes(searchTerm.toLowerCase()) ||
+							groupColors.some((color) =>
+								color.key.toLowerCase().includes(searchTerm.toLowerCase())
+							)
 					)
-				).map(([group, groupColors]) => (
-					<div key={group} style={{ marginBottom: '24px' }}>
-						<h3 style={styles.heading}>{group}</h3>
-						<div style={styles.grid}>
-							{groupColors.map((color) => (
-								<div key={color.key} style={styles.card}>
-									<div style={styles.text}>
-										<div style={styles.name}>{color.key}</div>
-										<div style={styles.value}>{color.description}</div>
-									</div>
-									<div
-										style={{
-											...styles.swatch,
-											backgroundColor: `var(--vscode-${color.key})`
-										}}
-									/>
-								</div>
-							))}
+					.map(([group, groupColors]) => (
+						<div key={group} style={{ marginBottom: '24px' }}>
+							<h3 style={styles.heading}>{group}</h3>
+							<div style={styles.grid}>
+								{groupColors
+									.filter((color) =>
+										color.key.toLowerCase().includes(searchTerm.toLowerCase())
+									)
+									.map((color) => (
+										<div key={color.key} style={styles.card}>
+											<div style={styles.text}>
+												<div style={styles.name}>{color.key}</div>
+												<div style={styles.value}>{color.description}</div>
+											</div>
+											<div
+												style={{
+													...styles.swatch,
+													backgroundColor: `var(--vscode-${color.key})`
+												}}
+											/>
+										</div>
+									))}
+							</div>
 						</div>
-					</div>
-				))}
+					))}
 			</div>
 		</div>
 	)
@@ -89,7 +96,7 @@ const styles: Record<string, React.CSSProperties> = {
 	},
 	heading: {
 		fontSize: '20px',
-		marginBottom: '16px',
+		marginBottom: '16px'
 	},
 	grid: {
 		display: 'grid',

@@ -89,17 +89,6 @@ label {
 	justify-content: flex-start;
 }
 
-@media screen and (min-width: 1024px) {
-	#webview-body {
-		padding: 0;
-		max-width: 1024px;
-		margin-left: 0;
-		/* Align to the left */
-		height: 100%;
-		overflow: visible;
-	}
-}
-
 .title {
 	margin-left: 10px;
 }

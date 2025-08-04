@@ -11,6 +11,7 @@ import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 import { ProjectReportDocument } from '../customDocuments/ProjectReportDocument'
 import {
 	ReportViewProtocol_ChildToParent,
+	ReportViewProtocol_ParentToChild,
 	ReportViewProtocolCommands
 } from '../protocols/ReportViewProtocol'
 
@@ -59,15 +60,24 @@ export class ReportEditorProvider implements CustomEditorProvider {
 				)
 			]
 		}
+		this.hardRefresh(webviewPanel, document)
+		this.subscriptions.push(
+			webviewPanel.webview.onDidReceiveMessage(
+				this.receiveMessageFromWebview(webviewPanel.webview, document).bind(this)
+			),
+			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this, webviewPanel, document)),
+		)
+	}
+
+	hardRefresh(
+		webviewPanel: vscode.WebviewPanel,
+		document: ProjectReportDocument
+	): void {
 		webviewPanel.webview.html = this._getHtmlForWebview(
 			document.content,
 			webviewPanel.webview,
 			this._container.context.extensionUri,
 			document.reportPath.toPlatformString()
-		)
-
-		webviewPanel.webview.onDidReceiveMessage(
-			this.receiveMessageFromWebview(document)
 		)
 	}
 
@@ -141,19 +151,99 @@ export class ReportEditorProvider implements CustomEditorProvider {
 		return disposable
 	}
 
-	receiveMessageFromWebview(document: ProjectReportDocument) {
+	postMessageToWebview(
+		webview: vscode.Webview,
+		message: ReportViewProtocol_ParentToChild
+	): void {
+		webview.postMessage(message)
+	}
+
+	receiveMessageFromWebview(
+		webview: vscode.Webview,
+		document: ProjectReportDocument
+	) {
 		return (message: ReportViewProtocol_ChildToParent) => {
 			switch (message.command) {
-			case ReportViewProtocolCommands.openAsJson:
-				this.openJsonEditor(document)
-				break
-		}
+				case ReportViewProtocolCommands.openAsJson:
+					this.openJsonEditor(document)
+					break
+				case ReportViewProtocolCommands.viewLoaded:
+					this.setReportData(webview, document)
+					break
+			}
 		}
 	}
 
-	async openJsonEditor(
-		document: ProjectReportDocument
-	): Promise<void> {
+	setReportData(webview: vscode.Webview, document: ProjectReportDocument) {
+		const dateOptions = {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false
+		}
+		const report = document.content
+		const fileName = document.reportPath.basename()
+
+		const commitHash = report.executionDetails.commitHash
+		const timestamp = report.executionDetails.timestamp
+		const timestampDate = new Date(timestamp)
+		const commitTimestamp = report.executionDetails.commitTimestamp
+		const formattedTimestamp = timestampDate.toLocaleString(
+			undefined,
+			dateOptions as Intl.DateTimeFormatOptions
+		)
+		let formattedCommitTimestamp = ''
+		if (commitTimestamp !== undefined) {
+			const commitTimestampDate = new Date(commitTimestamp * 1000)
+			formattedCommitTimestamp = commitTimestampDate.toLocaleString(
+				undefined,
+				dateOptions as Intl.DateTimeFormatOptions
+			)
+		}
+		const version = report.reportVersion
+		const projectId = report.projectMetaData.projectID
+		const uncommittedChanges = report.executionDetails.uncommittedChanges
+		const nodeVersion = report.executionDetails.languageInformation.version
+		const origin = report.executionDetails.origin
+		const systemInformation = report.executionDetails.systemInformation
+
+		const runtime = report.executionDetails.runTimeOptions.v8.cpu.sampleInterval
+		const sensorInterface =
+			report.executionDetails.runTimeOptions.sensorInterface
+
+		this.postMessageToWebview(webview, {
+			command: ReportViewProtocolCommands.setReportData,
+			data: {
+				fileName,
+				commitHash,
+				formattedCommitTimestamp,
+				formattedTimestamp,
+				version,
+				projectId,
+				uncommittedChanges,
+				nodeVersion,
+				origin,
+				os: {
+					platform: systemInformation.os.platform,
+					distro: systemInformation.os.distro,
+					release: systemInformation.os.release,
+					arch: systemInformation.os.arch
+				},
+				runtime,
+				sensorInterface: sensorInterface
+					? {
+							type: sensorInterface.type,
+							sampleInterval: sensorInterface.options.sampleInterval
+					}
+					: undefined
+			}
+		})
+	}
+
+	async openJsonEditor(document: ProjectReportDocument): Promise<void> {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
 			const readOnlyUri = document.uri.with({ scheme: 'readonly' })
@@ -177,7 +267,13 @@ export class ReportEditorProvider implements CustomEditorProvider {
 			'dist',
 			'webview',
 			'webpack',
-			'ReportWebview.js'
+			'ReportEditorView.js'
+		])
+		const styleUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'ReportEditorView.css'
 		])
 		const vendorsUri = getUri(webview, extensionUri, [
 			'dist',
@@ -185,107 +281,26 @@ export class ReportEditorProvider implements CustomEditorProvider {
 			'webpack',
 			'vendors.js'
 		])
-		const styleUri = getUri(webview, extensionUri, [
-			'dist',
-			'webview',
-			'stylesReportPage.css'
-		])
 
-		const dateOptions = {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			hour12: false
-		}
-
-		const commitHash = data.executionDetails.commitHash
-		const timestamp = data.executionDetails.timestamp
-		const timestampDate = new Date(timestamp)
-		const commitTimestamp = data.executionDetails.commitTimestamp
-		const formattedTimestamp = timestampDate.toLocaleString(
-			undefined,
-			dateOptions as Intl.DateTimeFormatOptions
-		)
-		let formattedCommitTimestamp = ''
-		if (commitTimestamp !== undefined) {
-			const commitTimestampDate = new Date(commitTimestamp * 1000)
-			formattedCommitTimestamp = commitTimestampDate.toLocaleString(
-				undefined,
-				dateOptions as Intl.DateTimeFormatOptions
-			)
-		}
-		const version = data.reportVersion
-		const projectId = data.projectMetaData.projectID
-		const uncommittedChanges = data.executionDetails.uncommittedChanges
-		const nodeVersion = data.executionDetails.languageInformation.version
-		const origin = data.executionDetails.origin
-		const os =
-			data.executionDetails.systemInformation.os.platform +
-			', ' +
-			data.executionDetails.systemInformation.os.distro +
-			', ' +
-			data.executionDetails.systemInformation.os.release +
-			', ' +
-			data.executionDetails.systemInformation.os.arch
-		const runtime = data.executionDetails.runTimeOptions.v8.cpu.sampleInterval
-		const sensorInterface =
-			data.executionDetails.runTimeOptions.sensorInterface === undefined
-				? 'None'
-				: data.executionDetails.runTimeOptions.sensorInterface?.type +
-				' (type) , ' +
-				data.executionDetails.runTimeOptions.sensorInterface?.options
-						.sampleInterval +
-				' (sampleInterval)'
-
-		return /*HTML*/ `
-					<!DOCTYPE html>
-					<html lang="en">
-					<head>
-							<meta charset="UTF-8">
-							<meta name="viewport" content="width=device-width,initial-scale=1.0">
-							<meta http-equiv="Content-Security-Policy" 
-							content="default-src 'none'; script-src 'nonce-${nonce}';style-src ${
-			webview.cspSource
-		} 'unsafe-inline';">
-							<link rel="stylesheet" href="${styleUri}">
-					</head>
-					<body>
-				<div class="container">
-					<div class="sidebar">
-						<h2>Options</h2>
-						<vscode-button
-							id="jsonButton"
-							appearance="primary"
-							title="This button will open the original JSON"
-						>
-						JSON</vscode-button>
-						<input type="hidden" id="filePath" value="${filePath}">
-					</div>
-					<div class="info-table">
-					<p>This is an overview of the report data.</p>
-						<table>
-							<tr><td>Project Name</td><td>${filePath.split(/[/\\\\]/).pop()}</td></tr>
-							<tr><td>CommitHash</td><td>${commitHash}</td></tr>
-							<tr><td>Commit Date</td><td>${formattedCommitTimestamp}</td></tr>
-							<tr><td>Time of Measurement</td><td>${formattedTimestamp}</td></tr>
-							<tr><td>Version</td><td>${version}</td></tr>
-							<tr><td>ProjectID</td><td>${projectId}</td></tr>
-							<tr><td>Uncommitted Changes</td><td>${uncommittedChanges}</td></tr>
-							<tr><td>Node Version</td><td>${nodeVersion}</td></tr>
-							<tr><td>Origin</td><td>${origin}</td></tr>
-							<tr><td>OS</td><td>${os}</td></tr>
-							<tr><td>V8 CPU Sample Interval</td><td>${runtime}</td></tr>
-							<tr><td>SensorInterface</td><td>${sensorInterface}</td></tr>
-						</table>
-					</div>
-				</div>
+		return `
+			<!DOCTYPE html>
+			<html lang="en">
+			<head>
+					<meta charset="UTF-8">
+					<meta name="viewport" content="width=device-width,initial-scale=1.0">
+					<meta http-equiv="Content-Security-Policy" content="
+						default-src 'none';
+						script-src 'nonce-${nonce}';
+						style-src ${webview.cspSource} 'unsafe-inline';
+					">
+					<link rel="stylesheet" href="${styleUri}">
+			</head>
+			<body>
+				<div id="root"></div>
 				<script nonce="${nonce}" src="${vendorsUri}"></script>
-				<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
-					</body>
-					</html>
-			`
+				<script nonce="${nonce}" src="${webviewUri}"></script>
+			</body>
+			</html>
+		`
 	}
 }
