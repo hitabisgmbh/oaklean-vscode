@@ -3,7 +3,7 @@ import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 
 export enum EditorFileMethodViewCommands {
 	clearMethodList = 'clear-method-list',
-	createMethodList = 'create-method-list',
+	updateMethodList = 'update-method-list',
 	open = 'open',
 	initMethods = 'initMethods'
 }
@@ -18,7 +18,7 @@ export type EditorFileMethodViewProtocol_ChildToParent =
 
 export type EditorFileMethodViewProtocol_ParentToChild =
 	| {
-			command: EditorFileMethodViewCommands.createMethodList
+			command: EditorFileMethodViewCommands.updateMethodList
 			sourceFileMethodTree: ISourceFileMethodTree
 			sensorValueRepresentation: SensorValueRepresentation
 	}

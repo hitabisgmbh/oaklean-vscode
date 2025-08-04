@@ -6,7 +6,7 @@ import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
-import { TextEditorChangeEvent } from '../helper/EventHandler'
+import { TextEditorChangeEvent, TextEditorsChangeVisibilityEvent } from '../helper/EventHandler'
 import {
 	EditorFileMethodViewProtocol_ParentToChild,
 	EditorFileMethodViewCommands
@@ -29,6 +29,9 @@ export class EditorFileMethodViewProvider
 		this.subscriptions = [
 			this._container.eventHandler.onTextEditorChange(
 				this.textEditorChanged.bind(this)
+			),
+			this._container.eventHandler.onTextEditorsChangeVisibility(
+				this.onTextEditorsChangeVisibility.bind(this)
 			),
 			this._container.eventHandler.onSelectedSensorValueTypeChange(
 				this.refresh.bind(this)
@@ -105,6 +108,13 @@ export class EditorFileMethodViewProvider
 		this._view?.webview.postMessage(message)
 	}
 
+	onTextEditorsChangeVisibility(event: TextEditorsChangeVisibilityEvent) {
+		if (event.editors.length === 0) {
+			this.editor = undefined
+			this.refresh()
+		}
+	}
+
 	textEditorChanged(event: TextEditorChangeEvent) {
 		this.setEditor(event.editor)
 	}
@@ -140,7 +150,7 @@ export class EditorFileMethodViewProvider
 			'sensorValueRepresentation'
 		) as SensorValueRepresentation
 		this.postMessageToWebview({
-			command: EditorFileMethodViewCommands.createMethodList,
+			command: EditorFileMethodViewCommands.updateMethodList,
 			sourceFileMethodTree: sourceFileMethodTree.toJSON(),
 			sensorValueRepresentation
 		})

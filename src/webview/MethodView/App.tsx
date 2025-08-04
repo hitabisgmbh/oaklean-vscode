@@ -39,7 +39,7 @@ export function App() {
 		data: MethodViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case MethodViewCommands.createMethodList:
+			case MethodViewCommands.updateMethodList:
 				setProps({
 					methodTrees: message.data.methodTrees,
 					sensorValueRepresentation: message.data.sensorValueRepresentation

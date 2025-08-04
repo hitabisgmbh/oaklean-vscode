@@ -34,7 +34,7 @@ export function App() {
 		data: EditorFileMethodViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case EditorFileMethodViewCommands.createMethodList:
+			case EditorFileMethodViewCommands.updateMethodList:
 				setProps({
 					sourceFileMethodTree: message.data.sourceFileMethodTree,
 					sensorValueRepresentation: message.data.sensorValueRepresentation

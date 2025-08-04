@@ -3,7 +3,7 @@ import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 
 export enum MethodViewCommands {
 	clearMethodList = 'clear-method-list',
-	createMethodList = 'create-method-list',
+	updateMethodList = 'update-method-list',
 	open = 'open',
 	initMethods = 'initMethods'
 }
@@ -18,7 +18,7 @@ export type MethodViewProtocol_ChildToParent =
 
 export type MethodViewProtocol_ParentToChild =
 	| {
-			command: MethodViewCommands.createMethodList
+			command: MethodViewCommands.updateMethodList
 			methodTrees: Record<string, {
 				fileName: string
 				tree: ISourceFileMethodTree

@@ -165,7 +165,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			command: MethodViewCommands.clearMethodList
 		})
 		this.postMessageToWebview({
-			command: MethodViewCommands.createMethodList,
+			command: MethodViewCommands.updateMethodList,
 			methodTrees: sourceFileMethodTrees,
 			sensorValueRepresentation
 		})
