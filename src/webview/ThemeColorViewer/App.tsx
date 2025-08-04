@@ -1,8 +1,4 @@
 import { useEffect, useState } from 'react'
-import {
-	provideVSCodeDesignSystem,
-	allComponents
-} from '@vscode/webview-ui-toolkit'
 
 type IColorData = {
 	key: string
@@ -10,8 +6,6 @@ type IColorData = {
 }
 
 declare const acquireVsCodeApi: any
-
-provideVSCodeDesignSystem().register(allComponents)
 
 export const vscode = acquireVsCodeApi()
 

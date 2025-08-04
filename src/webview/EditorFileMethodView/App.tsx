@@ -1,8 +1,4 @@
 import { useEffect, useState } from 'react'
-import {
-	provideVSCodeDesignSystem,
-	allComponents
-} from '@vscode/webview-ui-toolkit'
 
 import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
@@ -19,8 +15,6 @@ import { SortButton } from '../components/buttons/SortButton'
 import { SortDirection } from '../../types/sortDirection'
 
 declare const acquireVsCodeApi: any
-
-provideVSCodeDesignSystem().register(allComponents)
 
 export const vscode = acquireVsCodeApi()
 

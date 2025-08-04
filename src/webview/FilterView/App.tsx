@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { VSCodeTextField } from '@vscode/webview-ui-toolkit/react'
 import './main.css'
 
