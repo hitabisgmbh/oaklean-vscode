@@ -23,7 +23,12 @@ export default class ProfileHelper implements Disposable {
 		this.container.eventHandler.onProfileChange(this.profileChanges.bind(this))
 	}
 	get profiles(): Profile[] {
-		return this.readProfiles()
+		const result = this.readProfiles()
+		if (result.error) {
+			vscode.window.showErrorMessage(result.error)
+			return []
+		}
+		return result.profiles
 	}
 	get currentProfile(): Profile | undefined {
 		return this.container.storage.getWorkspace('profile') as Profile | undefined
@@ -45,20 +50,35 @@ export default class ProfileHelper implements Disposable {
 		const workspaceFolder = WorkspaceUtils.getWorkspaceDir()
 		return workspaceFolder?.join('.vscode', 'settings.json')
 	}
-	readProfiles(): Profile[] {
+	readProfiles(): {
+		profiles: Profile[],
+		error?: string
+	} {
 		const settingsPath = this.returnSettingsPath()
 		if (settingsPath !== undefined) {
 			if (fs.existsSync(settingsPath.toPlatformString())) {
-				const settings = jsonc.parse(fs.readFileSync(settingsPath.toPlatformString(), 'utf8'))
-				const profiles: Profile[] = settings[PROFILE_IDENTIFIER] || []
-				return profiles
+				const content = fs.readFileSync(settingsPath.toPlatformString(), 'utf8')
+				try {
+					const settings = jsonc.parse(content)
+					const profiles: Profile[] = settings[PROFILE_IDENTIFIER] || []
+					return {
+						profiles
+					}
+				} catch (error) {
+					return {
+						profiles: [],
+						error: `Failed to parse settings file: ${settingsPath}, check if the file is valid JSON.`
+					}
+				}
 			}
 		}
-		return []
+		return {
+			profiles: []
+		}
 	}
 
 	addProfile(profile: Profile): boolean {
-		const profiles = this.readProfiles()
+		const profiles = this.profiles
 		if (profiles.some(p => p.name === profile.name)) {
 			return false
 		}
@@ -67,7 +87,7 @@ export default class ProfileHelper implements Disposable {
 		return true
 	}
 	updateProfile(updatedProfile: Profile) {
-		const profiles = this.readProfiles()
+		const profiles = this.profiles
 		const index = profiles.findIndex(p => p.name === updatedProfile.name)
 		if (index === -1) {
 			vscode.window.showErrorMessage(ERROR_NO_PROFILE_FOUND)
@@ -77,7 +97,7 @@ export default class ProfileHelper implements Disposable {
 		this.writeProfiles(profiles)
 	}
 	deleteProfile(profileName: string) {
-		const profiles = this.readProfiles()
+		const profiles = this.profiles
 		const filteredProfiles = profiles.filter(p => p.name !== profileName)
 		if (filteredProfiles.length === profiles.length) {
 			vscode.window.showErrorMessage(ERROR_NO_PROFILE)
