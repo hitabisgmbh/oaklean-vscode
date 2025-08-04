@@ -28,8 +28,6 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 	modulesTotalValue: number
 	displayedSensorValue = 0
 	directory: UnifiedPath | undefined
-	includedFilterPath: string
-	excludedFilterPath: string
 	locallyTotalValue: number | undefined
 	constructor(
 		label: string,
@@ -39,8 +37,6 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		sensorValueRepresentation: SensorValueRepresentation,
 		internalTotalValue: number,
 		modulesTotalValue: number,
-		includedFilterPath: string,
-		excludedFilterPath: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
 		directory: UnifiedPath | undefined,
 		public readonly file?: UnifiedPath,
@@ -56,8 +52,6 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		this.modulesTotalValue = modulesTotalValue
 		this.directory = directory
 		let proportion = 0
-		this.includedFilterPath = includedFilterPath
-		this.excludedFilterPath = excludedFilterPath
 		this.locallyTotalValue = locallyTotalValue
 		if (this.sensorValueRepresentation.selectedSensorValueType === undefined) {
 			this.sensorValueRepresentation.selectedSensorValueType = 'aggregatedCPUTime'
@@ -201,7 +195,8 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		this._disposable = vscode.Disposable.from(
 			this.container.eventHandler.onReportLoaded(this.reportLoaded.bind(this)),
 			this.container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this)),
-			this.container.eventHandler.onSortDirectionChange(this.sortDirectionChanged.bind(this))	
+			this.container.eventHandler.onSortDirectionChange(this.sortDirectionChanged.bind(this)),
+			this.container.eventHandler.onFilterPathChange(this.applyFilter.bind(this))
 		)
 	}
 
@@ -225,8 +220,11 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		const oldModulesTotalValue = this.modulesTotalValue
 		this.sensorValueRepresentation = sensorValueRepresentation
 		let modulesTotalValue = 0
-		if (this.sourceFileMetaDataTree && this.sourceFileMetaDataTree.type === 'Root'
-			&& this.sensorValueRepresentation.selectedSensorValueType !== undefined) {
+		if (
+			this.sourceFileMetaDataTree &&
+			this.sourceFileMetaDataTree.type === 'Root' &&
+			this.sensorValueRepresentation.selectedSensorValueType !== undefined
+		) {
 			for (const externChild of this.sourceFileMetaDataTree.externChildren.values()) {
 				try {
 					const value = calcOrReturnSensorValue(
@@ -241,7 +239,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 
 				this.modulesTotalValue = modulesTotalValue
 			}
-			this.changeEvent.fire()
+			this.rerender()
 		}
 	}
 
@@ -250,14 +248,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		if (projectReport) {
 			this.relativeRootDir = projectReport.relativeRootDir
 			this._originalSourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(projectReport)
-			this.includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
-			this.excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
-			this.sourceFileMetaDataTree = this._originalSourceFileMetaDataTree.filter(
-				this.includedFilterPath,
-				this.excludedFilterPath
-			).node || undefined
-			this.valueRepresentation(this.sensorValueRepresentation)
-			this.changeEvent.fire()
+			this.applyFilter()
 		}
 	}
 
@@ -271,21 +262,15 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 
 	changeSortDirection(sortDirection: string) {
 		this.sortDirection = sortDirection
-		this.changeEvent.fire()
+		this.rerender()
 	}
 
-
-	filter(command: string, text: string) {
-		if (command === 'included-path-change') {
-			this.includedFilterPath = text
-			this.container.storage.storeWorkspace('includedFilterPath', this.includedFilterPath)
-		} else if (command === 'excluded-path-change') {
-			this.excludedFilterPath = text
-			this.container.storage.storeWorkspace('excludedFilterPath', this.excludedFilterPath)
-		}
+	applyFilter() {
+		const includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
+		const excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
 		this.sourceFileMetaDataTree = this._originalSourceFileMetaDataTree?.filter(
-			this.includedFilterPath,
-			this.excludedFilterPath
+			includedFilterPath,
+			excludedFilterPath
 		).node || undefined
 		this.valueRepresentation(this.sensorValueRepresentation)
 		this.rerender()
@@ -354,8 +339,6 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 					this.sensorValueRepresentation,
 					internalTotalValue,
 					this.modulesTotalValue,
-					this.includedFilterPath || '',
-					this.excludedFilterPath || '',
 					isEmpty
 						? vscode.TreeItemCollapsibleState.None
 						: vscode.TreeItemCollapsibleState.Collapsed,
@@ -377,8 +360,6 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 						this.sensorValueRepresentation,
 						internalTotalValue,
 						this.modulesTotalValue,
-						this.includedFilterPath || '',
-						this.excludedFilterPath || '',
 						vscode.TreeItemCollapsibleState.Collapsed,
 						path,
 						undefined,
