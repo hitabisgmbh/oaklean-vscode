@@ -80,7 +80,7 @@ const webviewConfig = {
 	entry: {
 		FilterView: './src/webview/FilterView/main.tsx',
 		ReportWebview: './src/webview/ReportWebview.ts',
-		settingsWebview: './src/webview/settingsWebview.ts',
+		SettingsView: './src/webview/SettingsView/main.tsx',
 		EditorFileMethodView: './src/webview/EditorFileMethodView/main.tsx',
 		MethodView: './src/webview/MethodView/main.tsx',
 		ThemeColorViewer: './src/webview/ThemeColorViewer/main.tsx' // Entry point for Theme Color Viewer

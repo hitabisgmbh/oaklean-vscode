@@ -1,0 +1,7 @@
+.option-section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	/* Reduced gap */
+	overflow: visible;
+}

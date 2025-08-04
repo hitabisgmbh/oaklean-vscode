@@ -1,8 +1,9 @@
 import vscode from 'vscode'
 
 import BaseCommand from './BaseCommand'
+import { IDENTIFIER as SETTINGS_IDENTIFIER } from './SettingsCommand'
 
-import { COMMAND_OPEN_SETTINGS, DOT, REQUEST_ADD_NEW_PROFILE } from '../constants/webview'
+import { DOT, REQUEST_ADD_NEW_PROFILE } from '../constants/webview'
 import { Container } from '../container'
 import { Profile } from '../types/profile'
 import { APP_IDENTIFIER } from '../constants/app'
@@ -41,7 +42,7 @@ export default class SelectProfileCommand extends BaseCommand {
 		}
 		quickPickOptions.set(REQUEST_ADD_NEW_PROFILE, {
 			selectionCallback: () => {
-				vscode.commands.executeCommand(APP_IDENTIFIER + DOT + COMMAND_OPEN_SETTINGS)
+				vscode.commands.executeCommand(APP_IDENTIFIER + DOT + SETTINGS_IDENTIFIER)
 			}
 		})
 

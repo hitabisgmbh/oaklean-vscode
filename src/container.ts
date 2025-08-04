@@ -11,7 +11,7 @@ import SelectValueRepresentationCommand from './commands/SelectValueRepresentati
 import SelectSensorValueTypeCommand from './commands/SelectSensorValueTypeCommand'
 import ChangeSortDirectionCommands from './commands/ChangeSortDirectionCommands'
 import ThemeColorViewerCommands from './commands/ThemeColorViewerCommands'
-import SettingsWebviewController from './controller/SettingsWebviewController'
+import SettingsCommand from './commands/SettingsCommand'
 import { ReportWebviewController } from './controller/ReportWebviewController'
 import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction } from './commands/ToggleLineAnnotationCommands'
 import { MethodViewProvider } from './providers/MethodViewProvider'
@@ -30,11 +30,6 @@ export class Container {
 	static #instance: Container | undefined
 	static get instance(): Container | undefined {
 		return Container.#instance
-	}
-
-	private readonly _settingsWebviewController: SettingsWebviewController
-	get settingsWebviewController() {
-		return this._settingsWebviewController
 	}
 
 	private readonly _reportWebviewController: ReportWebviewController
@@ -70,6 +65,11 @@ export class Container {
 	private readonly _textDocumentController: TextDocumentController
 	get textDocumentController() {
 		return this._textDocumentController
+	}
+
+	private readonly _settingsCommand: SettingsCommand
+	get settingsWebviewController() {
+		return this._settingsCommand
 	}
 
 	private readonly _selectReportCommand: SelectReport
@@ -174,7 +174,6 @@ export class Container {
 		this.context.subscriptions.push((this._textEditorController = new TextEditorController(this)))
 		this.context.subscriptions.push((this._textDocumentController = new TextDocumentController(this)))
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
-		this.context.subscriptions.push((this._settingsWebviewController = new SettingsWebviewController(this)))
 		this.context.subscriptions.push((this._reportWebviewController = new ReportWebviewController(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
@@ -193,6 +192,8 @@ export class Container {
 		)
 
 		// Commands
+		this.context.subscriptions.push((this._settingsCommand = new SettingsCommand(this)))
+		this.context.subscriptions.push(this._settingsCommand.register())
 		this.context.subscriptions.push(this._showThemeColorViewerCommand = new ThemeColorViewerCommands(this))
 		this.context.subscriptions.push(this._showThemeColorViewerCommand.register())
 		this.context.subscriptions.push(this._selectReportCommand = new SelectReport(this))

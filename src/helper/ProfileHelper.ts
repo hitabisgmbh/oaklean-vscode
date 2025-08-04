@@ -6,8 +6,8 @@ import vscode, { Disposable } from 'vscode'
 
 import WorkspaceUtils from './WorkspaceUtils'
 
-import { Profile } from '../types/profile'
-import { ERROR_FAILED_TO_SAVE_PROFILE, ERROR_NO_PROFILE, ERROR_NO_PROFILE_FOUND } from '../constants/infoMessages'
+import { DEFAULT_PROFILE, Profile } from '../types/profile'
+import { ERROR_EMPTY_NAME, ERROR_FAILED_TO_SAVE_PROFILE, ERROR_NO_PROFILE, ERROR_NO_PROFILE_FOUND, ERROR_SAME_NAME } from '../constants/infoMessages'
 import { Container } from '../container'
 import { PROFILE_IDENTIFIER } from '../constants/webview'
 import { ProfileChangeEvent } from '../helper/EventHandler'
@@ -78,9 +78,12 @@ export default class ProfileHelper implements Disposable {
 	}
 
 	addProfile(profile: Profile): boolean {
+		if (profile.name === '') {
+			throw new Error(ERROR_EMPTY_NAME)
+		}
 		const profiles = this.profiles
 		if (profiles.some(p => p.name === profile.name)) {
-			return false
+			throw new Error(ERROR_SAME_NAME)
 		}
 		profiles.push(profile)
 		this.writeProfiles(profiles)
@@ -90,7 +93,9 @@ export default class ProfileHelper implements Disposable {
 		const profiles = this.profiles
 		const index = profiles.findIndex(p => p.name === updatedProfile.name)
 		if (index === -1) {
-			vscode.window.showErrorMessage(ERROR_NO_PROFILE_FOUND)
+			if (updatedProfile.name !== DEFAULT_PROFILE.name) {
+				vscode.window.showErrorMessage(ERROR_NO_PROFILE_FOUND)
+			}
 			return
 		}
 		profiles[index] = updatedProfile
