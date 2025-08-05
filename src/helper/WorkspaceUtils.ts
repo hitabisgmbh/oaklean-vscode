@@ -46,8 +46,12 @@ export default class WorkspaceUtils {
 		return result.map((reportPath) => new UnifiedPath(reportPath))
 	}
 
-	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath {
+	static getFullFilePath(config: ProfilerConfig, filePath: UnifiedPath | string): UnifiedPath {
 		return config.getRootDir().join(filePath)
+	}
+
+	static getRelativeFilePath(config: ProfilerConfig, filePath: UnifiedPath | string): UnifiedPath {
+		return config.getRootDir().pathTo(filePath)
 	}
 
 	static resolveConfigFromFile(configPath: UnifiedPath): {

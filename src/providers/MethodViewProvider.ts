@@ -1,7 +1,6 @@
 import * as vscode from 'vscode'
 import {
-	SourceNodeIdentifier_string,
-	UnifiedPath
+	SourceNodeIdentifier_string
 } from '@oaklean/profiler-core'
 
 import { getNonce } from '../utilities/getNonce'
@@ -12,10 +11,11 @@ import {
 	MethodViewProtocol_ChildToParent,
 	MethodViewProtocol_ParentToChild
 } from '../protocols/MethodViewProtocol'
-import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
+import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
 
 export class MethodViewProvider implements vscode.WebviewViewProvider {
 	private subscriptions: vscode.Disposable[] = []
@@ -67,7 +67,15 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		if (message.command === MethodViewCommands.open) {
 			const identifier = message.identifier
 			const filePath = message.filePath
-			this.openMethodInEditor(identifier, filePath)
+			OpenSourceLocationCommand.execute(
+				{
+					command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
+					args: {
+						filePath,
+						sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
+					}
+				}
+			)
 		} else if (message.command === MethodViewCommands.initMethods) {
 			this.refresh()
 		}
@@ -86,60 +94,6 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	public postMessageToWebview(message: MethodViewProtocol_ParentToChild) {
 		this._view?.webview.postMessage(message)
-	}
-
-	async openMethodInEditor(identifier: string, filePath: string) {
-		const unifiedFilePath = new UnifiedPath(filePath)
-		const absolutePath = new UnifiedPath(filePath)
-		const config = this._container.textDocumentController.config
-		if (!config) {
-			return
-		}
-		const fullPath = WorkspaceUtils.getFullFilePath(config, filePath)
-		const uri = vscode.Uri.file(fullPath.toString())
-		const errorMessage = `Could not find file: ${filePath}`
-		try {
-			if (absolutePath) {
-				const document = await vscode.workspace.openTextDocument(uri)
-
-				if (document) {
-					const programStructureTreeOfFile =
-						this._container.textDocumentController.getProgramStructureTreeOfFile(
-							unifiedFilePath
-						)
-					let position
-					if (programStructureTreeOfFile) {
-						const sourceIdentifierString = identifier.replace(
-							/"/g,
-							''
-						) as SourceNodeIdentifier_string
-						const loc = programStructureTreeOfFile.sourceLocationOfIdentifier(
-							sourceIdentifierString
-						)
-						if (loc) {
-							position = new vscode.Position(
-								loc.beginLoc.line - 1,
-								loc.beginLoc.column
-							)
-						}
-					}
-					if (position) {
-						await vscode.window.showTextDocument(document, {
-							selection: new vscode.Range(position, position)
-						})
-					} else {
-						await vscode.window.showTextDocument(document)
-					}
-				}
-			} else {
-				console.error(errorMessage)
-				vscode.window.showErrorMessage(errorMessage)
-			}
-		} catch (error) {
-			vscode.window.showErrorMessage(errorMessage)
-			console.error(error)
-			console.error(errorMessage)
-		}
 	}
 
 	refresh() {

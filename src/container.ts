@@ -24,6 +24,7 @@ import { GraphicalViewProvider } from './providers/GraphicalViewProvider'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from './types/sensorValueRepresentation'
 import ReportBackendStorageController from './controller/ReportBackendStorageController'
 import WorkspaceUtils from './helper/WorkspaceUtils'
+import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
 
 export class Container {
 	static #instance: Container | undefined
@@ -89,6 +90,11 @@ export class Container {
 	private readonly _selectProfileCommand: SelectProfileCommand
 	get selectProfileCommand() {
 		return this._selectProfileCommand
+	}
+
+	private readonly _openSourceLocationCommand: OpenSourceLocationCommand
+	get openSourceLocationCommand() {
+		return this._openSourceLocationCommand
 	}
 
 	private readonly _changeSortDirectionAscToDescCommand: ChangeSortDirectionCommands
@@ -191,6 +197,8 @@ export class Container {
 		this.context.subscriptions.push(this._showThemeColorViewerCommand.register())
 		this.context.subscriptions.push(this._selectReportCommand = new SelectReport(this))
 		this.context.subscriptions.push(this._selectReportCommand.register())
+		this.context.subscriptions.push(this._openSourceLocationCommand = new OpenSourceLocationCommand(this))
+		this.context.subscriptions.push(this._openSourceLocationCommand.register())
 
 		this.context.subscriptions.push(
 			this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)

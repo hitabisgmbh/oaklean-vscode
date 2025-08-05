@@ -6,13 +6,18 @@ import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
-import { TextEditorChangeEvent, TextEditorsChangeVisibilityEvent } from '../helper/EventHandler'
+import {
+	TextEditorChangeEvent,
+	TextEditorsChangeVisibilityEvent
+} from '../helper/EventHandler'
 import {
 	EditorFileMethodViewProtocol_ParentToChild,
 	EditorFileMethodViewCommands
 } from '../protocols/EditorFileMethodViewProtocol'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
+import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
+import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
 export class EditorFileMethodViewProvider
 	implements vscode.WebviewViewProvider {
 	private subscriptions: vscode.Disposable[] = []
@@ -37,7 +42,9 @@ export class EditorFileMethodViewProvider
 				this.refresh.bind(this)
 			),
 			this._container.eventHandler.onReportLoaded(this.refresh.bind(this)),
-			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this))
+			this._container.eventHandler.onWebpackRecompile(
+				this.hardRefresh.bind(this)
+			)
 		]
 	}
 
@@ -94,8 +101,14 @@ export class EditorFileMethodViewProvider
 	}) {
 		if (message.command === EditorFileMethodViewCommands.open) {
 			const identifier = message.identifier
-			if (identifier) {
-				this.openMethodInEditor(identifier)
+			if (identifier && this.editor) {
+				OpenSourceLocationCommand.execute({
+					command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
+					args: {
+						filePath: this.editor.document.fileName,
+						sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
+					}
+				})
 			}
 		} else if (message.command === EditorFileMethodViewCommands.initMethods) {
 			this.refresh()
@@ -156,54 +169,6 @@ export class EditorFileMethodViewProvider
 		})
 	}
 
-	async openMethodInEditor(identifier: string) {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!this.editor || !workspaceDir) {
-			return
-		}
-		const filePathRelativeToWorkspace = workspaceDir.pathTo(
-			this.editor.document.fileName
-		)
-		const absolutePath = this.editor.document.fileName
-		const uri = vscode.Uri.file(absolutePath?.toString() || '')
-		try {
-			if (absolutePath) {
-				const document = await vscode.workspace.openTextDocument(uri)
-				if (document) {
-					const programStructureTreeOfFile =
-						this._container.textDocumentController.getProgramStructureTreeOfFile(
-							filePathRelativeToWorkspace
-						)
-					let position
-					if (programStructureTreeOfFile) {
-						const loc = programStructureTreeOfFile.sourceLocationOfIdentifier(
-							identifier as SourceNodeIdentifier_string
-						)
-						if (loc) {
-							position = new vscode.Position(
-								loc.beginLoc.line - 1,
-								loc.beginLoc.column
-							)
-						}
-					}
-					if (position) {
-						await vscode.window.showTextDocument(document, {
-							selection: new vscode.Range(position, position)
-						})
-					} else {
-						await vscode.window.showTextDocument(document)
-					}
-				}
-			} else {
-				console.error(
-					`Could not find file: ${filePathRelativeToWorkspace.toString()}`
-				)
-			}
-		} catch (error) {
-			console.error(`Could not open file: ${error}`)
-		}
-	}
-
 	private _getHtmlForWebview(
 		webview: vscode.Webview,
 		extensionUri: vscode.Uri
@@ -235,9 +200,7 @@ export class EditorFileMethodViewProvider
 			'codicon.css'
 		])
 
-		const mediaPath = getUri(webview, extensionUri, [
-			'media'
-		])
+		const mediaPath = getUri(webview, extensionUri, ['media'])
 
 		const htmlContent = `<!DOCTYPE html>
         <html lang="en">
