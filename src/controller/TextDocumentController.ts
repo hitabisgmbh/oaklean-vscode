@@ -12,7 +12,6 @@ import {
 	ProjectReport,
 	SourceFileMetaData,
 	ProgramStructureTree,
-	TypescriptParser,
 	ProfilerConfig,
 	STATIC_CONFIG_FILENAME
 } from '@oaklean/profiler-core'
@@ -26,13 +25,7 @@ import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { INFO_PROJECT_REPORT } from '../constants/infoMessages'
 import { ProjectReportHelper } from '../helper/ProjectReportHelper'
-
-const VALID_EXTENSIONS_TO_PARSE = [
-	'.js',
-	'.jsx',
-	'.ts',
-	'.tsx'
-]
+import { SourceFileInformation } from '../model/SourceFileInformation'
 
 export type ProfileInfoOfFile = {
 	projectReport: ProjectReport | undefined,
@@ -43,11 +36,11 @@ export type ProfileInfoOfFile = {
 export default class TextDocumentController implements Disposable {
 	private readonly _disposable: Disposable
 	container: Container
-	programStructureTreePerDocument: Record<string, ProgramStructureTree>
+	sourceFileInformationPerDocument: Map<string, SourceFileInformation> 
 
 	constructor(container: Container) {
 		this.container = container
-		this.programStructureTreePerDocument = {}
+		this.sourceFileInformationPerDocument = new Map()
 
 		this._disposable = Disposable.from(
 			this.container.eventHandler.onReportPathChange(this.reportPathChanged.bind(this)),
@@ -102,8 +95,12 @@ export default class TextDocumentController implements Disposable {
 		}
 	}
 
+	getSourceFileInformationOfFile(fileName: UnifiedPath): SourceFileInformation | undefined {
+		return this.sourceFileInformationPerDocument.get(fileName.toString())
+	}
+
 	getProgramStructureTreeOfFile(fileName: UnifiedPath): ProgramStructureTree | undefined {
-		return this.programStructureTreePerDocument[fileName.toString()]
+		return this.getSourceFileInformationOfFile(fileName)?.programStructureTree
 	}
 
 	getSourceFileMetaData(
@@ -192,40 +189,34 @@ export default class TextDocumentController implements Disposable {
 	}
 
 	setProgramStructureTreeOfDocument(document: TextDocument) {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
+		if (this.config === undefined) {
 			return
 		}
-
-		const fileName = new UnifiedPath(document.fileName)
-		if (!VALID_EXTENSIONS_TO_PARSE.includes(path.extname(fileName.toJSON()).toLowerCase())) {
-			return // wrong file extension, do not parse the file
+		const relativeFilePath = WorkspaceUtils.getRelativeFilePath(
+			this.config,
+			document.fileName
+		)
+		const sourceFileInformation = SourceFileInformation.fromDocument(document)
+		if (sourceFileInformation !== undefined) {
+			this.sourceFileInformationPerDocument.set(relativeFilePath.toString(), sourceFileInformation)
 		}
-
-		const filePathRelativeToWorkspace = workspaceDir.pathTo(fileName)
-
-		this.programStructureTreePerDocument[filePathRelativeToWorkspace.toString()] =
-			TypescriptParser.parseSource(
-				fileName,
-				document.getText()
-			)
-		this.container.eventHandler.fireProgramStructureTreeChange(filePathRelativeToWorkspace)
+		this.container.eventHandler.fireSourceFileInformationChange(relativeFilePath)
 	}
 
 	unsetProgramStructureTreeOfDocument(document: TextDocument) {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
+		if (this.config === undefined) {
 			return
 		}
+		const relativeFilePath = WorkspaceUtils.getRelativeFilePath(
+			this.config,
+			document.fileName
+		)
 
-		const fileName = document.fileName
-		const filePathRelativeToWorkspace = workspaceDir.pathTo(fileName)
-
-		const existed = (filePathRelativeToWorkspace.toString() in this.programStructureTreePerDocument)
-		delete this.programStructureTreePerDocument[filePathRelativeToWorkspace.toString()]
+		const existed = this.sourceFileInformationPerDocument.has(relativeFilePath.toString())
+		this.sourceFileInformationPerDocument.delete(relativeFilePath.toString())
 		if (existed) {
 			console.debug('Remove ProgramStructureTree of File from Cache', {
-				fileName: filePathRelativeToWorkspace.toString()
+				fileName: relativeFilePath.toString()
 			})
 		}
 	}

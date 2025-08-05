@@ -56,7 +56,7 @@ export type SortDirectionChangeEvent = {
 	readonly sortDirection: SortDirection
 }
 
-export type ProgramStructureTreeChangeEvent = {
+export type SourceFileInformationChangeEvent = {
 	readonly fileName: UnifiedPath
 }
 
@@ -88,7 +88,7 @@ export default class EventHandler implements Disposable {
 	private _textDocumentClose = new EventEmitter<TextDocumentCloseEvent>()
 	private _textDocumentChange = new EventEmitter<TextDocumentChangeEvent>()
 	private _textDocumentDidSave = new EventEmitter<vscode.TextDocument>()
-	private _programStructureTreeChanged = new EventEmitter<ProgramStructureTreeChangeEvent>()
+	private _sourceFileInformationChanged = new EventEmitter<SourceFileInformationChangeEvent>()
 	private _filterPathChange = new EventEmitter<FilterPathChangeEvent>()
 	private _sortDirectionChange = new EventEmitter<SortDirectionChangeEvent>()
 	private _profileChange = new EventEmitter<ProfileChangeEvent>()
@@ -280,16 +280,16 @@ export default class EventHandler implements Disposable {
 		this._reportLoaded.fire({ type: type })
 	}
 
-	get onProgramStructureTreeChange(): Event<ProgramStructureTreeChangeEvent> {
-		return this._programStructureTreeChanged.event
+	get onSourceFileInformationChange(): Event<SourceFileInformationChangeEvent> {
+		return this._sourceFileInformationChanged.event
 	}
 
-	fireProgramStructureTreeChange(fileName: UnifiedPath) {
-		console.debug('EventFire: EventHandler.fireProgramStructureTreeChange', {
+	fireSourceFileInformationChange(fileName: UnifiedPath) {
+		console.debug('EventFire: EventHandler.fireSourceFileInformationChange', {
 			timestamp: TimeHelper.getCurrentHighResolutionTime(),
 			fileName: fileName
 		})
-		this._programStructureTreeChanged.fire({ fileName: fileName })
+		this._sourceFileInformationChanged.fire({ fileName: fileName })
 	}
 
 	get onTextEditorsChangeVisibility(): Event<TextEditorsChangeVisibilityEvent> {
