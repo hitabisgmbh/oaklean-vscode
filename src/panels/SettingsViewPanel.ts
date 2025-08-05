@@ -1,4 +1,4 @@
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import { getUri } from '../utilities/getUri'
 import { getNonce } from '../utilities/getNonce'

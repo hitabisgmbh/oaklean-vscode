@@ -1,4 +1,4 @@
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import {
 	SourceNodeIdentifier_string
 } from '@oaklean/profiler-core'

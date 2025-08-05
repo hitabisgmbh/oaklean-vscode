@@ -1,4 +1,4 @@
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'

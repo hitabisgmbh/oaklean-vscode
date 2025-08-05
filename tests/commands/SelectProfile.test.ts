@@ -1,5 +1,5 @@
 import '../shared/mocks/vscode.mock'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import SelectProfileCommand, { CommandIdentifiers } from '../../src/commands/SelectProfile'
 import { Container } from '../../src/container'

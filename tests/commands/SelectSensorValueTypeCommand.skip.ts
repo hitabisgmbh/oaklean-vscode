@@ -1,7 +1,7 @@
 import '../shared/mocks/vscode.mock'
 import '../shared/mocks/profiler-core.mock'
 import '../shared/mocks/FormulaHelper.mock'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import { Container } from '../../src/container'
 import EventHandler from '../../src/helper/EventHandler'

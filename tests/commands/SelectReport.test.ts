@@ -1,5 +1,5 @@
 import '../shared/mocks/vscode.mock'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import SelectReport from '../../src/commands/SelectReport'
 import { Container } from '../../src/container'

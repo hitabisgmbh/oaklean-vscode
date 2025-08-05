@@ -1,5 +1,5 @@
 import '../shared/mocks/vscode.mock'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import { UnifiedPath } from '@oaklean/profiler-core'
 
 import SelectReport, { CommandIdentifiers } from '../../src/commands/SelectReportFromContextMenu'
