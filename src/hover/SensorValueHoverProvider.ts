@@ -1,19 +1,35 @@
 import * as vscode from 'vscode'
-import { SensorValues } from '@oaklean/profiler-core'
+import {
+	SourceNodeMetaData,
+	SourceNodeMetaDataType
+} from '@oaklean/profiler-core'
 
 import SensorValueHover from './SensorValueHover'
 
+import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+
 export class SensorValueHoverProvider implements vscode.HoverProvider {
 	private readonly hoverObjects: {
-		decoration: vscode.TextEditorDecorationType;
-		decorationRange: vscode.Range; sensorValues: SensorValues;
+		decoration: vscode.TextEditorDecorationType
+		decorationRange: vscode.Range
+		sourceNodeMetaData: SourceNodeMetaData<
+			| SourceNodeMetaDataType.SourceNode
+			| SourceNodeMetaDataType.LangInternalSourceNode
+		>
 	}[]
-	private formula: string | undefined
-	constructor(hoverObjects: {
-		decoration: vscode.TextEditorDecorationType;
-		decorationRange: vscode.Range; sensorValues: SensorValues;
-	}[], formula: string | undefined) {
-		this.formula = formula
+	private _sensorValueRepresentation: SensorValueRepresentation
+	constructor(
+		hoverObjects: {
+			decoration: vscode.TextEditorDecorationType
+			decorationRange: vscode.Range
+			sourceNodeMetaData: SourceNodeMetaData<
+				| SourceNodeMetaDataType.SourceNode
+				| SourceNodeMetaDataType.LangInternalSourceNode
+			>
+		}[],
+		sensorValueRepresentation: SensorValueRepresentation
+	) {
+		this._sensorValueRepresentation = sensorValueRepresentation
 		this.hoverObjects = hoverObjects
 	}
 	provideHover(
@@ -21,9 +37,8 @@ export class SensorValueHoverProvider implements vscode.HoverProvider {
 		position: vscode.Position,
 		token: vscode.CancellationToken
 	): vscode.ProviderResult<vscode.Hover> {
-
 		const matchingDecoration = this.hoverObjects.find((decoration) => {
-			// TODO: Find out, why vscode.Range.contains work (decoration.decorationRange.contains(position)) 
+			// TODO: Find out, why vscode.Range.contains work (decoration.decorationRange.contains(position))
 			// is not working
 			const startLine = decoration.decorationRange.start.line
 			const endLine = decoration.decorationRange.end.line
@@ -33,12 +48,19 @@ export class SensorValueHoverProvider implements vscode.HoverProvider {
 			const line = position.line
 			const character = position.character
 
-			return line >= startLine && line <= endLine &&
-				((line === startLine && character >= startPosition) || (line === endLine && character <= endPosition))
+			return (
+				line >= startLine &&
+				line <= endLine &&
+				((line === startLine && character >= startPosition) ||
+					(line === endLine && character <= endPosition))
+			)
 		})
 
 		if (matchingDecoration) {
-			return new SensorValueHover(matchingDecoration.sensorValues, this.formula).provideHover()
+			return new SensorValueHover(
+				matchingDecoration.sourceNodeMetaData,
+				this._sensorValueRepresentation
+			).provideHover()
 		}
 	}
 }

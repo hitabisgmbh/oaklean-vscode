@@ -4,17 +4,42 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never"
-			},
+      "label": "watch",
+      "type": "shell",
+      "command": "npm run watch",
+      "isBackground": true,
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			}
-		}
+			},
+      "problemMatcher": [
+        {
+          "owner": "webpack",
+          "pattern": [
+						{
+							"regexp": "\\[tsl\\] (ERROR|WARNING) in (.*)?\\((\\d+),(\\d+)\\)",
+							"severity": 1,
+							"file": 2,
+							"line": 3,
+							"column": 4
+						},
+						{
+							"regexp": "\\s*TS(\\d+):\\s*(.*)$",
+							"code": 1,
+							"message": 2
+						}
+					],
+          "background": {
+            "activeOnStart": true,
+						"beginsPattern": {
+							"regexp": "[Cc]ompiling.*?|[Cc]ompil(ation|er) .*?starting"
+						},
+						"endsPattern": {
+							"regexp": "[Cc]ompiled (.*?successfully|with .*?(error|warning))|[Cc]ompil(ation|er) .*?finished"
+						}
+          }
+        }
+      ]
+    }
 	]
 }

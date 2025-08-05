@@ -1,9 +1,5 @@
 import * as vscode from 'vscode'
 import {
-	ModelMap,
-	PathID_number,
-	ProjectReport,
-	SourceFileMetaData,
 	SourceNodeIdentifier_string,
 	UnifiedPath
 } from '@oaklean/profiler-core'
@@ -12,33 +8,35 @@ import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import {
-	FilterPathChangeEvent,
-	SelectedSensorValueRepresentationChangeEvent,
-	SortDirectionChangeEvent
-} from '../helper/EventHandler'
-import { MethodViewMessageTypes } from '../types/methodViewMessageTypes'
-import { MethodViewCommands } from '../types/methodViewCommands'
-import { SortDirection } from '../types/sortDirection'
-import {
+	MethodViewCommands,
 	MethodViewProtocol_ChildToParent,
 	MethodViewProtocol_ParentToChild
-} from '../protocols/methodViewProtocol'
-import { MethodList } from '../model/MethodList'
-import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+} from '../protocols/MethodViewProtocol'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
+import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
+import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
+import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
 export class MethodViewProvider implements vscode.WebviewViewProvider {
+	private subscriptions: vscode.Disposable[] = []
 
 	public static readonly viewType = 'methodView'
 	private _view?: vscode.WebviewView
-	report: ProjectReport | undefined
 	_container: Container
-	constructor(private readonly _extensionUri: vscode.Uri, container: Container) {
+	constructor(
+		private readonly _extensionUri: vscode.Uri,
+		container: Container
+	) {
 		this._container = container
-		container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
-		container.eventHandler.onFilterPathChange(this.filterPathChange.bind(this))
-		container.eventHandler.onSortDirectionChange(this.sortDirectionChange.bind(this))
-		container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
+		this.subscriptions = [
+			this._container.eventHandler.onSelectedSensorValueTypeChange(this.refresh.bind(this)),
+			this._container.eventHandler.onReportLoaded(this.refresh.bind(this)),
+			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this))
+		]
+	}
+
+	dispose() {
+		this.subscriptions.forEach((d) => d.dispose())
 	}
 
 	public resolveWebviewView(
@@ -51,100 +49,43 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.options = {
 			enableScripts: true,
 
-			localResourceRoots: [
-				this._extensionUri
-			]
+			localResourceRoots: [this._extensionUri]
 		}
-		this._view.webview.onDidReceiveMessage(
-			(message: MethodViewProtocol_ChildToParent) => {
-				if (message.command === MethodViewCommands.openMethod) {
-					const identifier = message.identifier
-					const filePath = message.filePath
-					this.openMethodInEditor(identifier, filePath)
-				} else if (message.command === MethodViewCommands.initMethods) {
-					this.fillMethodView()
-				}
-			}
+		this.subscriptions.push(
+			this._view.webview.onDidReceiveMessage(
+				this.receiveMessageFromWebview.bind(this)
+			)
 		)
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, this._extensionUri)
 
+		webviewView.webview.html = this._getHtmlForWebview(
+			webviewView.webview,
+			this._extensionUri
+		)
 	}
 
-	fillMethodView() {
-		this.report = this._container.textDocumentController.projectReport
-		let internMeasurements: ModelMap<PathID_number, SourceFileMetaData> | undefined
-		const methodLists: MethodList[] = []
-		if (this.report !== undefined) {
-			internMeasurements = this.report.intern
-			for (const [pathID, sourceFileMetaData] of internMeasurements.entries()) {
-				if (sourceFileMetaData && sourceFileMetaData.pathIndex.file) {
-					const originalPathIndex = undefined
-
-					let lastCnt = 0
-					if (methodLists.length > 0) {
-						lastCnt = methodLists[methodLists.length - 1].lastCnt
-					}
-					const methodList = new MethodList(sourceFileMetaData, lastCnt, originalPathIndex)
-					methodLists.push(methodList)
-				}
-			}
+	receiveMessageFromWebview(message: MethodViewProtocol_ChildToParent) {
+		if (message.command === MethodViewCommands.open) {
+			const identifier = message.identifier
+			const filePath = message.filePath
+			this.openMethodInEditor(identifier, filePath)
+		} else if (message.command === MethodViewCommands.initMethods) {
+			this.refresh()
 		}
-		const sensorValueRepresentation = this._container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-		const includedFilterPath = this._container.storage.getWorkspace('includedFilterPath') as string
-		const excludedFilterPath = this._container.storage.getWorkspace('excludedFilterPath') as string
-		const sortDirection = this._container.storage.getWorkspace('sortDirection') as SortDirection
-		this.postMessageToWebview({
-			type: MethodViewMessageTypes.clear
-		})
-		methodLists.forEach((methodList) => {
-			if (methodList.methods.length > 0) {
-				this.postMessageToWebview({
-					type: MethodViewMessageTypes.displayMethods,
-					methodList,
-					sensorValueRepresentation,
-					filterPaths: { includedFilterPath, excludedFilterPath }
-				})
-			}
-		})
-		if (sortDirection !== (SortDirection.default || undefined)) {
-			this.postMessageToWebview({
-				type: MethodViewMessageTypes.sortDirectionChange,
-				sortDirection
-			})
-		}
-
-
 	}
 
-	reportLoaded() {
-		this.fillMethodView()
+	hardRefresh() {
+		if (this._view === undefined) {
+			return
+		}
+		this._view.webview.html = this._getHtmlForWebview(
+			this._view.webview,
+			this._extensionUri
+		)
+		this.refresh()
 	}
 
 	public postMessageToWebview(message: MethodViewProtocol_ParentToChild) {
 		this._view?.webview.postMessage(message)
-	}
-
-	selectedSensorValueTypeChanged(event: SelectedSensorValueRepresentationChangeEvent) {
-		const sensorValueRepresentation = event.sensorValueRepresentation
-		this.postMessageToWebview({
-			type: MethodViewMessageTypes.sensorValueTypeChange,
-			sensorValueRepresentation
-		})
-	}
-
-	sortDirectionChange(event: SortDirectionChangeEvent) {
-		const sortDirection = event.sortDirection
-		this.postMessageToWebview({
-			type: MethodViewMessageTypes.sortDirectionChange,
-			sortDirection
-		})
-	}
-
-	filterPathChange(event: FilterPathChangeEvent) {
-		this.postMessageToWebview({
-			type: MethodViewMessageTypes.filterPathChange,
-			filterPaths: event.filterPaths
-		})
 	}
 
 	async openMethodInEditor(identifier: string, filePath: string) {
@@ -162,24 +103,33 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 				const document = await vscode.workspace.openTextDocument(uri)
 
 				if (document) {
-
 					const programStructureTreeOfFile =
-						this._container.textDocumentController.getProgramStructureTreeOfFile(unifiedFilePath)
+						this._container.textDocumentController.getProgramStructureTreeOfFile(
+							unifiedFilePath
+						)
 					let position
 					if (programStructureTreeOfFile) {
-						const sourceIdentifierString = identifier.replace(/"/g, '') as SourceNodeIdentifier_string
-						const loc = programStructureTreeOfFile.sourceLocationOfIdentifier(sourceIdentifierString)
+						const sourceIdentifierString = identifier.replace(
+							/"/g,
+							''
+						) as SourceNodeIdentifier_string
+						const loc = programStructureTreeOfFile.sourceLocationOfIdentifier(
+							sourceIdentifierString
+						)
 						if (loc) {
-							position = new vscode.Position(loc.beginLoc.line - 1, loc.beginLoc.column)
+							position = new vscode.Position(
+								loc.beginLoc.line - 1,
+								loc.beginLoc.column
+							)
 						}
 					}
 					if (position) {
-						await vscode.window.showTextDocument(document,
-							{ selection: new vscode.Range(position, position) })
+						await vscode.window.showTextDocument(document, {
+							selection: new vscode.Range(position, position)
+						})
 					} else {
 						await vscode.window.showTextDocument(document)
 					}
-
 				}
 			} else {
 				console.error(errorMessage)
@@ -192,30 +142,89 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {
+	refresh() {
+		const projectReport = this._container.textDocumentController.projectReport
+		if (projectReport === undefined) {
+			return
+		}
+		const sensorValueRepresentation = this._container.storage.getWorkspace(
+					'sensorValueRepresentation'
+				) as SensorValueRepresentation
+
+		const sourceFileMethodTrees: Record<string, {
+			fileName: string,
+			tree: ISourceFileMethodTree
+		}>  = {}
+		for (const sourceFileMetaData of projectReport.intern.values()) {
+			sourceFileMethodTrees[sourceFileMetaData.path] = {
+				fileName: sourceFileMetaData.pathIndex.identifier.split('/').pop() || '',
+				tree: SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData).toJSON()
+			}
+		}
+		this.postMessageToWebview({
+			command: MethodViewCommands.clearMethodList
+		})
+		this.postMessageToWebview({
+			command: MethodViewCommands.updateMethodList,
+			methodTrees: sourceFileMethodTrees,
+			sensorValueRepresentation
+		})
+	}
+
+	private _getHtmlForWebview(
+		webview: vscode.Webview,
+		extensionUri: vscode.Uri
+	) {
 		const nonce = getNonce()
-		const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'MethodView.js'])
-		const stylesUri = getUri(webview, extensionUri, ['dist', 'webview', 'methodView.css'])
-		const codiconsUri = getUri(webview, extensionUri, ['dist', 'webview', 'codicons', 'codicon.css'])
+		const webviewUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'MethodView.js'
+		])
+		const stylesUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'MethodView.css'
+		])
+		const vendorsUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'webpack',
+			'vendors.js'
+		])
+		const codiconsUri = getUri(webview, extensionUri, [
+			'dist',
+			'webview',
+			'codicons',
+			'codicon.css'
+		])
 		const htmlContent = `<!DOCTYPE html>
         <html lang="en">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
-						<meta http-equiv="Content-Security-Policy"
-						content="default-src 'none';
-						font-src ${webview.cspSource}; 
-						style-src ${webview.cspSource} 'unsafe-inline';
-						script-src 'nonce-${nonce}';">
+						<meta
+							http-equiv="Content-Security-Policy"
+							content="
+								default-src 'none';
+								font-src ${webview.cspSource};
+								style-src 'unsafe-inline' ${webview.cspSource};
+								style-src-elem 'unsafe-inline' ${webview.cspSource};
+								script-src 'nonce-${nonce}';
+							"
+						>
 						<link rel="stylesheet" href="${stylesUri}">
 						<link rel="stylesheet" href="${codiconsUri}">
             <title>Methods</title>
           </head>
-          <body>
-		  			<div id="content"></div>
-						<script type="module" nonce="${nonce}" src="${webviewUri}"></script>
-						</body>
-					</html>
+					<body>
+						<div id="root"></div>
+						<script nonce="${nonce}" src="${vendorsUri}"></script>
+						<script nonce="${nonce}" src="${webviewUri}"></script>
+					</body>
+				</html>
     `
 
 		return htmlContent

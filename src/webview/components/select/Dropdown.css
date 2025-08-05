@@ -1,0 +1,13 @@
+
+.dropdown {
+	width: 300px;
+	/* Fixed width for form elements and labels */
+	margin-left: 0;
+	/* Ensure alignment to the left */
+	margin-top: 5px;
+	margin-bottom: 5px;
+	/* Smaller gap below labels */
+	overflow: visible;
+	flex-flow: column;
+	height: auto;
+}

@@ -1,12 +1,17 @@
 import sinon from 'sinon'
-import { MicroSeconds_number, ProfilerConfig, ProjectIdentifier_string, UnifiedPath } from '@oaklean/profiler-core'
+import {
+	MicroSeconds_number,
+	ProfilerConfig,
+	ProjectIdentifier_string,
+	STATIC_CONFIG_FILENAME,
+	UnifiedPath
+} from '@oaklean/profiler-core'
 
 export const stub_ProfilerConfig = () => {
-	const profilerConfigStub = sinon.stub(ProfilerConfig, 'autoResolveFromPath').callsFake(
-		(
-			startDir: UnifiedPath
-		): ProfilerConfig => {
-			return ProfilerConfig.fromJSON({
+	const profilerConfigStub = sinon
+		.stub(ProfilerConfig, 'autoResolveFromPath')
+		.callsFake((startDir: UnifiedPath): ProfilerConfig => {
+			return new ProfilerConfig(new UnifiedPath(STATIC_CONFIG_FILENAME), {
 				exportOptions: {
 					outDir: 'profiles',
 					outHistoryDir: 'profiles_history',
@@ -16,7 +21,8 @@ export const stub_ProfilerConfig = () => {
 					exportSensorInterfaceData: true
 				},
 				projectOptions: {
-					identifier: '00000000-0000-0000-0000-000000000000' as ProjectIdentifier_string
+					identifier:
+						'00000000-0000-0000-0000-000000000000' as ProjectIdentifier_string
 				},
 				runtimeOptions: {
 					seeds: {},

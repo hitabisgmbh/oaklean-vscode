@@ -10,10 +10,9 @@ import { SourceFileMetaDataTreeProvider } from './treeviews/SourceFileMetaDataTr
 import SelectValueRepresentationCommand from './commands/SelectValueRepresentationCommand'
 import SelectSensorValueTypeCommand from './commands/SelectSensorValueTypeCommand'
 import ChangeSortDirectionCommands from './commands/ChangeSortDirectionCommands'
-import SettingsWebviewController from './controller/SettingsWebviewController'
-import { ReportWebviewController } from './controller/ReportWebviewController'
+import ThemeColorViewerCommands from './commands/ThemeColorViewerCommands'
+import SettingsCommand from './commands/SettingsCommand'
 import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction } from './commands/ToggleLineAnnotationCommands'
-import FilterCommand from './commands/FilterCommand'
 import { MethodViewProvider } from './providers/MethodViewProvider'
 import { FilterViewProvider } from './providers/FilterViewProvider'
 import SelectProfileCommand from './commands/SelectProfile'
@@ -30,16 +29,6 @@ export class Container {
 	static #instance: Container | undefined
 	static get instance(): Container | undefined {
 		return Container.#instance
-	}
-
-	private readonly _settingsWebviewController: SettingsWebviewController
-	get settingsWebviewController() {
-		return this._settingsWebviewController
-	}
-
-	private readonly _reportWebviewController: ReportWebviewController
-	get reportWebviewController() {
-		return this._reportWebviewController
 	}
 
 	private _reportBackendStorageController: ReportBackendStorageController
@@ -70,6 +59,11 @@ export class Container {
 	private readonly _textDocumentController: TextDocumentController
 	get textDocumentController() {
 		return this._textDocumentController
+	}
+
+	private readonly _settingsCommand: SettingsCommand
+	get settingsWebviewController() {
+		return this._settingsCommand
 	}
 
 	private readonly _selectReportCommand: SelectReport
@@ -122,10 +116,11 @@ export class Container {
 		return this._enableLineAnnotationsCommand
 	}
 
-	private readonly _filterCommand: FilterCommand
-	get filterCommand() {
-		return this._filterCommand
+	private readonly _showThemeColorViewerCommand: ThemeColorViewerCommands
+	get showThemeColorViewerCommand() {
+		return this._showThemeColorViewerCommand
 	}
+
 	private readonly _treeDataProvider: SourceFileMetaDataTreeProvider
 	get treeDataProvider() {
 		return this._treeDataProvider
@@ -173,14 +168,10 @@ export class Container {
 		this.context.subscriptions.push((this._textEditorController = new TextEditorController(this)))
 		this.context.subscriptions.push((this._textDocumentController = new TextDocumentController(this)))
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
-		this.context.subscriptions.push((this._settingsWebviewController = new SettingsWebviewController(this)))
-		this.context.subscriptions.push((this._reportWebviewController = new ReportWebviewController(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
 		// TreeViews
-		this._treeDataProvider = new SourceFileMetaDataTreeProvider(
-			this
-		)
+		this.context.subscriptions.push(this._treeDataProvider = new SourceFileMetaDataTreeProvider(this))
 		this.context.subscriptions.push(
 			vscode.window.registerTreeDataProvider(
 				'SourceFileMetaDataTree',
@@ -194,66 +185,95 @@ export class Container {
 		)
 
 		// Commands
-		this._selectReportCommand = new SelectReport(this)
+		this.context.subscriptions.push((this._settingsCommand = new SettingsCommand(this)))
+		this.context.subscriptions.push(this._settingsCommand.register())
+		this.context.subscriptions.push(this._showThemeColorViewerCommand = new ThemeColorViewerCommands(this))
+		this.context.subscriptions.push(this._showThemeColorViewerCommand.register())
+		this.context.subscriptions.push(this._selectReportCommand = new SelectReport(this))
 		this.context.subscriptions.push(this._selectReportCommand.register())
 
-		this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
+		this.context.subscriptions.push(
+			this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
+		)
 		this.context.subscriptions.push(this._selectReportFromContextMenuCommand.register())
 
-		this._selectValueRepresentationCommand = new SelectValueRepresentationCommand(this, this._treeDataProvider)
+		this.context.subscriptions.push(
+			this._selectValueRepresentationCommand = new SelectValueRepresentationCommand(this, this._treeDataProvider)
+		)
 		this.context.subscriptions.push(this._selectValueRepresentationCommand.register())
 
-		this._selectSensorValueTypeCommand = new SelectSensorValueTypeCommand(this, this._treeDataProvider)
+		this.context.subscriptions.push(
+			this._selectSensorValueTypeCommand = new SelectSensorValueTypeCommand(this, this._treeDataProvider)
+		)
 		this.context.subscriptions.push(this._selectSensorValueTypeCommand.register())
 
-
-		this._selectProfileCommand = new SelectProfileCommand(this)
+		this.context.subscriptions.push(
+			this._selectProfileCommand = new SelectProfileCommand(this)
+		)
 		this.context.subscriptions.push(this._selectProfileCommand.register())
 
-		this._disableLineAnnotationsCommand = new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.disable)
+		this.context.subscriptions.push(
+			this._disableLineAnnotationsCommand =
+				new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.disable)
+		)
 		this.context.subscriptions.push(this._disableLineAnnotationsCommand.register())
 
-		this._enableLineAnnotationsCommand = new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.enable)
+		this.context.subscriptions.push(
+			this._enableLineAnnotationsCommand =
+				new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.enable)
+		)
 		this.context.subscriptions.push(this._enableLineAnnotationsCommand.register())
 
-		this._changeSortDirectionAscToDescCommand = new ChangeSortDirectionCommands(
-			this,
-			this._treeDataProvider,
-			SortDirection.desc
+		this.context.subscriptions.push(
+			this._changeSortDirectionAscToDescCommand = new ChangeSortDirectionCommands(
+				this,
+				this._treeDataProvider,
+				SortDirection.desc
+			)
 		)
-		this._changeSortDirectionDescToDefaultCommand = new ChangeSortDirectionCommands(
-			this,
-			this._treeDataProvider,
-			SortDirection.default
+		this.context.subscriptions.push(
+			this._changeSortDirectionDescToDefaultCommand = new ChangeSortDirectionCommands(
+				this,
+				this._treeDataProvider,
+				SortDirection.default
+			)
 		)
-		this._changeSortDirectionDefaultToAscCommand = new ChangeSortDirectionCommands(
-			this,
-			this._treeDataProvider,
-			SortDirection.asc
+		this.context.subscriptions.push(
+			this._changeSortDirectionDefaultToAscCommand = new ChangeSortDirectionCommands(
+				this,
+				this._treeDataProvider,
+				SortDirection.asc
+			)
 		)
 		this.context.subscriptions.push(this._changeSortDirectionAscToDescCommand.register())
 		this.context.subscriptions.push(this._changeSortDirectionDescToDefaultCommand.register())
 		this.context.subscriptions.push(this._changeSortDirectionDefaultToAscCommand.register())
 
-		this._filterCommand = new FilterCommand(this, this._treeDataProvider)
-		this.context.subscriptions.push(this._filterCommand.register())
-
 		//webview providers
-		this._methodViewProvider = new MethodViewProvider(this.context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._methodViewProvider = new MethodViewProvider(this.context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				MethodViewProvider.viewType, this._methodViewProvider
 			))
 
-		this._filterViewProvider = new FilterViewProvider(this.context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._filterViewProvider = new FilterViewProvider(this.context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				FilterViewProvider.viewType, this._filterViewProvider
 			))
-		this._reportEditorProvider = new ReportEditorProvider(this)
+		this.context.subscriptions.push(this._reportEditorProvider = new ReportEditorProvider(this))
 		this.context.subscriptions.push(
 			vscode.window.registerCustomEditorProvider(
-				'oaklean.oak', this.reportEditorProvider
+				'oaklean.oak', this._reportEditorProvider, {
+					webviewOptions: {
+						retainContextWhenHidden: true
+					},
+					supportsMultipleEditorsPerDocument: false
+				}
 			)
 		)
 
@@ -270,13 +290,17 @@ export class Container {
 			})
 		)
 
-		this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				EditorFileMethodViewProvider.viewType, this._editorFileMethodViewProvider
 			))
 
-		this._graphicalViewProvider = new GraphicalViewProvider(context.extensionUri, this)
+		this.context.subscriptions.push(
+			this._graphicalViewProvider = new GraphicalViewProvider(context.extensionUri, this)
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				GraphicalViewProvider.viewType, this._graphicalViewProvider

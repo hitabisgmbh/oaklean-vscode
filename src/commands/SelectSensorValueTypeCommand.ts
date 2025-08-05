@@ -37,6 +37,7 @@ export enum CommandIdentifiers {
 }
 
 export default class SelectValueRepresentationCommand extends BaseCommand {
+	private _disposable: vscode.Disposable
 	container: Container
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 
@@ -44,8 +45,12 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 		super()
 		this.container = container
 		this._treeDataProvider = treeDataProvider
+		this._disposable = vscode.Disposable.from()
 	}
 
+	dispose() {
+		this._disposable.dispose()
+	}
 
 	getIdentifier(): CommandIdentifiers {
 		return CommandIdentifiers.selectedSensorValueType

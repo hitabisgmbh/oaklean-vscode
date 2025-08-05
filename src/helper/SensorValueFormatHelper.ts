@@ -2,8 +2,10 @@ import {
 	ExtendedSensorValueType,
 	SensorUnits,
 	EnergyConsumptionSensorValueTypes,
-	UnitPerSensorValue
+	UnitPerSensorValue,
+	SensorValueTypeNames
 } from '../types/sensorValues'
+import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
 const DECIMALS_TO_ROUND = 3
 const FACTOR_TO_ROUND = Math.pow(10, DECIMALS_TO_ROUND)
@@ -13,7 +15,7 @@ export class SensorValueFormatHelper {
 		value: number,
 		sensorValueType: ExtendedSensorValueType
 	): {
-		value: string,
+		value: string
 		unit: SensorUnits
 	} {
 		const unit = UnitPerSensorValue[sensorValueType]
@@ -23,7 +25,9 @@ export class SensorValueFormatHelper {
 		if (value === undefined || value === 0) {
 			newValue = '0'
 		} else if (EnergyConsumptionSensorValueTypes.includes(sensorValueType)) {
-			newValue = (Math.round(value * FACTOR_TO_ROUND) / FACTOR_TO_ROUND).toFixed(DECIMALS_TO_ROUND)
+			newValue = (
+				Math.round(value * FACTOR_TO_ROUND) / FACTOR_TO_ROUND
+			).toFixed(DECIMALS_TO_ROUND)
 		} else {
 			newValue = value.toString()
 		}
@@ -31,5 +35,11 @@ export class SensorValueFormatHelper {
 			value: newValue,
 			unit: newUnit
 		}
+	}
+
+	static formatSensorValueType(
+		sensorValueRepresentation: SensorValueRepresentation
+	) {
+		return SensorValueTypeNames[sensorValueRepresentation.selectedSensorValueType]
 	}
 }

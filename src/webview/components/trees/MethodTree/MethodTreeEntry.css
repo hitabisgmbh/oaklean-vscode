@@ -1,0 +1,37 @@
+.method-tree-entry {
+	display: flex;
+	align-items: center;
+	flex: 1;
+	flex-wrap: wrap; /* allow wrapping */
+}
+
+.method-tree-entry .npiosc-marker {
+	margin-left: 5px;
+}
+
+.method-tree-entry .text {
+	padding-left: 5px;
+	line-height: 22px;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.method-tree-entry .icon {
+	display: inline-block;
+}
+
+.method-tree-entry .sensorValue {
+	flex-grow: 1;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.method-tree-entry .sensorValue .unit {
+	padding-left: 5px;
+	color: var(--vscode-descriptionForeground);
+}
+
+.method-tree-entry .sensorValue .self {
+	color: var(--vscode-textLink-foreground);
+}

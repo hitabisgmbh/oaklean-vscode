@@ -4,6 +4,7 @@ import { getNonce } from '../utilities/getNonce'
 import { Container } from '../container'
 
 export class GraphicalViewProvider implements vscode.WebviewViewProvider {
+	private readonly _disposables: vscode.Disposable[]
 
 	public static readonly viewType = 'graphicalView'
 
@@ -11,6 +12,11 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 	_container: Container
 	constructor(private readonly _extensionUri: vscode.Uri, container: Container) {
 		this._container = container
+		this._disposables = []
+	}
+
+	dispose() {
+		this._disposables.forEach((d) => d.dispose())
 	}
 
 	public resolveWebviewView(
@@ -20,15 +26,9 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 	) {
 		this._view = webviewView
 
-		// this._view.webview.onDidReceiveMessage(
-		// 	(message: { command: string; text: string }) => {}
-		// )
-
-		this._view.onDidChangeVisibility((e: any) => {
-			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
-				this._extensionUri)
-
-		})
+		this._disposables.push(
+			this._view.onDidChangeVisibility(this.hardRefresh.bind(this))
+		)
 		webviewView.webview.options = {
 			// Enable scripts in the webview
 			enableScripts: true,
@@ -41,6 +41,16 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
 			this._extensionUri)
+	}
+
+	hardRefresh() {
+		if (this._view === undefined) {
+			return
+		}
+		this._view.webview.html = this._getHtmlForWebview(
+			this._view.webview,
+			this._extensionUri
+		)
 	}
 
 	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {

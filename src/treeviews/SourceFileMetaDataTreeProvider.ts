@@ -10,7 +10,6 @@ import {
 import { Container } from '../container'
 import { ReportLoadedEvent, SelectedSensorValueRepresentationChangeEvent, SortDirectionChangeEvent } from '../helper/EventHandler'
 import { ValueRepresentationType } from '../types/valueRepresentationTypes'
-import { ExtendedSensorValueType } from '../types/sensorValues'
 import { calcOrReturnSensorValue } from '../helper/FormulaHelper'
 import { SortDirection } from '../types/sortDirection'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from '../types/sensorValueRepresentation'
@@ -29,8 +28,6 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 	modulesTotalValue: number
 	displayedSensorValue = 0
 	directory: UnifiedPath | undefined
-	includedFilterPath: string
-	excludedFilterPath: string
 	locallyTotalValue: number | undefined
 	constructor(
 		label: string,
@@ -40,8 +37,6 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		sensorValueRepresentation: SensorValueRepresentation,
 		internalTotalValue: number,
 		modulesTotalValue: number,
-		includedFilterPath: string,
-		excludedFilterPath: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
 		directory: UnifiedPath | undefined,
 		public readonly file?: UnifiedPath,
@@ -57,8 +52,6 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		this.modulesTotalValue = modulesTotalValue
 		this.directory = directory
 		let proportion = 0
-		this.includedFilterPath = includedFilterPath
-		this.excludedFilterPath = excludedFilterPath
 		this.locallyTotalValue = locallyTotalValue
 		if (this.sensorValueRepresentation.selectedSensorValueType === undefined) {
 			this.sensorValueRepresentation.selectedSensorValueType = 'aggregatedCPUTime'
@@ -67,16 +60,14 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 			this.sensorValueRepresentation.selectedValueRepresentation === ValueRepresentationType.absolute) {
 			if (type === DisplayType.extern) {
 				let childModulesTotal = 0
-				childModulesTotal = this.calculateModulesTotal(metaDataNode,
-					this.sensorValueRepresentation.selectedSensorValueType,
-					this.sensorValueRepresentation.formula)
+				childModulesTotal = this.calculateModulesTotal(metaDataNode)
 
 				proportion = childModulesTotal
 			} else {
-				proportion = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
-					.total.sensorValues,
-					this.sensorValueRepresentation.selectedSensorValueType,
-					this.sensorValueRepresentation.formula)
+				proportion = calcOrReturnSensorValue(
+					metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
+					this.sensorValueRepresentation
+				)
 			}
 			const formattedValue = SensorValueFormatHelper.format(
 				proportion,
@@ -87,15 +78,15 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.locallyRelative) {
 			if (type === DisplayType.extern) {
-				const modulesTotalValue = this.calculateModulesTotal(metaDataNode,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+				const modulesTotalValue = this.calculateModulesTotal(metaDataNode)
 				if (locallyTotalValue) {
 					proportion = modulesTotalValue / locallyTotalValue * 100
 				} else {
 					let internTotal = 0
-					internTotal = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
-						.total.sensorValues,
-						this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+					internTotal = calcOrReturnSensorValue(
+						metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
+						this.sensorValueRepresentation
+					)
 
 					proportion = modulesTotalValue / (internTotal + modulesTotalValue) * 100
 				}
@@ -104,19 +95,19 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 				if (locallyTotalValue) {
 					total = locallyTotalValue
 				} else {
-					total += this.calculateModulesTotal(parentNode,
-						this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+					total += this.calculateModulesTotal(parentNode)
 					if (metaDataNode.type !== SourceFileMetaDataTreeType.Module) {
-						total += calcOrReturnSensorValue(parentNode.aggregatedInternSourceMetaData
-							.total.sensorValues,
-							this.sensorValueRepresentation.selectedSensorValueType,
-							this.sensorValueRepresentation.formula)
+						total += calcOrReturnSensorValue(
+							parentNode.aggregatedInternSourceMetaData.total.sensorValues,
+							this.sensorValueRepresentation
+						)
 					}
 				}
 				let internalTotalValue = 0
-				internalTotalValue = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
-					.total.sensorValues,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+				internalTotalValue = calcOrReturnSensorValue(
+					metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
+					this.sensorValueRepresentation
+				)
 				proportion = internalTotalValue / total * 100
 			}
 			if (isNaN(proportion)) {
@@ -127,14 +118,14 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		} else if (this.sensorValueRepresentation.selectedValueRepresentation
 			=== ValueRepresentationType.totalRelative) {
 			if (type === DisplayType.extern) {
-				const childModulesTotal = this.calculateModulesTotal(metaDataNode,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+				const childModulesTotal = this.calculateModulesTotal(metaDataNode)
 
 				proportion = childModulesTotal / (modulesTotalValue + internalTotalValue) * 100
 			} else {
-				const result = calcOrReturnSensorValue(metaDataNode.aggregatedInternSourceMetaData
-					.total.sensorValues,
-					this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula)
+				const result = calcOrReturnSensorValue(
+					metaDataNode.aggregatedInternSourceMetaData.total.sensorValues,
+					this.sensorValueRepresentation
+				)
 				proportion = result / (modulesTotalValue + internalTotalValue) * 100
 			}
 			if (isNaN(proportion)) {
@@ -159,12 +150,15 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 		}
 	}
 
-	calculateModulesTotal(node: SourceFileMetaDataTree<SourceFileMetaDataTreeType>,
-		sensorValueType: ExtendedSensorValueType, formula: string | undefined): number {
+	calculateModulesTotal(
+		node: SourceFileMetaDataTree<SourceFileMetaDataTreeType>
+	): number {
 		let total = 0
 		for (const externChild of node.externChildren.values()) {
-			total += calcOrReturnSensorValue(externChild.aggregatedInternSourceMetaData
-				.total.sensorValues, sensorValueType, formula)
+			total += calcOrReturnSensorValue(
+				externChild.aggregatedInternSourceMetaData.total.sensorValues,
+				this.sensorValueRepresentation
+			)
 		}
 		return total
 
@@ -172,6 +166,8 @@ class SourceFileMetaDataTreeNode extends vscode.TreeItem {
 }
 
 export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<SourceFileMetaDataTreeNode> {
+	private _disposable: vscode.Disposable
+	
 	container: Container
 	_originalSourceFileMetaDataTree: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined
 	sourceFileMetaDataTree: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined
@@ -189,9 +185,6 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 	constructor(container: Container) {
 		this.container = container
 		this.loadFromProjectReport()
-		this.container.eventHandler.onReportLoaded(this.reportLoaded.bind(this))
-		this.container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this))
-		this.container.eventHandler.onSortDirectionChange(this.sortDirectionChanged.bind(this))
 		const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
 		if (sensorValueRepresentation === undefined) {
 			this.sensorValueRepresentation = defaultSensorValueRepresentation()
@@ -199,6 +192,16 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 			this.sensorValueRepresentation = sensorValueRepresentation
 		}
 
+		this._disposable = vscode.Disposable.from(
+			this.container.eventHandler.onReportLoaded(this.reportLoaded.bind(this)),
+			this.container.eventHandler.onSelectedSensorValueTypeChange(this.selectedSensorValueTypeChanged.bind(this)),
+			this.container.eventHandler.onSortDirectionChange(this.sortDirectionChanged.bind(this)),
+			this.container.eventHandler.onFilterPathChange(this.applyFilter.bind(this))
+		)
+	}
+
+	dispose() {
+		this._disposable.dispose()
 	}
 
 	sortDirectionChanged(event: SortDirectionChangeEvent) {
@@ -217,12 +220,17 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		const oldModulesTotalValue = this.modulesTotalValue
 		this.sensorValueRepresentation = sensorValueRepresentation
 		let modulesTotalValue = 0
-		if (this.sourceFileMetaDataTree && this.sourceFileMetaDataTree.type === 'Root'
-			&& this.sensorValueRepresentation.selectedSensorValueType !== undefined) {
+		if (
+			this.sourceFileMetaDataTree &&
+			this.sourceFileMetaDataTree.type === 'Root' &&
+			this.sensorValueRepresentation.selectedSensorValueType !== undefined
+		) {
 			for (const externChild of this.sourceFileMetaDataTree.externChildren.values()) {
 				try {
-					const value = calcOrReturnSensorValue(externChild.aggregatedInternSourceMetaData
-						.total.sensorValues, this.sensorValueRepresentation.selectedSensorValueType, this.sensorValueRepresentation.formula || '')
+					const value = calcOrReturnSensorValue(
+						externChild.aggregatedInternSourceMetaData.total.sensorValues,
+						this.sensorValueRepresentation
+					)
 					modulesTotalValue += value
 				} catch (e) {
 					this.sensorValueRepresentation = oldRepresentation
@@ -231,7 +239,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 
 				this.modulesTotalValue = modulesTotalValue
 			}
-			this.changeEvent.fire()
+			this.rerender()
 		}
 	}
 
@@ -240,14 +248,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		if (projectReport) {
 			this.relativeRootDir = projectReport.relativeRootDir
 			this._originalSourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(projectReport)
-			this.includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
-			this.excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
-			this.sourceFileMetaDataTree = this._originalSourceFileMetaDataTree.filter(
-				this.includedFilterPath,
-				this.excludedFilterPath
-			).node || undefined
-			this.valueRepresentation(this.sensorValueRepresentation)
-			this.changeEvent.fire()
+			this.applyFilter()
 		}
 	}
 
@@ -261,21 +262,15 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 
 	changeSortDirection(sortDirection: string) {
 		this.sortDirection = sortDirection
-		this.changeEvent.fire()
+		this.rerender()
 	}
 
-
-	filter(command: string, text: string) {
-		if (command === 'included-path-change') {
-			this.includedFilterPath = text
-			this.container.storage.storeWorkspace('includedFilterPath', this.includedFilterPath)
-		} else if (command === 'excluded-path-change') {
-			this.excludedFilterPath = text
-			this.container.storage.storeWorkspace('excludedFilterPath', this.excludedFilterPath)
-		}
+	applyFilter() {
+		const includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
+		const excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
 		this.sourceFileMetaDataTree = this._originalSourceFileMetaDataTree?.filter(
-			this.includedFilterPath,
-			this.excludedFilterPath
+			includedFilterPath,
+			excludedFilterPath
 		).node || undefined
 		this.valueRepresentation(this.sensorValueRepresentation)
 		this.rerender()
@@ -298,8 +293,7 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 		if (this.sensorValueRepresentation.selectedSensorValueType) {
 			internalTotalValue = calcOrReturnSensorValue(
 				this.sourceFileMetaDataTree.aggregatedInternSourceMetaData.total.sensorValues,
-				this.sensorValueRepresentation.selectedSensorValueType,
-				this.sensorValueRepresentation.formula)
+				this.sensorValueRepresentation)
 		}
 
 		for (const [filePathPart, childNode] of children.entries()) {
@@ -345,8 +339,6 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 					this.sensorValueRepresentation,
 					internalTotalValue,
 					this.modulesTotalValue,
-					this.includedFilterPath || '',
-					this.excludedFilterPath || '',
 					isEmpty
 						? vscode.TreeItemCollapsibleState.None
 						: vscode.TreeItemCollapsibleState.Collapsed,
@@ -368,8 +360,6 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 						this.sensorValueRepresentation,
 						internalTotalValue,
 						this.modulesTotalValue,
-						this.includedFilterPath || '',
-						this.excludedFilterPath || '',
 						vscode.TreeItemCollapsibleState.Collapsed,
 						path,
 						undefined,

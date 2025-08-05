@@ -18,6 +18,7 @@ import { Profile } from '../types/profile'
 import { SortDirection } from '../types/sortDirection'
 import { FilterPaths } from '../types/FilterPaths'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import { WEBPACK_WEBVIEW_PATH } from '../constants/webpack'
 
 export type ReportLoadedEvent = {
 	type: 'ProjectReport'
@@ -37,6 +38,10 @@ export type ReportPathChangeEvent = {
 
 export type TextEditorChangeEvent = {
 	readonly editor: TextEditor
+}
+
+export type TextEditorsChangeVisibilityEvent = {
+	readonly editors: readonly TextEditor[]
 }
 
 export type TextDocumentOpenEvent = {
@@ -63,6 +68,10 @@ export type ProfileChangeEvent = {
 	readonly profile: Profile
 }
 
+export type WebpackRecompileEvent = {
+	data?: undefined
+}
+
 export default class EventHandler implements Disposable {
 	private readonly _disposable: Disposable
 	container: Container
@@ -72,6 +81,8 @@ export default class EventHandler implements Disposable {
 		new EventEmitter<SelectedSensorValueRepresentationChangeEvent>()
 	private _toggleLineAnnotationsChangeEvent = new EventEmitter<ToggleLineAnnotationsChangeEvent>()
 	private _reportLoaded = new EventEmitter<ReportLoadedEvent>()
+
+	private _textEditorsChangeVisibility = new EventEmitter<TextEditorsChangeVisibilityEvent>()
 	private _textEditorChange = new EventEmitter<TextEditorChangeEvent>()
 	private _textDocumentOpen = new EventEmitter<TextDocumentOpenEvent>()
 	private _textDocumentClose = new EventEmitter<TextDocumentCloseEvent>()
@@ -82,6 +93,8 @@ export default class EventHandler implements Disposable {
 	private _sortDirectionChange = new EventEmitter<SortDirectionChangeEvent>()
 	private _profileChange = new EventEmitter<ProfileChangeEvent>()
 
+	private _webpackRecompile = new EventEmitter<WebpackRecompileEvent>()
+
 	constructor(container: Container) {
 		this.container = container
 		this._disposable = Disposable.from(
@@ -90,8 +103,49 @@ export default class EventHandler implements Disposable {
 			vscode.workspace.onDidCloseTextDocument(this.fireTextDocumentClose.bind(this)),
 			vscode.workspace.onDidSaveTextDocument(this.fireTextDocumentDidSave.bind(this)),
 			vscode.workspace.onDidChangeTextDocument(this.fireTextDocumentChange.bind(this)),
-			window.onDidChangeActiveTextEditor(this.fireTextEditorChange.bind(this))
+			vscode.window.onDidChangeVisibleTextEditors(this.fireTextEditorsChangeVisibility.bind(this)),
+			window.onDidChangeActiveTextEditor(this.fireTextEditorChange.bind(this)),
+			this.onWebpackRecompileWatcher()
 		)
+	}
+
+
+	/*
+	 * Watches the webpack webview directory for changes and fires a recompile event
+	 * when a change is detected.
+	 * This is only active in development mode.
+	 */
+	onWebpackRecompileWatcher(): { dispose: () => void } {
+		if (
+			this.container.context.extensionMode !== vscode.ExtensionMode.Development
+		) {
+			return { dispose: () => undefined }
+		}
+
+		let debounceTimer: NodeJS.Timeout | null = null
+		const watcher = fs.watch(
+			`${this.container.context.extensionUri.fsPath}/${WEBPACK_WEBVIEW_PATH}`,
+			{ recursive: true },
+			async (eventType, filename) => {
+				// only refresh when there are no changes for 1 second
+				if (debounceTimer) {
+					clearTimeout(debounceTimer)
+				}
+
+				debounceTimer = setTimeout(() => {
+					this.fireWebpackRecompile()
+				}, 1000)
+			}
+		)
+
+		return {
+			dispose: () => {
+				if (debounceTimer) {
+					clearTimeout(debounceTimer)
+				}
+				watcher.close()
+			}
+		}
 	}
 
 	fireInitialEvents() {
@@ -238,9 +292,19 @@ export default class EventHandler implements Disposable {
 		this._programStructureTreeChanged.fire({ fileName: fileName })
 	}
 
-	get onTextEditorChange(): Event<TextEditorChangeEvent> {
-		return this._textEditorChange.event
+	get onTextEditorsChangeVisibility(): Event<TextEditorsChangeVisibilityEvent> {
+		return this._textEditorsChangeVisibility.event
 	}
+
+	fireTextEditorsChangeVisibility(editors: readonly TextEditor[]) {
+		console.debug('EventFire: EventHandler.fireTextEditorsChangeVisibility', {
+			timestamp: TimeHelper.getCurrentHighResolutionTime()
+		})
+		this._textEditorsChangeVisibility.fire({
+			editors
+		})
+	}
+
 	get onTextDocumentChange(): Event<TextDocumentChangeEvent> {
 		return this._textDocumentChange.event
 	}
@@ -250,6 +314,10 @@ export default class EventHandler implements Disposable {
 			timestamp: TimeHelper.getCurrentHighResolutionTime()
 		})
 		this._textDocumentChange.fire(event)
+	}
+
+	get onTextEditorChange(): Event<TextEditorChangeEvent> {
+		return this._textEditorChange.event
 	}
 
 	fireTextEditorChange(editor: TextEditor | undefined) {
@@ -296,6 +364,17 @@ export default class EventHandler implements Disposable {
 			sortDirection
 		})
 		this._sortDirectionChange.fire({ sortDirection })
+	}
+
+	get onWebpackRecompile(): Event<WebpackRecompileEvent> {
+		return this._webpackRecompile.event
+	}
+
+	fireWebpackRecompile() {
+		console.debug('EventFire: EventHandler.fireWebpackRecompile', {
+			timestamp: TimeHelper.getCurrentHighResolutionTime()
+		})
+		this._webpackRecompile.fire({})
 	}
 
 	get onProfileChange(): Event<ProfileChangeEvent> {

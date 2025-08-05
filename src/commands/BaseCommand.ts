@@ -7,13 +7,13 @@ export default class BaseCommand {
 	register() {
 		const identifiers = this.getIdentifier()
 		if (typeof identifiers === 'object' && Array.isArray(identifiers)) {
-			return new Disposable(() => {
-				for (const identifier of identifiers) {
+			return Disposable.from(
+				...identifiers.map(identifier => 
 					vscode.commands.registerCommand(`${APP_IDENTIFIER}.${identifier}`, () => {
 						this.execute()
 					})
-				}
-			})
+				)
+			)
 		} else {
 			console.debug(`Register command: ${APP_IDENTIFIER}.${identifiers}`)
 			return vscode.commands.registerCommand(`${APP_IDENTIFIER}.${identifiers}`, (uri: vscode.Uri) => {

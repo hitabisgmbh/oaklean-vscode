@@ -1,0 +1,1 @@
+export const WEBPACK_WEBVIEW_PATH = 'dist/webview/webpack'

@@ -1,67 +1,33 @@
 import {
-	SourceNodeIdentifier_string
+	ProgramStructureTreeType,
+	SourceNodeIdentifierPart_string
 } from '@oaklean/profiler-core/dist/src/types'
-import {
-	LangInternalSourceNodeIdentifierRegex,
-	MethodDefinitionRegex,
-	ClassDeclarationRegex,
-	FunctionDeclarationRegex,
-	FunctionExpressionRegex,
-	ConstructorDeclarationRegex
-} from '@oaklean/profiler-core/dist/src/constants/SourceNodeRegex'
+import { SourceNodeIdentifierHelper } from '@oaklean/profiler-core/dist/src/helper/SourceNodeIdentifierHelper'
 
-const allowedMethodTypes = ['function', 'functionExpression', 'method', 'class', 'constructor']
-
-
-const identifierTypeAbbreviation = {
-	'class': '(c)',
-	'function': '(f)',
-	'functionExpression': '(f)',
-	'constructor': '(f)',
-	'method': '(m)'
+const IDENTIFIER_TYPE_ABBREVIATION: Record<ProgramStructureTreeType, string> = {
+	[ProgramStructureTreeType.Root]: '(r)',
+	[ProgramStructureTreeType.ClassDeclaration]: '(c)',
+	[ProgramStructureTreeType.ClassExpression]: '(c)',
+	[ProgramStructureTreeType.FunctionDeclaration]: '(f)',
+	[ProgramStructureTreeType.FunctionExpression]: '(f)',
+	[ProgramStructureTreeType.ConstructorDeclaration]: '(f)',
+	[ProgramStructureTreeType.MethodDefinition]: '(m)',
+	[ProgramStructureTreeType.IfStatement]: '(s)',
+	[ProgramStructureTreeType.IfThenStatement]: '(s)',
+	[ProgramStructureTreeType.IfElseStatement]: '(s)',
+	[ProgramStructureTreeType.SwitchStatement]: '(s)',
+	[ProgramStructureTreeType.SwitchCaseClause]: '(s)',
+	[ProgramStructureTreeType.ObjectLiteralExpression]: '(s)'
 }
 export class MethodIdentifierHelper {
-
-	static getShortenedIdentifier(identifier: SourceNodeIdentifier_string): string {
-		const type = this.getMethodTypeOfIdentifierPart(identifier)
-		const name = this.getMethodNameOfIdentifierPart(identifier)
-		return `${type}&nbsp;${name}`
-	}
-
-	static getMethodTypeOfIdentifierPart(identifier: SourceNodeIdentifier_string): string | null {
-		if (new RegExp(MethodDefinitionRegex).test(identifier)) {
-			return identifierTypeAbbreviation['method']
-		} else if (new RegExp(FunctionDeclarationRegex).test(identifier)) {
-			return identifierTypeAbbreviation['function']
-		} else if (new RegExp(ClassDeclarationRegex).test(identifier)) {
-			return identifierTypeAbbreviation['class']
-		} else if (new RegExp(FunctionExpressionRegex).test(identifier)) {
-			return identifierTypeAbbreviation['functionExpression']
-		} else if (new RegExp(ConstructorDeclarationRegex).test(identifier)) {
-			return identifierTypeAbbreviation['constructor']
-		} else {
-			return null
+	static getShortenedIdentifier(
+		identifier: SourceNodeIdentifierPart_string
+	): string {
+		const result =
+			SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(identifier)
+		if (result === null) {
+			return 'undefined'
 		}
-	}
-
-	static getMethodNameOfIdentifierPart(identifier: SourceNodeIdentifier_string): string | null {
-		if (identifier.startsWith('RegExp:')) {
-			return identifier
-		}
-		const regex = new RegExp(`{(${allowedMethodTypes.join('|')}):([^}]*)}`)
-		const match = identifier.match(regex)
-		if (match) {
-			const name = match[2]
-			return name
-		}
-
-		const langInternalMatch = identifier.match(LangInternalSourceNodeIdentifierRegex)
-		if (langInternalMatch) {
-			if (langInternalMatch[0] === identifier && identifier.indexOf(':') === -1) {
-				return identifier
-			}
-		}
-
-		return null
+		return `${IDENTIFIER_TYPE_ABBREVIATION[result.type]} ${result.name}`
 	}
 }

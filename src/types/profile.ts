@@ -8,3 +8,9 @@ export type Profile = {
 	measurement: ExtendedSensorValueType
 	formula?: string
 }
+
+export const DEFAULT_PROFILE: Profile = {
+	name: 'Default',
+	color: Color.Red,
+	measurement: 'profilerHits'
+}

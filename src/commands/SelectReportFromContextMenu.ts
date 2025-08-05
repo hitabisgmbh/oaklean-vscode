@@ -12,11 +12,17 @@ export enum CommandIdentifiers {
 }
 
 export default class SelectReport extends BaseCommand {
+	private _disposable: vscode.Disposable
 	container: Container
 
 	constructor(container: Container) {
 		super()
 		this.container = container
+		this._disposable = vscode.Disposable.from()
+	}
+
+	dispose() {
+		this._disposable.dispose()
 	}
 
 	getIdentifier(): CommandIdentifiers {

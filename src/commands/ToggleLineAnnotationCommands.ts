@@ -19,6 +19,7 @@ export enum ContextOptions {
 }
 
 export default class ToggleLineAnnotationCommands extends BaseCommand {
+	private _disposable: vscode.Disposable
 	container: Container
 	action: ToggleLineAnnotationAction
 
@@ -26,8 +27,14 @@ export default class ToggleLineAnnotationCommands extends BaseCommand {
 		super()
 		this.container = container
 		this.action = action
+		this._disposable = vscode.Disposable.from()
+
 		const lineAnnotationsEnabled = !!container.storage.getWorkspace('enableLineAnnotations')
 		vscode.commands.executeCommand('setContext', ContextOptions.lineAnnotationsEnabled, lineAnnotationsEnabled)
+	}
+
+	dispose() {
+		this._disposable.dispose()
 	}
 
 	getIdentifier(): CommandIdentifiers {

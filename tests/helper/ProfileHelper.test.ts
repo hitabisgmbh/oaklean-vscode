@@ -79,12 +79,16 @@ describe('ProfileHelper', () => {
 
 	it('should read profiles from settings file', () => {
 		const result = profileHelper.readProfiles()
-		expect(result).toEqual([{ name: 'Profile 1', color: 'Red', measurement: 'profilerHits' }])
+		expect(result).toEqual({
+			profiles: [{ name: 'Profile 1', color: 'Red', measurement: 'profilerHits' }]
+		})
 	})
 
 	it('should add a profile', () => {
 		const profile = { name: 'Profile 2', color: Color.Red, measurement: 'profilerHits' } as Profile
-		const readProfilesSpy = jest.spyOn(profileHelper, 'readProfiles').mockReturnValueOnce([])
+		const readProfilesSpy = jest.spyOn(profileHelper, 'readProfiles').mockReturnValueOnce({
+			profiles: []
+		})
 		const writeProfilesSpy = jest.spyOn(profileHelper, 'writeProfiles')
 		const result = profileHelper.addProfile(profile)
 		expect(result).toBe(true)
@@ -96,8 +100,10 @@ describe('ProfileHelper', () => {
 		const profile = { name: 'Profile 1', color: Color.Red, measurement: 'profilerHits' } as Profile
 		const readProfilesSpy = jest.spyOn(profileHelper, 'readProfiles')
 		const writeProfilesSpy = jest.spyOn(profileHelper, 'writeProfiles')
-		const result = profileHelper.addProfile(profile)
-		expect(result).toBe(false)
+		const t = () => {
+			profileHelper.addProfile(profile)
+		}
+		expect(t).toThrowError('A profile with the same name already exists.')
 		expect(readProfilesSpy).toHaveBeenCalled()
 		expect(writeProfilesSpy).not.toHaveBeenCalled()
 	})

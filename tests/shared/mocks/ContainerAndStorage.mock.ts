@@ -103,6 +103,9 @@ export default class StorageAndContainerMock {
 				}
 			},
 			eventHandler: this.mockEventHandler,
+			context:{
+				extensionMode: 1
+			}
 		}
 
 		jest.mock('../../../src/container', () => {

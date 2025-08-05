@@ -1,5 +1,5 @@
 import vscode, { TextEditor, TextEditorDecorationType } from 'vscode'
-import { SensorValues, UnifiedPath } from '@oaklean/profiler-core'
+import { UnifiedPath, SourceNodeMetaData, SourceNodeMetaDataType } from '@oaklean/profiler-core'
 
 import { calcOrReturnSensorValue } from './FormulaHelper'
 import { SensorValueFormatHelper } from './SensorValueFormatHelper'
@@ -9,7 +9,7 @@ import { getImportanceColor } from '../system/color'
 import { GlyphChars } from '../constants/characters'
 import { PROFILE_PERCENT_PRECISION } from '../constants/profile'
 import { Container } from '../container'
-import { ExtendedSensorValueType, SensorValueType, SensorValueTypeNames } from '../types/sensorValues'
+import { SensorValueTypeNames } from '../types/sensorValues'
 import { Profile } from '../types/profile'
 import { Color } from '../types/color'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
@@ -18,7 +18,10 @@ export type LineProfileDecoration = {
 	decoration: TextEditorDecorationType,
 	decorationRange: vscode.Range,
 	decorationOptions: vscode.DecorationRenderOptions
-	sensorValues: SensorValues
+	sourceNodeMetaData: SourceNodeMetaData<
+	SourceNodeMetaDataType.SourceNode |
+	SourceNodeMetaDataType.LangInternalSourceNode
+	>
 }
 
 export class TextDocumentHighlighter {
@@ -28,7 +31,10 @@ export class TextDocumentHighlighter {
 		lineNumber: number,
 		message: string,
 		importanceWeight: number,
-		sensorValues: SensorValues,
+		sourceNodeMetaData: SourceNodeMetaData<
+		SourceNodeMetaDataType.SourceNode |
+		SourceNodeMetaDataType.LangInternalSourceNode
+		>,
 		profile?: Profile
 	): LineProfileDecoration {
 		const color: Color = (profile?.color || Color.Red)
@@ -66,13 +72,13 @@ export class TextDocumentHighlighter {
 			decoration: decoration,
 			decorationRange: decorationRange,
 			decorationOptions: decorationOptions,
-			sensorValues: sensorValues
+			sourceNodeMetaData: sourceNodeMetaData
 		}
 	}
 
 	static *lineAnnotationsByReport(
 		editor: TextEditor,
-		selectedSensorValueType: ExtendedSensorValueType,
+		sensorValueRepresentation: SensorValueRepresentation,
 		filePathRelativeToWorkspace: UnifiedPath,
 		container: Container
 	): Generator<LineProfileDecoration> {
@@ -105,35 +111,39 @@ export class TextDocumentHighlighter {
 			const { beginLoc } = locationOfFunction
 			let message
 			let weight: number
-			if (selectedSensorValueType === 'customFormula') {
-				const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-				const formula = sensorValueRepresentation.formula
+			if (sensorValueRepresentation.selectedSensorValueType === 'customFormula') {
 				const calculatedFormula = calcOrReturnSensorValue(
-					sourceNodeMetaData.sensorValues, selectedSensorValueType, formula)
+					sourceNodeMetaData.sensorValues,
+					sensorValueRepresentation
+				)
 				const formattedCalculatedFormula = SensorValueFormatHelper.format(
 					calculatedFormula,
-					selectedSensorValueType
+					sensorValueRepresentation.selectedSensorValueType
 				)
 				const formulaTotal = calcOrReturnSensorValue(
-					totalAndMaxMetaData.total.sensorValues, selectedSensorValueType, formula)
+					totalAndMaxMetaData.total.sensorValues,
+					sensorValueRepresentation
+				)
 				const relativeToTotalForFormula = calculatedFormula / formulaTotal * 100
-				message = `${formula}: ${formattedCalculatedFormula.value} ` +
+				message = `${sensorValueRepresentation.formula}: ${formattedCalculatedFormula.value} ` +
 					`(${relativeToTotalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
 				weight = calculatedFormula / calcOrReturnSensorValue(
-					totalAndMaxMetaData.max.sensorValues, selectedSensorValueType, formula)
+					totalAndMaxMetaData.max.sensorValues,
+					sensorValueRepresentation
+				)
 			} else {
-				const value = sourceNodeMetaData.sensorValues[selectedSensorValueType]
-				const total = totalAndMaxMetaData.total.sensorValues[selectedSensorValueType]
+				const value = sourceNodeMetaData.sensorValues[sensorValueRepresentation.selectedSensorValueType]
+				const total = totalAndMaxMetaData.total.sensorValues[sensorValueRepresentation.selectedSensorValueType]
 				const relativeToTotal = total === 0 ? 0 : value / total * 100
 				const formattedValue = SensorValueFormatHelper.format(
 					value,
-					selectedSensorValueType
+					sensorValueRepresentation.selectedSensorValueType
 				)
 				message =
-					SensorValueTypeNames[selectedSensorValueType] +
+					SensorValueTypeNames[sensorValueRepresentation.selectedSensorValueType] +
 					`: ${formattedValue.value} ${formattedValue.unit} ` +
 					`(${relativeToTotal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
-				weight = value / totalAndMaxMetaData.max.sensorValues[selectedSensorValueType]
+				weight = value / totalAndMaxMetaData.max.sensorValues[sensorValueRepresentation.selectedSensorValueType]
 			}
 
 			yield TextDocumentHighlighter.highlightLine(
@@ -141,7 +151,7 @@ export class TextDocumentHighlighter {
 				beginLoc.line - 1,
 				message,
 				weight,
-				sourceNodeMetaData.sensorValues,
+				sourceNodeMetaData,
 				profile
 			)
 		}

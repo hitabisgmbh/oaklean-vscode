@@ -1,0 +1,18 @@
+.options {
+	display: flex;
+	flex-direction: column;
+	overflow: visible;
+	gap: 0.5rem;
+	height: 100%;
+}
+
+.inline {
+	display: flex;
+	flex-direction: row;
+	width: 300px;
+	overflow: visible;
+}
+
+.hidden {
+	display: none;
+}

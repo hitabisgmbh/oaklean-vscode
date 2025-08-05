@@ -6,8 +6,8 @@ import vscode, { Disposable } from 'vscode'
 
 import WorkspaceUtils from './WorkspaceUtils'
 
-import { Profile } from '../types/profile'
-import { ERROR_FAILED_TO_SAVE_PROFILE, ERROR_NO_PROFILE, ERROR_NO_PROFILE_FOUND } from '../constants/infoMessages'
+import { DEFAULT_PROFILE, Profile } from '../types/profile'
+import { ERROR_EMPTY_NAME, ERROR_FAILED_TO_SAVE_PROFILE, ERROR_NO_PROFILE, ERROR_NO_PROFILE_FOUND, ERROR_SAME_NAME } from '../constants/infoMessages'
 import { Container } from '../container'
 import { PROFILE_IDENTIFIER } from '../constants/webview'
 import { ProfileChangeEvent } from '../helper/EventHandler'
@@ -23,7 +23,12 @@ export default class ProfileHelper implements Disposable {
 		this.container.eventHandler.onProfileChange(this.profileChanges.bind(this))
 	}
 	get profiles(): Profile[] {
-		return this.readProfiles()
+		const result = this.readProfiles()
+		if (result.error) {
+			vscode.window.showErrorMessage(result.error)
+			return []
+		}
+		return result.profiles
 	}
 	get currentProfile(): Profile | undefined {
 		return this.container.storage.getWorkspace('profile') as Profile | undefined
@@ -45,39 +50,59 @@ export default class ProfileHelper implements Disposable {
 		const workspaceFolder = WorkspaceUtils.getWorkspaceDir()
 		return workspaceFolder?.join('.vscode', 'settings.json')
 	}
-	readProfiles(): Profile[] {
+	readProfiles(): {
+		profiles: Profile[],
+		error?: string
+	} {
 		const settingsPath = this.returnSettingsPath()
 		if (settingsPath !== undefined) {
 			if (fs.existsSync(settingsPath.toPlatformString())) {
-				const settings = jsonc.parse(fs.readFileSync(settingsPath.toPlatformString(), 'utf8'))
-				const profiles: Profile[] = settings[PROFILE_IDENTIFIER] || []
-				return profiles
+				const content = fs.readFileSync(settingsPath.toPlatformString(), 'utf8')
+				try {
+					const settings = jsonc.parse(content)
+					const profiles: Profile[] = settings[PROFILE_IDENTIFIER] || []
+					return {
+						profiles
+					}
+				} catch (error) {
+					return {
+						profiles: [],
+						error: `Failed to parse settings file: ${settingsPath}, check if the file is valid JSON.`
+					}
+				}
 			}
 		}
-		return []
+		return {
+			profiles: []
+		}
 	}
 
 	addProfile(profile: Profile): boolean {
-		const profiles = this.readProfiles()
+		if (profile.name === '') {
+			throw new Error(ERROR_EMPTY_NAME)
+		}
+		const profiles = this.profiles
 		if (profiles.some(p => p.name === profile.name)) {
-			return false
+			throw new Error(ERROR_SAME_NAME)
 		}
 		profiles.push(profile)
 		this.writeProfiles(profiles)
 		return true
 	}
 	updateProfile(updatedProfile: Profile) {
-		const profiles = this.readProfiles()
+		const profiles = this.profiles
 		const index = profiles.findIndex(p => p.name === updatedProfile.name)
 		if (index === -1) {
-			vscode.window.showErrorMessage(ERROR_NO_PROFILE_FOUND)
+			if (updatedProfile.name !== DEFAULT_PROFILE.name) {
+				vscode.window.showErrorMessage(ERROR_NO_PROFILE_FOUND)
+			}
 			return
 		}
 		profiles[index] = updatedProfile
 		this.writeProfiles(profiles)
 	}
 	deleteProfile(profileName: string) {
-		const profiles = this.readProfiles()
+		const profiles = this.profiles
 		const filteredProfiles = profiles.filter(p => p.name !== profileName)
 		if (filteredProfiles.length === profiles.length) {
 			vscode.window.showErrorMessage(ERROR_NO_PROFILE)

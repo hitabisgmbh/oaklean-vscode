@@ -1,0 +1,102 @@
+.webview-body {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	height: 100%;
+	overflow-y: visible;
+	padding-left: 0;
+	/* Ensure no padding on the left */
+}
+
+.deleteButton {
+	margin-left: 5px;
+	/* Optional: add some space between the text field and the button */
+	width: fit-content;
+}
+
+.button {
+	margin-left: 0;
+	/* Ensure buttons are aligned to the left */
+	overflow-y: visible;
+}
+
+.section.Button {
+	margin-top: auto;
+	display: flex;
+	justify-content: flex-start;
+	/* Align buttons to the left */
+	gap: 0.5rem;
+	/* Reduced gap */
+}
+
+vscode-dropdown,
+vscode-text-field,
+vscode-button,
+label {
+	width: 300px;
+	/* Fixed width for form elements and labels */
+	margin-left: 0;
+	/* Ensure alignment to the left */
+	margin-top: 5px;
+	margin-bottom: 5px;
+	/* Smaller gap below labels */
+	overflow: visible;
+	flex-flow: column;
+	height: auto;
+}
+
+vscode-panel-view {
+	height: 600px;
+	overflow: visible;
+}
+
+
+p {
+	font-size: 0.9em;
+	/* Make the font size smaller */
+	margin-top: 0.2em;
+	/* Reduce the space above the paragraph */
+	margin-bottom: 0.2em;
+	/* Reduce the space below the paragraph */
+	padding: 0;
+	/* Remove padding */
+	overflow: visible;
+	width: 300px;
+}
+
+label {
+	margin-top: 0.2em;
+	/* Reduce the space above the label */
+	margin-bottom: 0.2em;
+	/* Reduce the space below the label */
+	padding: 0;
+	/* Remove padding */
+	overflow: visible;
+	text-decoration-thickness: 0.1em;
+	/* Add underline */
+}
+
+.vscode-dropdown:focus~#notes-form {
+	overflow: visible;
+	/* Set to visible when any vscode-dropdown is focused */
+}
+
+.dropdown-container {
+	box-sizing: border-box;
+	display: flex;
+	flex-flow: column nowrap;
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+.title {
+	margin-left: 10px;
+}
+
+.icon {
+	flex-shrink: 0;
+	text-align: center;
+	height: 100%;
+	display: flex !important;
+	padding-top: 3px
+}

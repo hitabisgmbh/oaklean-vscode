@@ -1,0 +1,16 @@
+.tree-view-header {
+	position: sticky;
+	top: 0;
+	z-index: 1000;
+	background-color: var(--vscode-sideBar-background);
+	height: 16px;
+	display: flex;
+	align-items: center;
+	font-weight: bold;
+	border-bottom: 2px solid var(--vscode-editorWidget-border);
+	padding: 5px 0;
+}
+
+.tree-view-header .right-section {
+	margin-left: auto;
+}
