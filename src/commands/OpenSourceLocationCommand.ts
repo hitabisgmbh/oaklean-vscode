@@ -40,32 +40,29 @@ export default class OpenSourceLocationCommand extends BaseCommand {
 
 	async openSourceNodeIdentifier(args: OpenSourceLocationCommandArgs) {
 		const identifier = args.sourceNodeIdentifier
-		const filePath = new UnifiedPath(args.filePath)
-		const config = this._container.textDocumentController.config
-		if (!config) {
+		const relativeWorkspacePath = new UnifiedPath(args.relativeWorkspacePath)
+		const fullPath = WorkspaceUtils.getFullFilePathFromRelativeWorkspacePath(
+			relativeWorkspacePath
+		)
+		const errorMessage = `Could not find file: ${fullPath}`
+		if (fullPath === undefined) {
 			return
 		}
-		const fullPath = filePath.isRelative() ? WorkspaceUtils.getFullFilePath(config, filePath) : filePath
-		const relativePath = filePath.isRelative() ? filePath : WorkspaceUtils.getRelativeFilePath(config, filePath)
+
 		const uri = vscode.Uri.file(fullPath.toString())
-		const errorMessage = `Could not find file: ${fullPath}`
+
 		try {
 			const document = await vscode.workspace.openTextDocument(uri)
 
 			if (document) {
 				const programStructureTreeOfFile =
 					this._container.textDocumentController.getProgramStructureTreeOfFile(
-						relativePath
+						relativeWorkspacePath
 					)
 				let position
 				if (programStructureTreeOfFile) {
-					const sourceIdentifierString = identifier.replace(
-						/"/g,
-						''
-					) as SourceNodeIdentifier_string
-					const loc = programStructureTreeOfFile.sourceLocationOfIdentifier(
-						sourceIdentifierString
-					)
+					const loc =
+						programStructureTreeOfFile.sourceLocationOfIdentifier(identifier)
 					if (loc) {
 						position = new vscode.Position(
 							loc.beginLoc.line - 1,
@@ -89,7 +86,7 @@ export default class OpenSourceLocationCommand extends BaseCommand {
 	}
 
 	static execute(args: {
-		command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
+		command: OpenSourceLocationCommandIdentifiers.openSourceLocation
 		args: OpenSourceLocationCommandArgs
 	}) {
 		vscode.commands.executeCommand(

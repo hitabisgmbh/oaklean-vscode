@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
-	EditorFileMethodViewCommands,
+	EditorFileMethodViewProtocolCommands,
 	EditorFileMethodViewProtocol_ChildToParent,
 	EditorFileMethodViewProtocol_ParentToChild
 } from '../../protocols/editorFileMethodViewProtocol'
@@ -34,13 +34,13 @@ export function App() {
 		data: EditorFileMethodViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case EditorFileMethodViewCommands.updateMethodList:
+			case EditorFileMethodViewProtocolCommands.updateMethodList:
 				setProps({
 					sourceFileMethodTree: message.data.sourceFileMethodTree,
 					sensorValueRepresentation: message.data.sensorValueRepresentation
 				})
 				break
-			case EditorFileMethodViewCommands.clearMethodList:
+			case EditorFileMethodViewProtocolCommands.clearMethodList:
 				setProps(undefined)
 				break
 		}
@@ -52,7 +52,7 @@ export function App() {
 
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
-		postToProvider({ command: EditorFileMethodViewCommands.initMethods })
+		postToProvider({ command: EditorFileMethodViewProtocolCommands.initMethods })
 
 		return () => {
 			window.removeEventListener('message', handleExtensionMessages)
@@ -98,7 +98,7 @@ export function App() {
 				data={
 					props !== undefined
 						? {
-								filePath: '',
+								relativePath: '',
 								sourceFileMethodTree: props.sourceFileMethodTree,
 								sensorValueRepresentation: props.sensorValueRepresentation,
 								postToProvider

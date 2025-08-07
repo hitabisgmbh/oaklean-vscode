@@ -57,7 +57,7 @@ export type SortDirectionChangeEvent = {
 }
 
 export type SourceFileInformationChangeEvent = {
-	readonly relativeWorkspacePath: UnifiedPath
+	readonly absolutePath: UnifiedPath
 }
 
 export type FilterPathChangeEvent = {
@@ -284,12 +284,12 @@ export default class EventHandler implements Disposable {
 		return this._sourceFileInformationChanged.event
 	}
 
-	fireSourceFileInformationChange(relativeWorkspacePath: UnifiedPath) {
+	fireSourceFileInformationChange(absolutePath: UnifiedPath) {
 		console.debug('EventFire: EventHandler.fireSourceFileInformationChange', {
 			timestamp: TimeHelper.getCurrentHighResolutionTime(),
-			relativeWorkspacePath
+			absolutePath
 		})
-		this._sourceFileInformationChanged.fire({ relativeWorkspacePath })
+		this._sourceFileInformationChanged.fire({ absolutePath })
 	}
 
 	get onTextEditorsChangeVisibility(): Event<TextEditorsChangeVisibilityEvent> {

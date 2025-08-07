@@ -3,7 +3,7 @@ import {
 } from '@oaklean/profiler-core/dist/src/types'
 
 export type OpenSourceLocationCommandArgs = {
-	filePath: string
+	relativeWorkspacePath: string
 	sourceNodeIdentifier: SourceNodeIdentifier_string
 }
 

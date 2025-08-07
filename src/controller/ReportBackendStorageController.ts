@@ -97,8 +97,12 @@ export default class ReportBackendStorageController implements Disposable {
 					if (!response.ok) {
 						throw new Error(`HTTP error! status: ${response.status}`)
 					}
-				} catch (error) {
-					console.debug('Error fetching URL:', error)
+				} catch (error: any) {
+					if (error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
+						console.debug('Error fetching URL due to timeout')
+					} else {
+						console.debug('Error fetching URL:', error)	
+					}
 					return
 				}
 

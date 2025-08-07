@@ -4,8 +4,6 @@ import {
 	NodeModuleUtils,
 	Report,
 	UnifiedPath,
-	SourceFileMetaDataTreeType,
-	SourceFileMetaDataTree,
 	ProjectReport,
 	SourceFileMetaData,
 	ProgramStructureTree,
@@ -30,15 +28,12 @@ export class SourceFileInformation {
 	private _relativeWorkspacePath: UnifiedPath
 	// the absolute file path is the path to the file on disk
 	private _absoluteFilePath: UnifiedPath
-	// relative to the project reports config file
-	private _relativeFilePath: UnifiedPath
 	private _sourceFileMetaData: SourceFileMetaData | undefined
 	private _programStructureTree: ProgramStructureTree
 
 	constructor(
 		reportPath: UnifiedPath,
 		projectReport: ProjectReport,
-		relativeFilePath: UnifiedPath,
 		relativeWorkspacePath: UnifiedPath,
 		document: vscode.TextDocument
 	) {
@@ -46,7 +41,6 @@ export class SourceFileInformation {
 		this._projectReport = projectReport
 		this._relativeWorkspacePath = relativeWorkspacePath
 		this._absoluteFilePath = new UnifiedPath(document.fileName)
-		this._relativeFilePath = relativeFilePath
 		this._programStructureTree = TypescriptParser.parseSource(
 			this._absoluteFilePath,
 			document.getText()
@@ -54,13 +48,12 @@ export class SourceFileInformation {
 		this._sourceFileMetaData = SourceFileInformation.resolveSourceFileMetaData({
 			reportPath: this._reportPath,
 			projectReport: this._projectReport,
-			absoluteFilePath: this._absoluteFilePath,
-			relativeFilePath: this._relativeFilePath
+			absoluteFilePath: this._absoluteFilePath
 		})
 	}
 
-	get relativeFilePath(): UnifiedPath {
-		return this._relativeFilePath
+	get absoluteFilePath(): UnifiedPath {
+		return this._absoluteFilePath
 	}
 
 	get relativeWorkspacePath(): UnifiedPath {
@@ -79,8 +72,7 @@ export class SourceFileInformation {
 		args: {
 			reportPath: UnifiedPath,
 			projectReport: ProjectReport,
-			absoluteFilePath: UnifiedPath,
-			relativeFilePath: UnifiedPath
+			absoluteFilePath: UnifiedPath
 		}
 	): SourceFileMetaData | undefined {
 		let reportPath = args.reportPath
@@ -114,7 +106,6 @@ export class SourceFileInformation {
 	}
 
 	static fromDocument(
-		config: ProfilerConfig,
 		reportPath: UnifiedPath,
 		projectReport: ProjectReport,
 		document: vscode.TextDocument
@@ -125,10 +116,6 @@ export class SourceFileInformation {
 		if (relativeWorkspacePath === undefined) {
 			return undefined
 		}
-		const relativeFilePath = WorkspaceUtils.getRelativeFilePath(
-			config,
-			document.fileName
-		)
 
 		const fileName = new UnifiedPath(document.fileName)
 		if (!VALID_EXTENSIONS_TO_PARSE.includes(fileName.extname().toLowerCase())) {
@@ -137,7 +124,6 @@ export class SourceFileInformation {
 		return new SourceFileInformation(
 			reportPath,
 			projectReport,
-			relativeFilePath,
 			relativeWorkspacePath,
 			document
 		)

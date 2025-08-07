@@ -11,9 +11,13 @@ import {
 	TextEditorsChangeVisibilityEvent
 } from '../helper/EventHandler'
 import {
-	EditorFileMethodViewProtocol_ParentToChild,
-	EditorFileMethodViewCommands
+	EditorFileMethodViewProtocolCommands,
+	EditorFileMethodViewProtocol_ChildToParent,
+	EditorFileMethodViewProtocol_ParentToChild
 } from '../protocols/EditorFileMethodViewProtocol'
+import {
+	OpenSourceLocationProtocolCommands
+} from '../protocols/OpenSourceLocationProtocol'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
@@ -83,34 +87,39 @@ export class EditorFileMethodViewProvider
 	}
 
 	getSourceFileMetaData() {
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!this.editor || !workspaceDir) {
+		if (this.editor === undefined) {
 			return
 		}
-		const relativeWorkspacePath = workspaceDir.pathTo(
+		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
 			this.editor.document.fileName
 		)
+		if (relativeWorkspacePath === undefined) {
+			return
+		}
 		return this._container.textDocumentController.getSourceFileMetaData(
 			relativeWorkspacePath
 		)
 	}
 
-	receiveMessageFromWebview(message: {
-		command: EditorFileMethodViewCommands
-		identifier: string
-	}) {
-		if (message.command === EditorFileMethodViewCommands.open) {
+	receiveMessageFromWebview(message: EditorFileMethodViewProtocol_ChildToParent) {
+		if (message.command === OpenSourceLocationProtocolCommands.openSourceLocation) {
 			const identifier = message.identifier
-			if (identifier && this.editor) {
+			if (this.editor !== undefined) {
+				const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
+					this.editor.document.fileName
+				)
+				if (relativeWorkspacePath === undefined) {
+					return
+				}
 				OpenSourceLocationCommand.execute({
 					command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
 					args: {
-						filePath: this.editor.document.fileName,
+						relativeWorkspacePath: relativeWorkspacePath.toString(),
 						sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
 					}
 				})
 			}
-		} else if (message.command === EditorFileMethodViewCommands.initMethods) {
+		} else if (message.command === EditorFileMethodViewProtocolCommands.initMethods) {
 			this.refresh()
 		}
 	}
@@ -152,7 +161,7 @@ export class EditorFileMethodViewProvider
 		const sourceFileMetaData = this.getSourceFileMetaData()
 		if (sourceFileMetaData === undefined) {
 			this.postMessageToWebview({
-				command: EditorFileMethodViewCommands.clearMethodList
+				command: EditorFileMethodViewProtocolCommands.clearMethodList
 			})
 			return
 		}
@@ -163,7 +172,7 @@ export class EditorFileMethodViewProvider
 			'sensorValueRepresentation'
 		) as SensorValueRepresentation
 		this.postMessageToWebview({
-			command: EditorFileMethodViewCommands.updateMethodList,
+			command: EditorFileMethodViewProtocolCommands.updateMethodList,
 			sourceFileMethodTree: sourceFileMethodTree.toJSON(),
 			sensorValueRepresentation
 		})

@@ -1,6 +1,6 @@
 import { Profile } from '../types/profile'
 
-export enum SettingsViewCommands {
+export enum SettingsViewProtocolCommands {
 	viewLoaded = 'viewLoaded',
 	selectProfile = 'selectProfile',
 	deleteProfile = 'deleteProfile',
@@ -11,25 +11,25 @@ export enum SettingsViewCommands {
 }
 
 export type SettingsViewProtocol_ChildToParent = {
-	command: SettingsViewCommands.viewLoaded
+	command: SettingsViewProtocolCommands.viewLoaded
 } |{
-	command: SettingsViewCommands.selectProfile,
+	command: SettingsViewProtocolCommands.selectProfile,
 	profileName: string
 } | {
-	command: SettingsViewCommands.deleteProfile,
+	command: SettingsViewProtocolCommands.deleteProfile,
 	profileName: string
 } | {
-	command: SettingsViewCommands.addProfile,
+	command: SettingsViewProtocolCommands.addProfile,
 	profile: Profile
 } | {
-	command: SettingsViewCommands.updateProfile,
+	command: SettingsViewProtocolCommands.updateProfile,
 	profile: Profile
 }
 
 export type SettingsViewProtocol_ParentToChild = {
-	command: SettingsViewCommands.loadProfiles,
+	command: SettingsViewProtocolCommands.loadProfiles,
 	profile: Profile | undefined,
 	profiles: Profile[]
 } | {
-	command: SettingsViewCommands.clearInput
+	command: SettingsViewProtocolCommands.clearInput
 }

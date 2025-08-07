@@ -1,27 +1,26 @@
+import {
+	OpenSourceLocationProtocol_ChildToParent
+} from './OpenSourceLocationProtocol'
+
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 
-export enum EditorFileMethodViewCommands {
+export enum EditorFileMethodViewProtocolCommands {
 	clearMethodList = 'clear-method-list',
 	updateMethodList = 'update-method-list',
-	open = 'open',
 	initMethods = 'initMethods'
 }
 
 export type EditorFileMethodViewProtocol_ChildToParent =
-	| {
-			command: EditorFileMethodViewCommands.open
-			identifier: string
-			filePath: string
-	}
-	| { command: EditorFileMethodViewCommands.initMethods }
+	| OpenSourceLocationProtocol_ChildToParent
+	| { command: EditorFileMethodViewProtocolCommands.initMethods }
 
 export type EditorFileMethodViewProtocol_ParentToChild =
 	| {
-			command: EditorFileMethodViewCommands.updateMethodList
+			command: EditorFileMethodViewProtocolCommands.updateMethodList
 			sourceFileMethodTree: ISourceFileMethodTree
 			sensorValueRepresentation: SensorValueRepresentation
 	}
 	| {
-			command: EditorFileMethodViewCommands.clearMethodList
+			command: EditorFileMethodViewProtocolCommands.clearMethodList
 	}

@@ -7,7 +7,7 @@ import { NewProfilePanel } from './components/NewProfilePanel'
 
 import { Profile, DEFAULT_PROFILE } from '../../types/profile'
 import {
-	SettingsViewCommands,
+	SettingsViewProtocolCommands,
 	SettingsViewProtocol_ChildToParent,
 	SettingsViewProtocol_ParentToChild
 } from '../../protocols/SettingsViewProtocol'
@@ -32,7 +32,7 @@ export function App() {
 		data: SettingsViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case SettingsViewCommands.loadProfiles:
+			case SettingsViewProtocolCommands.loadProfiles:
 				setProfile(
 					message.data.profile || message.data.profiles[0] || DEFAULT_PROFILE
 				)
@@ -42,7 +42,7 @@ export function App() {
 					setProfiles([DEFAULT_PROFILE])
 				}
 				break
-			case SettingsViewCommands.clearInput:
+			case SettingsViewProtocolCommands.clearInput:
 				setNewDefaultProfile({
 					...DEFAULT_PROFILE,
 					name: ''
@@ -53,7 +53,7 @@ export function App() {
 
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
-		postToProvider({ command: SettingsViewCommands.viewLoaded })
+		postToProvider({ command: SettingsViewProtocolCommands.viewLoaded })
 
 		return () => {
 			window.removeEventListener('message', handleExtensionMessages)
@@ -72,19 +72,19 @@ export function App() {
 						profiles={profiles}
 						onSave={(profile) => {
 							postToProvider({
-								command: SettingsViewCommands.updateProfile,
+								command: SettingsViewProtocolCommands.updateProfile,
 								profile
 							})
 						}}
 						onProfileChange={(profileName) => {
 							postToProvider({
-								command: SettingsViewCommands.selectProfile,
+								command: SettingsViewProtocolCommands.selectProfile,
 								profileName
 							})
 						}}
 						onProfileDelete={(profileName) => {
 							postToProvider({
-								command: SettingsViewCommands.deleteProfile,
+								command: SettingsViewProtocolCommands.deleteProfile,
 								profileName
 							})
 						}}
@@ -93,7 +93,7 @@ export function App() {
 						profile={newDefaultProfile}
 						onSave={(profile) => {
 							postToProvider({
-								command: SettingsViewCommands.addProfile,
+								command: SettingsViewProtocolCommands.addProfile,
 								profile
 							})
 						}}

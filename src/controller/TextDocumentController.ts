@@ -3,9 +3,6 @@ import * as path from 'path'
 import vscode from 'vscode'
 import { Disposable, TextDocument, TextDocumentChangeEvent } from 'vscode'
 import {
-	NodeModule,
-	NodeModuleUtils,
-	Report,
 	UnifiedPath,
 	SourceFileMetaDataTreeType,
 	SourceFileMetaDataTree,
@@ -156,7 +153,6 @@ export default class TextDocumentController implements Disposable {
 			return
 		}
 		const sourceFileInformation = SourceFileInformation.fromDocument(
-			this.config,
 			this.reportPath,
 			this.projectReport,
 			document
@@ -166,7 +162,7 @@ export default class TextDocumentController implements Disposable {
 				sourceFileInformation.relativeWorkspacePath.toString(),
 				sourceFileInformation
 			)
-			this.container.eventHandler.fireSourceFileInformationChange(sourceFileInformation.relativeFilePath)
+			this.container.eventHandler.fireSourceFileInformationChange(sourceFileInformation.absoluteFilePath)
 		}
 	}
 

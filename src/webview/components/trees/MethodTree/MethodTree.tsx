@@ -9,9 +9,9 @@ import './MethodTree.css'
 import { MethodTreeEntry } from './MethodTreeEntry'
 
 import {
-	EditorFileMethodViewCommands,
-	EditorFileMethodViewProtocol_ChildToParent
-} from '../../../../protocols/editorFileMethodViewProtocol'
+	OpenSourceLocationProtocolCommands,
+	OpenSourceLocationProtocol_ChildToParent
+} from '../../../../protocols/OpenSourceLocationProtocol'
 import { calcOrReturnSensorValue } from '../../../../helper/FormulaHelper'
 import { SensorValueFormatHelper } from '../../../../helper/SensorValueFormatHelper'
 import TreeView from '../Treeview'
@@ -58,11 +58,11 @@ const IDENTIFIER_TYPE_CODICONS: Record<ProgramStructureTreeType, string> = {
 
 export interface MethodTreeProps {
 	data?: {
-		filePath: string
+		relativePath: string
 		sourceFileMethodTree: ISourceFileMethodTree
 		sensorValueRepresentation: SensorValueRepresentation
 		postToProvider: (
-			message: EditorFileMethodViewProtocol_ChildToParent
+			message: OpenSourceLocationProtocol_ChildToParent
 		) => void
 	}
 	showNPIOSC: boolean
@@ -192,8 +192,8 @@ export function MethodTree({
 			<MethodTreeEntry
 				onClick={() => {
 					data?.postToProvider({
-						filePath: data.filePath,
-						command: EditorFileMethodViewCommands.open,
+						relativePath: data.relativePath,
+						command: OpenSourceLocationProtocolCommands.openSourceLocation,
 						identifier: identifierRoute.join('.')
 					})
 				}}

@@ -7,7 +7,7 @@ import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import {
-	MethodViewCommands,
+	MethodViewProtocolCommands,
 	MethodViewProtocol_ChildToParent,
 	MethodViewProtocol_ParentToChild
 } from '../protocols/MethodViewProtocol'
@@ -16,6 +16,8 @@ import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
 import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
+import { OpenSourceLocationProtocolCommands } from '../protocols/OpenSourceLocationProtocol'
+import WorkspaceUtils from '../helper/WorkspaceUtils'
 
 export class MethodViewProvider implements vscode.WebviewViewProvider {
 	private subscriptions: vscode.Disposable[] = []
@@ -64,19 +66,31 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	receiveMessageFromWebview(message: MethodViewProtocol_ChildToParent) {
-		if (message.command === MethodViewCommands.open) {
+		if (message.command === OpenSourceLocationProtocolCommands.openSourceLocation) {
 			const identifier = message.identifier
-			const filePath = message.filePath
+			const relativePath = message.relativePath
+
+			const config = this._container.textDocumentController.config
+			if (config === undefined) {
+				return
+			}
+			const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePathFromRelativePath(
+				config,
+				relativePath
+			)
+			if (relativeWorkspacePath === undefined) {
+				return
+			}
 			OpenSourceLocationCommand.execute(
 				{
 					command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
 					args: {
-						filePath,
+						relativeWorkspacePath: relativeWorkspacePath.toString(),
 						sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
 					}
 				}
 			)
-		} else if (message.command === MethodViewCommands.initMethods) {
+		} else if (message.command === MethodViewProtocolCommands.initMethods) {
 			this.refresh()
 		}
 	}
@@ -116,10 +130,10 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			}
 		}
 		this.postMessageToWebview({
-			command: MethodViewCommands.clearMethodList
+			command: MethodViewProtocolCommands.clearMethodList
 		})
 		this.postMessageToWebview({
-			command: MethodViewCommands.updateMethodList,
+			command: MethodViewProtocolCommands.updateMethodList,
 			methodTrees: sourceFileMethodTrees,
 			sensorValueRepresentation
 		})
