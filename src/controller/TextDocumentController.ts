@@ -87,63 +87,26 @@ export default class TextDocumentController implements Disposable {
 		this._sourceFileMetaDataTree = value
 	}
 
-	getReportInfoOfFile(fileName: UnifiedPath): ProfileInfoOfFile {
+	getReportInfoOfFile(relativeWorkspacePath: UnifiedPath): ProfileInfoOfFile {
 		return {
 			projectReport: this.projectReport,
-			sourceFileMetaData: this.getSourceFileMetaData(fileName),
-			programStructureTreeOfFile: this.getProgramStructureTreeOfFile(fileName)
+			sourceFileMetaData: this.getSourceFileMetaData(relativeWorkspacePath),
+			programStructureTreeOfFile: this.getProgramStructureTreeOfFile(relativeWorkspacePath)
 		}
 	}
 
-	getSourceFileInformationOfFile(fileName: UnifiedPath): SourceFileInformation | undefined {
-		return this.sourceFileInformationPerDocument.get(fileName.toString())
+	getSourceFileInformationOfFile(relativeWorkspacePath: UnifiedPath): SourceFileInformation | undefined {
+		return this.sourceFileInformationPerDocument.get(relativeWorkspacePath.toString())
 	}
 
-	getProgramStructureTreeOfFile(fileName: UnifiedPath): ProgramStructureTree | undefined {
-		return this.getSourceFileInformationOfFile(fileName)?.programStructureTree
+	getProgramStructureTreeOfFile(relativeWorkspacePath: UnifiedPath): ProgramStructureTree | undefined {
+		return this.getSourceFileInformationOfFile(relativeWorkspacePath)?.programStructureTree
 	}
 
 	getSourceFileMetaData(
-		filePathRelativeToWorkspace: UnifiedPath
+		relativeWorkspacePath: UnifiedPath
 	): SourceFileMetaData | undefined {
-		if (!this.reportPath || !this.projectReport) {
-			return undefined
-		}
-
-		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
-		if (!workspaceDir) {
-			return
-		}
-
-		let reportToRequest: Report = this.projectReport
-		let reportPath = this.reportPath
-		let filePath = workspaceDir.join(filePathRelativeToWorkspace)
-
-		const nodeModulePath = NodeModuleUtils.getParentModuleFromPath(filePathRelativeToWorkspace)
-		if (nodeModulePath) {
-			const nodeModule = NodeModule.fromNodeModulePath(workspaceDir.join(nodeModulePath))
-
-			if (nodeModule) {
-				const moduleIndex = this.projectReport.getModuleIndex('get', nodeModule.identifier)
-				const moduleReport = moduleIndex !== undefined ?
-					this.projectReport.extern.get(moduleIndex.id) : undefined
-				if (moduleReport) {
-					reportToRequest = moduleReport
-
-					// pretend there is a config file within the node module
-					// this needs to be done, since all paths are resolved relative to the config file
-					reportPath = workspaceDir.join(nodeModulePath).join(STATIC_CONFIG_FILENAME)
-					filePath = nodeModulePath.pathTo(filePathRelativeToWorkspace)
-				}
-			}
-		}
-		const result = reportToRequest.getMetaDataFromFile(
-			reportPath,
-			filePath
-		)
-
-
-		return result
+		return this.getSourceFileInformationOfFile(relativeWorkspacePath)?.sourceFileMetaData
 	}
 
 	reportPathChanged(event: ReportPathChangeEvent) {
@@ -169,7 +132,7 @@ export default class TextDocumentController implements Disposable {
 	}
 
 	documentChanged(event: TextDocumentChangeEvent) {
-		this.setProgramStructureTreeOfDocument(event.document)
+		this.setSourceFileInformationOfDocument(event.document)
 	}
 
 	documentSaved(document: TextDocument) {
@@ -188,45 +151,49 @@ export default class TextDocumentController implements Disposable {
 		}
 	}
 
-	setProgramStructureTreeOfDocument(document: TextDocument) {
-		if (this.config === undefined) {
+	setSourceFileInformationOfDocument(document: TextDocument) {
+		if (this.config === undefined || this.projectReport === undefined || this.reportPath === undefined) {
 			return
 		}
-		const relativeFilePath = WorkspaceUtils.getRelativeFilePath(
+		const sourceFileInformation = SourceFileInformation.fromDocument(
 			this.config,
-			document.fileName
+			this.reportPath,
+			this.projectReport,
+			document
 		)
-		const sourceFileInformation = SourceFileInformation.fromDocument(document)
 		if (sourceFileInformation !== undefined) {
-			this.sourceFileInformationPerDocument.set(relativeFilePath.toString(), sourceFileInformation)
+			this.sourceFileInformationPerDocument.set(
+				sourceFileInformation.relativeWorkspacePath.toString(),
+				sourceFileInformation
+			)
+			this.container.eventHandler.fireSourceFileInformationChange(sourceFileInformation.relativeFilePath)
 		}
-		this.container.eventHandler.fireSourceFileInformationChange(relativeFilePath)
 	}
 
-	unsetProgramStructureTreeOfDocument(document: TextDocument) {
+	unsetSourceFileInformationOfDocument(document: TextDocument) {
 		if (this.config === undefined) {
 			return
 		}
-		const relativeFilePath = WorkspaceUtils.getRelativeFilePath(
-			this.config,
-			document.fileName
-		)
+		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(document.fileName)
+		if (relativeWorkspacePath === undefined) {
+			return
+		}
 
-		const existed = this.sourceFileInformationPerDocument.has(relativeFilePath.toString())
-		this.sourceFileInformationPerDocument.delete(relativeFilePath.toString())
+		const existed = this.sourceFileInformationPerDocument.has(relativeWorkspacePath.toString())
+		this.sourceFileInformationPerDocument.delete(relativeWorkspacePath.toString())
 		if (existed) {
 			console.debug('Remove ProgramStructureTree of File from Cache', {
-				fileName: relativeFilePath.toString()
+				fileName: relativeWorkspacePath.toString()
 			})
 		}
 	}
 
 	documentOpened(event: TextDocumentOpenEvent) {
-		this.setProgramStructureTreeOfDocument(event.document)
+		this.setSourceFileInformationOfDocument(event.document)
 	}
 
 	documentClosed(event: TextDocumentCloseEvent) {
-		this.unsetProgramStructureTreeOfDocument(event.document)
+		this.unsetSourceFileInformationOfDocument(event.document)
 	}
 
 	dispose() {

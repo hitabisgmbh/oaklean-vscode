@@ -11,6 +11,14 @@ export default class WorkspaceUtils {
 		return undefined
 	}
 
+	static getRelativeWorkspacePath(filePath: UnifiedPath | string): UnifiedPath | undefined {
+		const workspaceDir = this.getWorkspaceDir()
+		if (workspaceDir === undefined) {
+			return undefined
+		}
+		return workspaceDir.pathTo(filePath)
+	}
+
 	static getWorkspaceProfilerConfigPaths(): UnifiedPath[] {
 		const workspaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workspaceDir) {

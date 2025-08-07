@@ -87,11 +87,11 @@ export class EditorFileMethodViewProvider
 		if (!this.editor || !workspaceDir) {
 			return
 		}
-		const filePathRelativeToWorkspace = workspaceDir.pathTo(
+		const relativeWorkspacePath = workspaceDir.pathTo(
 			this.editor.document.fileName
 		)
 		return this._container.textDocumentController.getSourceFileMetaData(
-			filePathRelativeToWorkspace
+			relativeWorkspacePath
 		)
 	}
 
