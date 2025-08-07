@@ -14,23 +14,13 @@ import {
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
 export default class SensorValueHover {
-	private sourceNodeMetaData: SourceNodeMetaData<
-		| SourceNodeMetaDataType.SourceNode
-		| SourceNodeMetaDataType.LangInternalSourceNode
-	>
-	private _sensorValueRepresentation: SensorValueRepresentation
-	constructor(
+	static provideHover(
 		sourceNodeMetaData: SourceNodeMetaData<
 			| SourceNodeMetaDataType.SourceNode
 			| SourceNodeMetaDataType.LangInternalSourceNode
 		>,
 		sensorValueRepresentation: SensorValueRepresentation
-	) {
-		this._sensorValueRepresentation = sensorValueRepresentation
-		this.sourceNodeMetaData = sourceNodeMetaData
-	}
-
-	provideHover(): vscode.ProviderResult<vscode.Hover> {
+	): vscode.ProviderResult<vscode.Hover> {
 		const contents: vscode.MarkdownString = new vscode.MarkdownString()
 		contents.appendMarkdown('|type|value|unit| \n')
 		contents.appendMarkdown('|---|---|---| \n')
@@ -39,9 +29,9 @@ export default class SensorValueHover {
 			SensorValueTypeNames
 		) as [ExtendedSensorValueType, ExtendedSensorValueType][]) {
 			const sensorValue = calcOrReturnSensorValue(
-				this.sourceNodeMetaData.sensorValues,
+				sourceNodeMetaData.sensorValues,
 				{
-					...this._sensorValueRepresentation,
+					...sensorValueRepresentation,
 					selectedSensorValueType: sensorValueType
 				}
 			)

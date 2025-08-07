@@ -8,18 +8,19 @@ import {
 	SourceFileMetaData,
 	ProgramStructureTree,
 	TypescriptParser,
-	ProfilerConfig,
-	STATIC_CONFIG_FILENAME
+	STATIC_CONFIG_FILENAME,
+	SourceNodeMetaData,
+	SourceNodeMetaDataType
 } from '@oaklean/profiler-core'
 
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 
-const VALID_EXTENSIONS_TO_PARSE = [
-	'.js',
-	'.jsx',
-	'.ts',
-	'.tsx'
-]
+const VALID_EXTENSIONS_TO_PARSE = ['.js', '.jsx', '.ts', '.tsx']
+
+type SourceNodeMetaDataDirect = SourceNodeMetaData<
+	| SourceNodeMetaDataType.SourceNode
+	| SourceNodeMetaDataType.LangInternalSourceNode
+>
 
 export class SourceFileInformation {
 	private _projectReport: ProjectReport
@@ -30,6 +31,11 @@ export class SourceFileInformation {
 	private _absoluteFilePath: UnifiedPath
 	private _sourceFileMetaData: SourceFileMetaData | undefined
 	private _programStructureTree: ProgramStructureTree
+
+	private _sourceNodeMetaDataIndex: {
+		byLine:
+		| Map<number, SourceNodeMetaDataDirect[]>
+	} | undefined
 
 	constructor(
 		reportPath: UnifiedPath,
@@ -52,6 +58,50 @@ export class SourceFileInformation {
 		})
 	}
 
+	get sourceNodeMetaDataByLine() {
+		return this.sourceNodeMetaDataIndex?.byLine
+	}
+
+	get sourceNodeMetaDataIndex() {
+		if (this._sourceNodeMetaDataIndex !== undefined) {
+			return this._sourceNodeMetaDataIndex
+		}
+		if (
+			this._sourceFileMetaData === undefined
+		) {
+			return null
+		}
+		const sourceNodeMetaDataByLine = new Map<number, SourceNodeMetaDataDirect[]>()
+		for (const sourceNodeMetaData of this._sourceFileMetaData.functions.values()) {
+			const sourceNodeIndex = sourceNodeMetaData.getIndex()
+			if (sourceNodeIndex === undefined) {
+				continue
+			}
+			const locationOfFunction =
+				this._programStructureTree.sourceLocationOfIdentifier(
+					sourceNodeIndex.identifier
+				)
+			if (locationOfFunction === null) {
+				continue
+			}
+			let existing = sourceNodeMetaDataByLine.get(
+				locationOfFunction.beginLoc.line - 1
+			)
+			if (existing === undefined) {
+				existing = []
+				sourceNodeMetaDataByLine.set(
+				locationOfFunction.beginLoc.line - 1,
+				existing
+			)
+			}
+			existing.push(sourceNodeMetaData)
+		}
+		this._sourceNodeMetaDataIndex = {
+			byLine: sourceNodeMetaDataByLine
+		}
+		return this._sourceNodeMetaDataIndex
+	}
+
 	get absoluteFilePath(): UnifiedPath {
 		return this._absoluteFilePath
 	}
@@ -68,25 +118,30 @@ export class SourceFileInformation {
 		return this._programStructureTree
 	}
 
-	static resolveSourceFileMetaData(
-		args: {
-			reportPath: UnifiedPath,
-			projectReport: ProjectReport,
-			absoluteFilePath: UnifiedPath
-		}
-	): SourceFileMetaData | undefined {
+	static resolveSourceFileMetaData(args: {
+		reportPath: UnifiedPath
+		projectReport: ProjectReport
+		absoluteFilePath: UnifiedPath
+	}): SourceFileMetaData | undefined {
 		let reportPath = args.reportPath
 		let reportToRequest: Report = args.projectReport
 		let filePath = args.absoluteFilePath
 
-		const absoluteNodeModulePath = NodeModuleUtils.getParentModuleFromPath(args.absoluteFilePath)
+		const absoluteNodeModulePath = NodeModuleUtils.getParentModuleFromPath(
+			args.absoluteFilePath
+		)
 		if (absoluteNodeModulePath) {
 			const nodeModule = NodeModule.fromNodeModulePath(absoluteNodeModulePath)
 
 			if (nodeModule) {
-				const moduleIndex = args.projectReport.getModuleIndex('get', nodeModule.identifier)
-				const moduleReport = moduleIndex !== undefined ?
-					args.projectReport.extern.get(moduleIndex.id) : undefined
+				const moduleIndex = args.projectReport.getModuleIndex(
+					'get',
+					nodeModule.identifier
+				)
+				const moduleReport =
+					moduleIndex !== undefined
+						? args.projectReport.extern.get(moduleIndex.id)
+						: undefined
 				if (moduleReport) {
 					reportToRequest = moduleReport
 
@@ -98,10 +153,7 @@ export class SourceFileInformation {
 			}
 		}
 
-		const result = reportToRequest.getMetaDataFromFile(
-			reportPath,
-			filePath
-		)
+		const result = reportToRequest.getMetaDataFromFile(reportPath, filePath)
 		return result
 	}
 

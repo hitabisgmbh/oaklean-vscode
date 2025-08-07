@@ -10,7 +10,8 @@ import {
 	SourceFileMetaData,
 	ProgramStructureTree,
 	ProfilerConfig,
-	STATIC_CONFIG_FILENAME
+	STATIC_CONFIG_FILENAME,
+	AggregatedSourceNodeMetaData
 } from '@oaklean/profiler-core'
 
 import {
@@ -48,6 +49,11 @@ export default class TextDocumentController implements Disposable {
 		)
 	}
 
+	private _totalAndMaxMetaData: AggregatedSourceNodeMetaData | undefined
+	get totalAndMaxMetaData(): AggregatedSourceNodeMetaData | undefined {
+		return this._totalAndMaxMetaData
+	}
+
 	private _reportPath: UnifiedPath | undefined
 	get reportPath(): UnifiedPath | undefined {
 		return this._reportPath
@@ -78,10 +84,6 @@ export default class TextDocumentController implements Disposable {
 	private _sourceFileMetaDataTree: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined
 	get sourceFileMetaDataTree(): SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined {
 		return this._sourceFileMetaDataTree
-	}
-
-	private set sourceFileMetaDataTree(value: SourceFileMetaDataTree<SourceFileMetaDataTreeType> | undefined) {
-		this._sourceFileMetaDataTree = value
 	}
 
 	getReportInfoOfFile(relativeWorkspacePath: UnifiedPath): ProfileInfoOfFile {
@@ -119,9 +121,11 @@ export default class TextDocumentController implements Disposable {
 		this.projectReport = report
 		if (this.projectReport) {
 			try {
-				this.sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport)
+				this._sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport)
+				this._totalAndMaxMetaData = this._sourceFileMetaDataTree.totalAggregatedSourceMetaData
 			} catch (e) {
-				this.sourceFileMetaDataTree = undefined
+				this._sourceFileMetaDataTree = undefined
+				this._totalAndMaxMetaData = undefined
 			}
 		}
 		vscode.window.showInformationMessage(INFO_PROJECT_REPORT + this.reportPath.basename())

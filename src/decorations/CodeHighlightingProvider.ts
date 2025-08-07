@@ -1,4 +1,9 @@
 import vscode from 'vscode'
+import {
+	AggregatedSourceNodeMetaData,
+	SourceNodeMetaData,
+	SourceNodeMetaDataType
+} from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
@@ -37,122 +42,117 @@ export class CodeHighlightingProvider extends vscode.Disposable {
 
 	provideDecorations(editor: vscode.TextEditor) {
 		this.disposeTextDecoration()
+		const enableLineAnnotations = this._container.storage.getWorkspace(
+			'enableLineAnnotations',
+			true
+		) as boolean
+		if (enableLineAnnotations === false) {
+			return
+		}
 		const sensorValueRepresentation = this._container.storage.getWorkspace(
 			'sensorValueRepresentation'
 		) as SensorValueRepresentation
 
-		const config = this._container.textDocumentController.config
-		if (config === undefined) {
-			return []
-		}
-		const relativeFile = WorkspaceUtils.getRelativeFilePath(
-			config,
+		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
 			editor.document.fileName
 		)
-		const { projectReport, sourceFileMetaData, programStructureTreeOfFile } =
-			this._container.textDocumentController.getReportInfoOfFile(relativeFile)
-
+		if (relativeWorkspacePath === undefined) {
+			return []
+		}
+		const sourceFileInfo =
+			this._container.textDocumentController.getSourceFileInformationOfFile(
+				relativeWorkspacePath
+			)
+		const totalAndMaxMetaData =
+			this._container.textDocumentController.totalAndMaxMetaData
 		if (
-			projectReport === undefined ||
-			sourceFileMetaData === undefined ||
-			programStructureTreeOfFile === undefined
+			sourceFileInfo === undefined ||
+			sourceFileInfo.sourceNodeMetaDataByLine === undefined ||
+			totalAndMaxMetaData === undefined
 		) {
 			return []
 		}
 
-		const functionsOfFile = sourceFileMetaData.functions
-		const totalAndMaxMetaData = projectReport.totalAndMaxMetaData()
-
 		for (const [
-			sourceNodeID,
-			sourceNodeMetaData
-		] of functionsOfFile.entries()) {
-			const sourceNodeIndex =
-				projectReport.globalIndex.getSourceNodeIndexByID(sourceNodeID)
-			if (sourceNodeIndex === undefined) {
+			lineNumber,
+			sourceNodeMetaDatas
+		] of sourceFileInfo.sourceNodeMetaDataByLine.entries()) {
+			if (sourceNodeMetaDatas.length === 0) {
 				continue
 			}
-			const locationOfFunction =
-				programStructureTreeOfFile.sourceLocationOfIdentifier(
-					sourceNodeIndex.identifier
-				)
-			if (!locationOfFunction) {
-				if (sourceNodeIndex.presentInOriginalSourceCode) {
-					console.error(
-						'SourceNodeIndexNotFoundError',
-						`Could not find location of function ${sourceNodeIndex.identifier}`
-					)
-				}
-				continue
-			}
-			const { beginLoc } = locationOfFunction
-			let message
-			let weight: number
-			if (
-				sensorValueRepresentation.selectedSensorValueType === 'customFormula'
-			) {
-				const calculatedFormula = calcOrReturnSensorValue(
-					sourceNodeMetaData.sensorValues,
-					sensorValueRepresentation
-				)
-				const formattedCalculatedFormula = SensorValueFormatHelper.format(
-					calculatedFormula,
-					sensorValueRepresentation.selectedSensorValueType
-				)
-				const formulaTotal = calcOrReturnSensorValue(
-					totalAndMaxMetaData.total.sensorValues,
-					sensorValueRepresentation
-				)
-				const relativeToTotalForFormula =
-					(calculatedFormula / formulaTotal) * 100
-				message =
-					`${sensorValueRepresentation.formula}: ${formattedCalculatedFormula.value} ` +
-					`(${relativeToTotalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
-				weight =
-					calculatedFormula /
-					calcOrReturnSensorValue(
-						totalAndMaxMetaData.max.sensorValues,
-						sensorValueRepresentation
-					)
-			} else {
-				const value =
-					sourceNodeMetaData.sensorValues[
-						sensorValueRepresentation.selectedSensorValueType
-					]
-				const total =
-					totalAndMaxMetaData.total.sensorValues[
-						sensorValueRepresentation.selectedSensorValueType
-					]
-				const relativeToTotal = total === 0 ? 0 : (value / total) * 100
-				const formattedValue = SensorValueFormatHelper.format(
-					value,
-					sensorValueRepresentation.selectedSensorValueType
-				)
-				message =
-					SensorValueTypeNames[
-						sensorValueRepresentation.selectedSensorValueType
-					] +
-					`: ${formattedValue.value} ${formattedValue.unit} ` +
-					`(${relativeToTotal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
-				weight =
-					value /
-					totalAndMaxMetaData.max.sensorValues[
-						sensorValueRepresentation.selectedSensorValueType
-					]
-			}
+			const sourceNodeMetaData = sourceNodeMetaDatas[0]
 
-			const line = this.highlightLine(editor, beginLoc.line - 1, message, weight)
+			const line = this.highlightSourceNode(
+				sensorValueRepresentation,
+				sourceNodeMetaData,
+				totalAndMaxMetaData,
+				editor,
+				lineNumber
+			)
 			this.textDecorations.push(line.decoration)
 			editor.setDecorations(line.decoration, line.decorationRanges)
 		}
 	}
 
-	highlightLine(
+	highlightSourceNode(
+		sensorValueRepresentation: SensorValueRepresentation,
+		sourceNodeMetaData: SourceNodeMetaData<SourceNodeMetaDataType>,
+		totalAndMaxMetaData: AggregatedSourceNodeMetaData,
 		editor: vscode.TextEditor,
-		lineNumber: number,
-		message: string,
-		importanceWeight: number
+		lineNumber: number
 	): LineProfileDecoration {
+		let message
+		let importanceWeight: number
+		if (sensorValueRepresentation.selectedSensorValueType === 'customFormula') {
+			const calculatedFormula = calcOrReturnSensorValue(
+				sourceNodeMetaData.sensorValues,
+				sensorValueRepresentation
+			)
+			const formattedCalculatedFormula = SensorValueFormatHelper.format(
+				calculatedFormula,
+				sensorValueRepresentation.selectedSensorValueType
+			)
+			const formulaTotal = calcOrReturnSensorValue(
+				totalAndMaxMetaData.total.sensorValues,
+				sensorValueRepresentation
+			)
+			const relativeToTotalForFormula = (calculatedFormula / formulaTotal) * 100
+			message =
+				`${sensorValueRepresentation.formula}: ${formattedCalculatedFormula.value} ` +
+				`(${relativeToTotalForFormula.toFixed(PROFILE_PERCENT_PRECISION)}%)`
+			importanceWeight =
+				calculatedFormula /
+				calcOrReturnSensorValue(
+					totalAndMaxMetaData.max.sensorValues,
+					sensorValueRepresentation
+				)
+		} else {
+			const value =
+				sourceNodeMetaData.sensorValues[
+					sensorValueRepresentation.selectedSensorValueType
+				]
+			const total =
+				totalAndMaxMetaData.total.sensorValues[
+					sensorValueRepresentation.selectedSensorValueType
+				]
+			const relativeToTotal = total === 0 ? 0 : (value / total) * 100
+			const formattedValue = SensorValueFormatHelper.format(
+				value,
+				sensorValueRepresentation.selectedSensorValueType
+			)
+			message =
+				SensorValueTypeNames[
+					sensorValueRepresentation.selectedSensorValueType
+				] +
+				`: ${formattedValue.value} ${formattedValue.unit} ` +
+				`(${relativeToTotal.toFixed(PROFILE_PERCENT_PRECISION)}%)`
+			importanceWeight =
+				value /
+				totalAndMaxMetaData.max.sensorValues[
+					sensorValueRepresentation.selectedSensorValueType
+				]
+		}
+
 		const profile = this._container.profileHelper.currentProfile
 		const color: Color = profile?.color || Color.Red
 		const { red, green, blue, alpha } = getImportanceColor(

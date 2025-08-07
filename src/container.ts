@@ -25,6 +25,7 @@ import { SensorValueRepresentation, defaultSensorValueRepresentation } from './t
 import ReportBackendStorageController from './controller/ReportBackendStorageController'
 import WorkspaceUtils from './helper/WorkspaceUtils'
 import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
+import { SensorValueHoverProvider } from './hover/SensorValueHoverProvider'
 
 export class Container {
 	static #instance: Container | undefined
@@ -176,6 +177,10 @@ export class Container {
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
+
+		// Hover Provider
+		this.context.subscriptions.push(SensorValueHoverProvider.register(this))
+
 		// TreeViews
 		this.context.subscriptions.push(this._treeDataProvider = new SourceFileMetaDataTreeProvider(this))
 		this.context.subscriptions.push(
