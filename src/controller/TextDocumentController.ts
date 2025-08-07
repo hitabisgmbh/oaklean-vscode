@@ -8,7 +8,6 @@ import {
 	SourceFileMetaDataTree,
 	ProjectReport,
 	SourceFileMetaData,
-	ProgramStructureTree,
 	ProfilerConfig,
 	STATIC_CONFIG_FILENAME,
 	AggregatedSourceNodeMetaData
@@ -24,12 +23,6 @@ import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { INFO_PROJECT_REPORT } from '../constants/infoMessages'
 import { ProjectReportHelper } from '../helper/ProjectReportHelper'
 import { SourceFileInformation } from '../model/SourceFileInformation'
-
-export type ProfileInfoOfFile = {
-	projectReport: ProjectReport | undefined,
-	sourceFileMetaData: SourceFileMetaData | undefined
-	programStructureTreeOfFile: ProgramStructureTree | undefined
-}
 
 export default class TextDocumentController implements Disposable {
 	private readonly _disposable: Disposable
@@ -86,19 +79,11 @@ export default class TextDocumentController implements Disposable {
 		return this._sourceFileMetaDataTree
 	}
 
-	getReportInfoOfFile(relativeWorkspacePath: UnifiedPath): ProfileInfoOfFile {
-		return {
-			projectReport: this.projectReport,
-			sourceFileMetaData: this.getSourceFileMetaData(relativeWorkspacePath),
-			programStructureTreeOfFile: this.getProgramStructureTreeOfFile(relativeWorkspacePath)
-		}
-	}
-
 	getSourceFileInformationOfFile(relativeWorkspacePath: UnifiedPath): SourceFileInformation | undefined {
 		return this.sourceFileInformationPerDocument.get(relativeWorkspacePath.toString())
 	}
 
-	getProgramStructureTreeOfFile(relativeWorkspacePath: UnifiedPath): ProgramStructureTree | undefined {
+	getProgramStructureTreeOfFile(relativeWorkspacePath: UnifiedPath) {
 		return this.getSourceFileInformationOfFile(relativeWorkspacePath)?.programStructureTree
 	}
 
@@ -153,7 +138,7 @@ export default class TextDocumentController implements Disposable {
 	}
 
 	setSourceFileInformationOfDocument(document: TextDocument) {
-		if (this.config === undefined || this.projectReport === undefined || this.reportPath === undefined) {
+		if (this.reportPath === undefined || this.projectReport === undefined) {
 			return
 		}
 		const sourceFileInformation = SourceFileInformation.fromDocument(
@@ -182,7 +167,7 @@ export default class TextDocumentController implements Disposable {
 		const existed = this.sourceFileInformationPerDocument.has(relativeWorkspacePath.toString())
 		this.sourceFileInformationPerDocument.delete(relativeWorkspacePath.toString())
 		if (existed) {
-			console.debug('Remove ProgramStructureTree of File from Cache', {
+			console.debug('Remove SourceFileInformation of File from Cache', {
 				fileName: relativeWorkspacePath.toString()
 			})
 		}

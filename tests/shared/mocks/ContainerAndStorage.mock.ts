@@ -54,7 +54,7 @@ export default class StorageAndContainerMock {
 	mockEventHandler = {
 		onTextDocumentOpen: jest.fn(),
 		onTextEditorChange: jest.fn(),
-		onProgramStructureTreeChange: jest.fn(),
+		onSourceFileInformationChange: jest.fn(),
 		onReportLoaded: jest.fn(),
 		onSelectedSensorValueTypeChange: jest.fn(),
 		onToggleLineAnnotationsChange: jest.fn(),
@@ -63,7 +63,7 @@ export default class StorageAndContainerMock {
 		onTextDocumentChange: jest.fn(),
 		onTextDocumentDidSave: jest.fn(),
 		fireReportLoaded: jest.fn(),
-		fireProgramStructureTreeChange: jest.fn(),
+		fireSourceFileInformationChange: jest.fn(),
 		onSortDirectionChange: jest.fn(),
 	}
 
@@ -77,7 +77,10 @@ export default class StorageAndContainerMock {
 
 		const mockContainer = {
 			textDocumentController: {
-				projectReport: {},
+				projectReport: {
+					get: jest.fn().mockReturnValue({})
+				},
+				getSourceFileInformationOfFile: jest.fn()
 			},
 			storage: {
 				storeWorkspace: jest.fn().mockImplementation((key, value) => {

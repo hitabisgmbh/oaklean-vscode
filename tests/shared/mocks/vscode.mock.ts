@@ -2,6 +2,7 @@ export default jest.mock('vscode', () => ({
 	window: {
 		onDidChangeActiveColorTheme: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 		onDidChangeActiveTextEditor: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+		onDidChangeVisibleTextEditors: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 		showQuickPick: jest.fn(),
 		showInputBox: jest.fn(),
 		showInformationMessage: jest.fn(),
@@ -23,8 +24,9 @@ export default jest.mock('vscode', () => ({
 		onDidChangeTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 		onDidSaveTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 	},
-	Disposable: {
-		from: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+	Disposable: class {
+		static from = jest.fn().mockReturnValue({ dispose: jest.fn() })
+		dispose = jest.fn()
 	},
 	commands: {
 		executeCommand: jest.fn(),

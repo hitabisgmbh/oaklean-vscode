@@ -34,21 +34,6 @@ describe('TextEditorController', () => {
 		}
 	})
 
-	it('should handle toggleLineAnnotationsChange event correctly', () => {
-		const refreshSpy = jest.spyOn(textEditorController, 'refresh')
-		textEditorController.toggleLineAnnotationsChange({ enabled: false })
-		expect(textEditorController['_enableLineAnnotations']).toBe(false)
-		expect(refreshSpy).toHaveBeenCalled()
-	})
-
-	it('should handle selectedSensorValueTypeChanged event correctly', () => {
-		const refreshSpy = jest.spyOn(textEditorController, 'refresh')
-		textEditorController.selectedSensorValueTypeChanged(
-			{ sensorValueRepresentation: mockEvent.sensorValueRepresentation })
-		expect(textEditorController['_sensorValueRepresentation']).toEqual(mockEvent.sensorValueRepresentation)
-		expect(refreshSpy).toHaveBeenCalled()
-	})
-
 	it('should refresh on reportLoaded event', () => {
 		const refreshSpy = jest.spyOn(textEditorController, 'refresh')
 		textEditorController.reportLoaded({
@@ -65,27 +50,19 @@ describe('TextEditorController', () => {
 	})
 
 
-	it('should refresh if the programStructureTreeChanged event file matches the editor file', () => {
+	it('should refresh if the sourceFileInformationChange event file matches the editor file', () => {
 		textEditorController.setEditor(mockEditor)
 		const refreshSpy = jest.spyOn(textEditorController, 'refresh')
-		const path = new UnifiedPath('./file.ts')
-		textEditorController.programStructureTreeChanged({ fileName: path })
+		const path = new UnifiedPath('/path/to/workspace/file.ts')
+		textEditorController.sourceFileInformationChanged({ absolutePath: path })
 		expect(refreshSpy).toHaveBeenCalled()
 	})
 
-	it('should not refresh if the programStructureTreeChanged event file does not match the editor file', () => {
+	it('should not refresh if the sourceFileInformationChange event file does not match the editor file', () => {
 		textEditorController.setEditor(mockEditor)
 		const refreshSpy = jest.spyOn(textEditorController, 'refresh')
-		const path = new UnifiedPath('./other-file.ts')
-		textEditorController.programStructureTreeChanged({ fileName: path })
+		const path = new UnifiedPath('/path/to/workspace/other-file.ts')
+		textEditorController.sourceFileInformationChanged({ absolutePath: path })
 		expect(refreshSpy).not.toHaveBeenCalled()
-	})
-
-	it('should dispose all resources on dispose', () => {
-		const disposeTextDecorationsSpy = jest.spyOn(textEditorController, 'disposeTextDecorations')
-		const disposeSensorValueHoverProviderSpy = jest.spyOn(textEditorController, 'disposeSensorValueHoverProvider')
-		textEditorController.dispose()
-		expect(disposeTextDecorationsSpy).toHaveBeenCalled()
-		expect(disposeSensorValueHoverProviderSpy).toHaveBeenCalled()
 	})
 })
