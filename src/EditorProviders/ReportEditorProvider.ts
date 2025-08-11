@@ -8,7 +8,7 @@ import { getUri } from '../utilities/getUri'
 import { getNonce } from '../utilities/getNonce'
 import { Container } from '../container'
 import { ProjectReportHelper } from '../helper/ProjectReportHelper'
-import { ProjectReportDocument } from '../customDocuments/ProjectReportDocument'
+import { ProjectReportDocument } from '../CustomDocuments/ProjectReportDocument'
 import {
 	ReportViewProtocol_ChildToParent,
 	ReportViewProtocol_ParentToChild,
