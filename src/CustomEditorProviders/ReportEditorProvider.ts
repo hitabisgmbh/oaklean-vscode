@@ -15,35 +15,32 @@ import {
 	ReportViewProtocolCommands
 } from '../protocols/ReportViewProtocol'
 
+const VIEW_TYPE = 'ReportEditorProvider'
 export class ReportEditorProvider implements CustomEditorProvider {
 	private _contentMap: Map<string, ProjectReportDocument>
 	private subscriptions: vscode.Disposable[] = []
 
 	private onDidChangeCustomDocumentEmitter =
 		new vscode.EventEmitter<CustomDocumentContentChangeEvent>()
-	public static readonly viewType = 'oaklean.oak'
+	public static readonly viewType = VIEW_TYPE
 
 	_container: Container
 	constructor(container: Container) {
 		this._container = container
 		this._contentMap = new Map<string, ProjectReportDocument>()
-
-		this.subscriptions.push(
-			vscode.workspace.registerTextDocumentContentProvider('readonly', {
-				provideTextDocumentContent: (uri: vscode.Uri) => {
-					const document = this._contentMap.get(uri.fsPath)
-					if (document) {
-						return JSON.stringify(document.content, null, 2)
-					} else {
-						return ''
-					}
-				}
-			})
-		)
 	}
 
 	dispose() {
 		this.subscriptions.forEach((sub) => sub.dispose())
+	}
+
+	register() {
+		return vscode.window.registerCustomEditorProvider(VIEW_TYPE, this, {
+			webviewOptions: {
+				retainContextWhenHidden: true
+			},
+			supportsMultipleEditorsPerDocument: false
+		})
 	}
 
 	async resolveCustomEditor(
@@ -63,9 +60,13 @@ export class ReportEditorProvider implements CustomEditorProvider {
 		this.hardRefresh(webviewPanel, document)
 		this.subscriptions.push(
 			webviewPanel.webview.onDidReceiveMessage(
-				this.receiveMessageFromWebview(webviewPanel.webview, document).bind(this)
+				this.receiveMessageFromWebview(webviewPanel.webview, document).bind(
+					this
+				)
 			),
-			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this, webviewPanel, document)),
+			this._container.eventHandler.onWebpackRecompile(
+				this.hardRefresh.bind(this, webviewPanel, document)
+			)
 		)
 	}
 
@@ -114,15 +115,19 @@ export class ReportEditorProvider implements CustomEditorProvider {
 	}
 
 	saveCustomDocument(): Thenable<void> {
-		throw new Error('Method')
+		throw new Error('ReportEditorProvider.saveCustomDocument: not implemented.')
 	}
 
 	saveCustomDocumentAs(): Thenable<void> {
-		throw new Error('Method not ')
+		throw new Error(
+			'ReportEditorProvider.saveCustomDocumentAs: not implemented.'
+		)
 	}
 
 	revertCustomDocument(): Thenable<void> {
-		throw new Error('Method not implemented.')
+		throw new Error(
+			'ReportEditorProvider.revertCustomDocument: not implemented.'
+		)
 	}
 
 	async backupCustomDocument(
@@ -246,10 +251,10 @@ export class ReportEditorProvider implements CustomEditorProvider {
 	async openJsonEditor(document: ProjectReportDocument): Promise<void> {
 		try {
 			vscode.window.showInformationMessage('Opening JSON editor...')
-			const readOnlyUri = document.uri.with({ scheme: 'readonly' })
-			const doc = await vscode.workspace.openTextDocument(readOnlyUri)
-			await vscode.languages.setTextDocumentLanguage(doc, 'json')
-			await vscode.window.showTextDocument(doc, { preview: true })
+			this._container.jsonTextDocumentContentProvider.openFileJsonReadonly(
+				document.uri,
+				JSON.stringify(document.content, null, 2)
+			)
 		} catch (error) {
 			console.error('Error opening JSON editor:', error)
 			vscode.window.showErrorMessage(`Failed to open JSON editor: ${error}`)

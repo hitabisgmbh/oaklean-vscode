@@ -19,6 +19,7 @@ import SelectProfileCommand from './commands/SelectProfile'
 import ProfileHelper from './helper/ProfileHelper'
 import { SortDirection } from './types/sortDirection'
 import { ReportEditorProvider } from './CustomEditorProviders/ReportEditorProvider'
+import { JsonTextDocumentContentProvider } from './TextDocumentContentProvider/JsonTextDocumentContentProvider'
 import { EditorFileMethodViewProvider } from './WebViewProviders/EditorFileMethodViewProvider'
 import { GraphicalViewProvider } from './WebViewProviders/GraphicalViewProvider'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from './types/sensorValueRepresentation'
@@ -163,6 +164,11 @@ export class Container {
 		return this._reportEditorProvider
 	}
 
+	private readonly _jsonTextDocumentContentProvider: JsonTextDocumentContentProvider
+	get jsonTextDocumentContentProvider() {
+		return this._jsonTextDocumentContentProvider
+	}
+
 	private constructor(
 		context: ExtensionContext,
 		storage: Storage
@@ -279,15 +285,10 @@ export class Container {
 				FilterViewProvider.viewType, this._filterViewProvider
 			))
 		this.context.subscriptions.push(this._reportEditorProvider = new ReportEditorProvider(this))
+		this.context.subscriptions.push(this._reportEditorProvider.register())
+
 		this.context.subscriptions.push(
-			vscode.window.registerCustomEditorProvider(
-				'oaklean.oak', this._reportEditorProvider, {
-					webviewOptions: {
-						retainContextWhenHidden: true
-					},
-					supportsMultipleEditorsPerDocument: false
-				}
-			)
+			this._jsonTextDocumentContentProvider = new JsonTextDocumentContentProvider(this)
 		)
 
 		this.context.subscriptions.push(

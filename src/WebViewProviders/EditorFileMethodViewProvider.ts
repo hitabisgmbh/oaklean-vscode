@@ -6,6 +6,7 @@ import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
+import { DEBUG_MODE } from '../constants/app'
 import {
 	TextEditorChangeEvent,
 	TextEditorsChangeVisibilityEvent
@@ -15,9 +16,7 @@ import {
 	EditorFileMethodViewProtocol_ChildToParent,
 	EditorFileMethodViewProtocol_ParentToChild
 } from '../protocols/EditorFileMethodViewProtocol'
-import {
-	OpenSourceLocationProtocolCommands
-} from '../protocols/OpenSourceLocationProtocol'
+import { OpenSourceLocationProtocolCommands } from '../protocols/OpenSourceLocationProtocol'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
@@ -101,26 +100,49 @@ export class EditorFileMethodViewProvider
 		)
 	}
 
-	receiveMessageFromWebview(message: EditorFileMethodViewProtocol_ChildToParent) {
-		if (message.command === OpenSourceLocationProtocolCommands.openSourceLocation) {
-			const identifier = message.identifier
-			if (this.editor !== undefined) {
-				const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
-					this.editor.document.fileName
-				)
-				if (relativeWorkspacePath === undefined) {
+	receiveMessageFromWebview(
+		message: EditorFileMethodViewProtocol_ChildToParent
+	) {
+		switch (message.command) {
+			case OpenSourceLocationProtocolCommands.openSourceLocation:
+				{
+					const identifier = message.identifier
+					if (this.editor !== undefined) {
+						const relativeWorkspacePath =
+							WorkspaceUtils.getRelativeWorkspacePath(
+								this.editor.document.fileName
+							)
+						if (relativeWorkspacePath === undefined) {
+							return
+						}
+						OpenSourceLocationCommand.execute({
+							command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
+							args: {
+								relativeWorkspacePath: relativeWorkspacePath.toString(),
+								sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
+							}
+						})
+					}
+				} break
+			case EditorFileMethodViewProtocolCommands.initMethods:
+				this.refresh()
+				break
+			case EditorFileMethodViewProtocolCommands.showPathIndex: {
+				if (this.editor === undefined) {
 					return
 				}
-				OpenSourceLocationCommand.execute({
-					command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
-					args: {
-						relativeWorkspacePath: relativeWorkspacePath.toString(),
-						sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
-					}
-				})
-			}
-		} else if (message.command === EditorFileMethodViewProtocolCommands.initMethods) {
-			this.refresh()
+				const sourceFileMetaData = this.getSourceFileMetaData()
+				if (sourceFileMetaData === null) {
+					return
+				}
+
+				this._container.jsonTextDocumentContentProvider.openFileJsonReadonly(
+					this.editor.document.uri,
+					JSON.stringify(sourceFileMetaData.pathIndex, null, 2)
+				)
+			} break
+			default:
+				break
 		}
 	}
 
@@ -172,6 +194,7 @@ export class EditorFileMethodViewProvider
 			'sensorValueRepresentation'
 		) as SensorValueRepresentation
 		this.postMessageToWebview({
+			debugMode: DEBUG_MODE,
 			command: EditorFileMethodViewProtocolCommands.updateMethodList,
 			sourceFileMethodTree: sourceFileMethodTree.toJSON(),
 			sensorValueRepresentation

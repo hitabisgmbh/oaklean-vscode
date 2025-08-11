@@ -8,3 +8,11 @@
 .codicon-button:hover {
 	background-color: var(--vscode-list-hoverBackground);
 }
+
+.highlighted {
+	border-color: var(--vscode-focusBorder);
+}
+
+.highlighted:hover {
+	background-color: var(--vscode-focusBorder);
+}

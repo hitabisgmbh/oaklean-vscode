@@ -20,3 +20,6 @@ export const ERROR_NO_TITLE = 'No profile title found.'
 
 export const ERROR_FILE_NOT_FOUND = 'Could not find file: '
 export const ERROR_SOURCE_NODE_NOT_FOUND = 'Could not find source node: '
+
+export const ERROR_FILE_IS_NOT_PART_OF_WORKSPACE = 'File is not part of the workspace.'
+export const ERROR_SOURCE_FILE_META_DATA_NOT_FOUND = 'Could not find source file metadata for the document.'

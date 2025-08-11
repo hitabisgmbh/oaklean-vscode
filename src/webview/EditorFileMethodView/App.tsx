@@ -23,6 +23,7 @@ function postToProvider(message: EditorFileMethodViewProtocol_ChildToParent) {
 }
 
 type Props = {
+	debugMode: boolean
 	sourceFileMethodTree: ISourceFileMethodTree
 	sensorValueRepresentation: SensorValueRepresentation
 }
@@ -36,6 +37,7 @@ export function App() {
 		switch (message.data.command) {
 			case EditorFileMethodViewProtocolCommands.updateMethodList:
 				setProps({
+					debugMode: message.data.debugMode,
 					sourceFileMethodTree: message.data.sourceFileMethodTree,
 					sensorValueRepresentation: message.data.sensorValueRepresentation
 				})
@@ -52,7 +54,9 @@ export function App() {
 
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
-		postToProvider({ command: EditorFileMethodViewProtocolCommands.initMethods })
+		postToProvider({
+			command: EditorFileMethodViewProtocolCommands.initMethods
+		})
 
 		return () => {
 			window.removeEventListener('message', handleExtensionMessages)
@@ -68,12 +72,27 @@ export function App() {
 							? ''
 							: SensorValueFormatHelper.formatSensorValueType(
 									props.sensorValueRepresentation
-							)}
+							  )}
 					</div>
 				}
 				rightSection={
 					<>
-						<SortButton sortDirection={sortDirection} setSortDirection={setSortDirection}/>
+						{props !== undefined && props.debugMode ? (
+							<CodiconButton
+								codiconName={'codicon-file-text highlighted'}
+								onClick={() => {
+									postToProvider({
+										command:
+											EditorFileMethodViewProtocolCommands.showPathIndex
+									})
+								}}
+								title="Show index of the source file"
+							></CodiconButton>
+						) : undefined}
+						<SortButton
+							sortDirection={sortDirection}
+							setSortDirection={setSortDirection}
+						/>
 						<CodiconButton
 							codiconName={flatMode ? 'codicon-list-flat' : 'codicon-list-tree'}
 							onClick={() => {
@@ -102,7 +121,7 @@ export function App() {
 								sourceFileMethodTree: props.sourceFileMethodTree,
 								sensorValueRepresentation: props.sensorValueRepresentation,
 								postToProvider
-						}
+						  }
 						: undefined
 				}
 			/>

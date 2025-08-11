@@ -42,6 +42,10 @@ export class CodeHighlightingProvider extends vscode.Disposable {
 
 	provideDecorations(editor: vscode.TextEditor) {
 		this.disposeTextDecoration()
+		if (editor.document.uri.scheme !== 'file') {
+			// Only provide decorations for file URIs
+			return
+		}	
 		const enableLineAnnotations = this._container.storage.getWorkspace(
 			'enableLineAnnotations',
 			true

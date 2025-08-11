@@ -131,7 +131,7 @@
 		},
 		"customEditors": [
 			{
-				"viewType": "oaklean.oak",
+				"viewType": "ReportEditorProvider",
 				"displayName": "Project Report Viewer",
 				"selector": [
 					{
