@@ -53,6 +53,21 @@ export class SourceFileInformation {
 		this._absoluteFilePath = new UnifiedPath(document.fileName)
 	}
 
+	update(
+		reportPath: UnifiedPath,
+		projectReport: ProjectReport,
+	) {
+		this._reportPath = reportPath
+		this._projectReport = projectReport
+		this.invalidate()
+	}
+
+	invalidate() {
+		this._sourceFileMetaData = undefined
+		this._programStructureTree = undefined
+		this._sourceNodeMetaDataIndex = undefined
+	}
+
 	get sourceNodeMetaDataByLine() {
 		return this.sourceNodeMetaDataIndex?.byLine
 	}
@@ -174,15 +189,9 @@ export class SourceFileInformation {
 	static fromDocument(
 		reportPath: UnifiedPath,
 		projectReport: ProjectReport,
+		relativeWorkspacePath: UnifiedPath,
 		document: vscode.TextDocument
 	): SourceFileInformation | undefined {
-		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
-			document.fileName
-		)
-		if (relativeWorkspacePath === undefined) {
-			return undefined
-		}
-
 		const fileName = new UnifiedPath(document.fileName)
 		if (!VALID_EXTENSIONS_TO_PARSE.includes(fileName.extname().toLowerCase())) {
 			return // wrong file extension, do not parse the file

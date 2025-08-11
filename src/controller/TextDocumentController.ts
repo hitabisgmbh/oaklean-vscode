@@ -108,6 +108,12 @@ export default class TextDocumentController implements Disposable {
 			try {
 				this._sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport)
 				this._totalAndMaxMetaData = this._sourceFileMetaDataTree.totalAggregatedSourceMetaData
+				for (const sourceFileInformation of this.sourceFileInformationPerDocument.values()) {
+					sourceFileInformation.update(
+						this.reportPath,
+						this.projectReport
+					)
+				}
 			} catch (e) {
 				this._sourceFileMetaDataTree = undefined
 				this._totalAndMaxMetaData = undefined
@@ -141,14 +147,31 @@ export default class TextDocumentController implements Disposable {
 		if (this.reportPath === undefined || this.projectReport === undefined) {
 			return
 		}
+		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
+			document.fileName
+		)
+		if (relativeWorkspacePath === undefined) {
+			return undefined
+		}
+		const existing = this.sourceFileInformationPerDocument.get(relativeWorkspacePath.toString())
+		if (existing !== undefined) {
+			existing.update(
+				this.reportPath,
+				this.projectReport
+			)
+			this.container.eventHandler.fireSourceFileInformationChange(existing.absoluteFilePath)
+			return
+		}
+
 		const sourceFileInformation = SourceFileInformation.fromDocument(
 			this.reportPath,
 			this.projectReport,
+			relativeWorkspacePath,
 			document
 		)
 		if (sourceFileInformation !== undefined) {
 			this.sourceFileInformationPerDocument.set(
-				sourceFileInformation.relativeWorkspacePath.toString(),
+				relativeWorkspacePath.toString(),
 				sourceFileInformation
 			)
 			this.container.eventHandler.fireSourceFileInformationChange(sourceFileInformation.absoluteFilePath)
