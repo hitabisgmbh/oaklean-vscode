@@ -17,6 +17,13 @@ export class SensorValueHoverProvider implements vscode.HoverProvider {
 		position: vscode.Position,
 		token: vscode.CancellationToken
 	): vscode.ProviderResult<vscode.Hover> {
+		const enableLineAnnotations = this._container.storage.getWorkspace(
+			'enableLineAnnotations',
+			true
+		) as boolean
+		if (enableLineAnnotations === false) {
+			return
+		}
 		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
 			document.fileName
 		)
