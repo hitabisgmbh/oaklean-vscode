@@ -17,3 +17,6 @@ export const ERROR_NO_PROFILE = 'No profiles to delete.'
 export const ERROR_NO_PROFILE_FOUND = 'Profile not found.'
 export const ERROR_INPUT_MISSING = 'One or more inputs are missing.'
 export const ERROR_NO_TITLE = 'No profile title found.'
+
+export const ERROR_FILE_NOT_FOUND = 'Could not find file: '
+export const ERROR_SOURCE_NODE_NOT_FOUND = 'Could not find source node: '

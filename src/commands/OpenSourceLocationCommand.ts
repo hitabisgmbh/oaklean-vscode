@@ -1,7 +1,7 @@
 import vscode from 'vscode'
 import {
 	UnifiedPath,
-	SourceNodeIdentifier_string
+	SourceNodeIdentifierHelper
 } from '@oaklean/profiler-core'
 
 import BaseCommand from './BaseCommand'
@@ -9,6 +9,10 @@ import BaseCommand from './BaseCommand'
 import { Container } from '../container'
 import { APP_IDENTIFIER } from '../constants/app'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
+import {
+	ERROR_FILE_NOT_FOUND,
+	ERROR_SOURCE_NODE_NOT_FOUND
+} from '../constants/infoMessages'
 // Types
 import {
 	OpenSourceLocationCommandIdentifiers,
@@ -44,7 +48,6 @@ export default class OpenSourceLocationCommand extends BaseCommand {
 		const fullPath = WorkspaceUtils.getFullFilePathFromRelativeWorkspacePath(
 			relativeWorkspacePath
 		)
-		const errorMessage = `Could not find file: ${fullPath}`
 		if (fullPath === undefined) {
 			return
 		}
@@ -75,13 +78,23 @@ export default class OpenSourceLocationCommand extends BaseCommand {
 						selection: new vscode.Range(position, position)
 					})
 				} else {
+					const identifierParts = SourceNodeIdentifierHelper.split(identifier)
+					const result =
+						SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(
+							identifierParts[identifierParts.length - 1]
+						)
 					await vscode.window.showTextDocument(document)
+					vscode.window.showErrorMessage(
+						`${ERROR_SOURCE_NODE_NOT_FOUND} ${result ? result.name : identifier}`
+					)
+					console.error(
+						`${ERROR_SOURCE_NODE_NOT_FOUND} ${identifier}`
+					)
 				}
 			}
 		} catch (error) {
-			vscode.window.showErrorMessage(errorMessage)
+			vscode.window.showErrorMessage(`${ERROR_FILE_NOT_FOUND} ${fullPath}`)
 			console.error(error)
-			console.error(errorMessage)
 		}
 	}
 
