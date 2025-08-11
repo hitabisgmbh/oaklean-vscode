@@ -89,8 +89,8 @@ export default class TextDocumentController implements Disposable {
 
 	getSourceFileMetaData(
 		relativeWorkspacePath: UnifiedPath
-	): SourceFileMetaData | undefined {
-		return this.getSourceFileInformationOfFile(relativeWorkspacePath)?.sourceFileMetaData
+	): SourceFileMetaData | null {
+		return this.getSourceFileInformationOfFile(relativeWorkspacePath)?.sourceFileMetaData || null
 	}
 
 	reportPathChanged(event: ReportPathChangeEvent) {

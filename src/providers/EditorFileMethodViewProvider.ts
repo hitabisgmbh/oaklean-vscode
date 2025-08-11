@@ -88,13 +88,13 @@ export class EditorFileMethodViewProvider
 
 	getSourceFileMetaData() {
 		if (this.editor === undefined) {
-			return
+			return null
 		}
 		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
 			this.editor.document.fileName
 		)
 		if (relativeWorkspacePath === undefined) {
-			return
+			return null
 		}
 		return this._container.textDocumentController.getSourceFileMetaData(
 			relativeWorkspacePath
@@ -159,7 +159,7 @@ export class EditorFileMethodViewProvider
 
 	refresh() {
 		const sourceFileMetaData = this.getSourceFileMetaData()
-		if (sourceFileMetaData === undefined) {
+		if (sourceFileMetaData === null) {
 			this.postMessageToWebview({
 				command: EditorFileMethodViewProtocolCommands.clearMethodList
 			})

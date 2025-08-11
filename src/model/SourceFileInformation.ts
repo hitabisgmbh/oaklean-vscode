@@ -23,19 +23,22 @@ type SourceNodeMetaDataDirect = SourceNodeMetaData<
 >
 
 export class SourceFileInformation {
+	private _document: vscode.TextDocument
 	private _projectReport: ProjectReport
 	private _reportPath: UnifiedPath
 	// relative to the workspace root
 	private _relativeWorkspacePath: UnifiedPath
 	// the absolute file path is the path to the file on disk
 	private _absoluteFilePath: UnifiedPath
-	private _sourceFileMetaData: SourceFileMetaData | undefined
-	private _programStructureTree: ProgramStructureTree
 
-	private _sourceNodeMetaDataIndex: {
-		byLine:
-		| Map<number, SourceNodeMetaDataDirect[]>
-	} | undefined
+	// get calculated only on demand
+	private _sourceFileMetaData: SourceFileMetaData | undefined | null
+	private _programStructureTree: ProgramStructureTree | undefined
+	private _sourceNodeMetaDataIndex:
+		| {
+				byLine: Map<number, SourceNodeMetaDataDirect[]>
+		}
+		| undefined
 
 	constructor(
 		reportPath: UnifiedPath,
@@ -43,19 +46,11 @@ export class SourceFileInformation {
 		relativeWorkspacePath: UnifiedPath,
 		document: vscode.TextDocument
 	) {
+		this._document = document
 		this._reportPath = reportPath
 		this._projectReport = projectReport
 		this._relativeWorkspacePath = relativeWorkspacePath
 		this._absoluteFilePath = new UnifiedPath(document.fileName)
-		this._programStructureTree = TypescriptParser.parseSource(
-			this._absoluteFilePath,
-			document.getText()
-		)
-		this._sourceFileMetaData = SourceFileInformation.resolveSourceFileMetaData({
-			reportPath: this._reportPath,
-			projectReport: this._projectReport,
-			absoluteFilePath: this._absoluteFilePath
-		})
 	}
 
 	get sourceNodeMetaDataByLine() {
@@ -66,19 +61,21 @@ export class SourceFileInformation {
 		if (this._sourceNodeMetaDataIndex !== undefined) {
 			return this._sourceNodeMetaDataIndex
 		}
-		if (
-			this._sourceFileMetaData === undefined
-		) {
+		const sourceFileMetaData = this.sourceFileMetaData
+		if (sourceFileMetaData === null) {
 			return null
 		}
-		const sourceNodeMetaDataByLine = new Map<number, SourceNodeMetaDataDirect[]>()
-		for (const sourceNodeMetaData of this._sourceFileMetaData.functions.values()) {
+		const sourceNodeMetaDataByLine = new Map<
+			number,
+			SourceNodeMetaDataDirect[]
+		>()
+		for (const sourceNodeMetaData of sourceFileMetaData.functions.values()) {
 			const sourceNodeIndex = sourceNodeMetaData.getIndex()
 			if (sourceNodeIndex === undefined) {
 				continue
 			}
 			const locationOfFunction =
-				this._programStructureTree.sourceLocationOfIdentifier(
+				this.programStructureTree.sourceLocationOfIdentifier(
 					sourceNodeIndex.identifier
 				)
 			if (locationOfFunction === null) {
@@ -90,9 +87,9 @@ export class SourceFileInformation {
 			if (existing === undefined) {
 				existing = []
 				sourceNodeMetaDataByLine.set(
-				locationOfFunction.beginLoc.line - 1,
-				existing
-			)
+					locationOfFunction.beginLoc.line - 1,
+					existing
+				)
 			}
 			existing.push(sourceNodeMetaData)
 		}
@@ -110,11 +107,28 @@ export class SourceFileInformation {
 		return this._relativeWorkspacePath
 	}
 
-	get sourceFileMetaData(): SourceFileMetaData | undefined {
+	get sourceFileMetaData(): SourceFileMetaData | null {
+		if (this._sourceFileMetaData !== undefined) {
+			return this._sourceFileMetaData
+		}
+		this._sourceFileMetaData =
+			SourceFileInformation.resolveSourceFileMetaData({
+				reportPath: this._reportPath,
+				projectReport: this._projectReport,
+				absoluteFilePath: this._absoluteFilePath
+			}) || null
 		return this._sourceFileMetaData
 	}
 
 	get programStructureTree(): ProgramStructureTree {
+		if (this._programStructureTree !== undefined) {
+			return this._programStructureTree
+		}
+		this._programStructureTree = TypescriptParser.parseSource(
+			this._absoluteFilePath,
+			this._document.getText()
+		)
+
 		return this._programStructureTree
 	}
 
