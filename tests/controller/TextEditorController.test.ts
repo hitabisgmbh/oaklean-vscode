@@ -22,7 +22,8 @@ describe('TextEditorController', () => {
 		textEditorController = new TextEditorController(container)
 		mockEditor = {
 			document: {
-				fileName: '/path/to/workspace/file.ts'
+				fileName: '/path/to/workspace/file.ts',
+				uri: { scheme: 'file' }
 			},
 			setDecorations: jest.fn()
 		} as unknown as TextEditor
