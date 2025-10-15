@@ -6,7 +6,7 @@ import {
 	FilterViewProtocolCommands,
 	FilterViewProtocol_ChildToParent,
 	FilterViewProtocol_ParentToChild
-} from '../../protocols/filterViewProtocol'
+} from '../../protocols/FilterViewProtocol'
 
 declare const acquireVsCodeApi: any
 

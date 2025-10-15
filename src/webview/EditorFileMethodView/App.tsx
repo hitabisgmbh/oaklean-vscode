@@ -5,7 +5,7 @@ import {
 	EditorFileMethodViewProtocolCommands,
 	EditorFileMethodViewProtocol_ChildToParent,
 	EditorFileMethodViewProtocol_ParentToChild
-} from '../../protocols/editorFileMethodViewProtocol'
+} from '../../protocols/EditorFileMethodViewProtocol'
 import { ISourceFileMethodTree } from '../../types/model/SourceFileMethodTree'
 import { SensorValueRepresentation } from '../../types/sensorValueRepresentation'
 import { TreeViewHeader } from '../components/trees/MethodTree/TreeViewHeader'

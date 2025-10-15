@@ -4,7 +4,7 @@ import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
 	MethodViewProtocolCommands,
 	MethodViewProtocol_ParentToChild
-} from '../../protocols/methodViewProtocol'
+} from '../../protocols/MethodViewProtocol'
 import { ISourceFileMethodTree } from '../../types/model/SourceFileMethodTree'
 import { SensorValueRepresentation } from '../../types/sensorValueRepresentation'
 import TreeView from '../components/trees/Treeview'
