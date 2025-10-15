@@ -72,7 +72,7 @@ export function App() {
 							? ''
 							: SensorValueFormatHelper.formatSensorValueType(
 									props.sensorValueRepresentation
-							  )}
+								)}
 					</div>
 				}
 				rightSection={
@@ -121,7 +121,7 @@ export function App() {
 								sourceFileMethodTree: props.sourceFileMethodTree,
 								sensorValueRepresentation: props.sensorValueRepresentation,
 								postToProvider
-						  }
+							}
 						: undefined
 				}
 			/>
