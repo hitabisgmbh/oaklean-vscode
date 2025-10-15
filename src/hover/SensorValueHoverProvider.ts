@@ -1,66 +1,77 @@
-import * as vscode from 'vscode'
-import {
-	SourceNodeMetaData,
-	SourceNodeMetaDataType
-} from '@oaklean/profiler-core'
+import vscode, { Disposable } from 'vscode'
 
 import SensorValueHover from './SensorValueHover'
 
+import WorkspaceUtils from '../helper/WorkspaceUtils'
+import { Container } from '../container'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
 export class SensorValueHoverProvider implements vscode.HoverProvider {
-	private readonly hoverObjects: {
-		decoration: vscode.TextEditorDecorationType
-		decorationRange: vscode.Range
-		sourceNodeMetaData: SourceNodeMetaData<
-			| SourceNodeMetaDataType.SourceNode
-			| SourceNodeMetaDataType.LangInternalSourceNode
-		>
-	}[]
-	private _sensorValueRepresentation: SensorValueRepresentation
-	constructor(
-		hoverObjects: {
-			decoration: vscode.TextEditorDecorationType
-			decorationRange: vscode.Range
-			sourceNodeMetaData: SourceNodeMetaData<
-				| SourceNodeMetaDataType.SourceNode
-				| SourceNodeMetaDataType.LangInternalSourceNode
-			>
-		}[],
-		sensorValueRepresentation: SensorValueRepresentation
-	) {
-		this._sensorValueRepresentation = sensorValueRepresentation
-		this.hoverObjects = hoverObjects
+	private _container: Container
+	constructor(container: Container) {
+		this._container = container
 	}
+
 	provideHover(
 		document: vscode.TextDocument,
 		position: vscode.Position,
 		token: vscode.CancellationToken
 	): vscode.ProviderResult<vscode.Hover> {
-		const matchingDecoration = this.hoverObjects.find((decoration) => {
-			// TODO: Find out, why vscode.Range.contains work (decoration.decorationRange.contains(position))
-			// is not working
-			const startLine = decoration.decorationRange.start.line
-			const endLine = decoration.decorationRange.end.line
-			const startPosition = decoration.decorationRange.start.character
-			const endPosition = decoration.decorationRange.end.character
-
-			const line = position.line
-			const character = position.character
-
-			return (
-				line >= startLine &&
-				line <= endLine &&
-				((line === startLine && character >= startPosition) ||
-					(line === endLine && character <= endPosition))
-			)
-		})
-
-		if (matchingDecoration) {
-			return new SensorValueHover(
-				matchingDecoration.sourceNodeMetaData,
-				this._sensorValueRepresentation
-			).provideHover()
+		const enableLineAnnotations = this._container.storage.getWorkspace(
+			'enableLineAnnotations',
+			true
+		) as boolean
+		if (enableLineAnnotations === false) {
+			return
 		}
+		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
+			document.fileName
+		)
+
+		if (relativeWorkspacePath === undefined) {
+			return
+		}
+		const sourceFileInfo =
+			this._container.textDocumentController.getSourceFileInformationOfFile(
+				relativeWorkspacePath
+			)
+
+		if (
+			sourceFileInfo === undefined ||
+			sourceFileInfo.sourceNodeMetaDataByLine === undefined
+		) {
+			return
+		}
+		const line = position.line
+		const sourceNodeMetaDatas =
+			sourceFileInfo.sourceNodeMetaDataByLine.get(line)
+		if (sourceNodeMetaDatas === undefined || sourceNodeMetaDatas.length === 0) {
+			return
+		}
+		const sourceNodeMetaData = sourceNodeMetaDatas[0]
+
+		const sensorValueRepresentation = this._container.storage.getWorkspace(
+			'sensorValueRepresentation'
+		) as SensorValueRepresentation
+
+		return SensorValueHover.provideHover(
+			sourceNodeMetaData,
+			sensorValueRepresentation
+		)
+	}
+
+	static register(container: Container) {
+		const hoverProvider = new SensorValueHoverProvider(container)
+
+		return Disposable.from(
+			vscode.languages.registerHoverProvider(
+				{ scheme: 'file', language: 'javascript' },
+				hoverProvider
+			),
+			vscode.languages.registerHoverProvider(
+				{ scheme: 'file', language: 'typescript' },
+				hoverProvider
+			)
+		)
 	}
 }

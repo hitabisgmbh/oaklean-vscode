@@ -1,4 +1,4 @@
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import sinon from 'sinon'
 
 import { SourceFileMetaDataTreeProvider } from '../../../src/treeviews/SourceFileMetaDataTreeProvider'

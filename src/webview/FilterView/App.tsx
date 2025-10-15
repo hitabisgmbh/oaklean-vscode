@@ -3,7 +3,7 @@ import { VSCodeTextField } from '@vscode/webview-ui-toolkit/react'
 import './main.css'
 
 import {
-	FilterViewCommands,
+	FilterViewProtocolCommands,
 	FilterViewProtocol_ChildToParent,
 	FilterViewProtocol_ParentToChild
 } from '../../protocols/filterViewProtocol'
@@ -28,7 +28,7 @@ export function App() {
 		data: FilterViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case FilterViewCommands.renderFilterView:
+			case FilterViewProtocolCommands.renderFilterView:
 				setIncludedFilterPath(message.data.filePaths.includedFilterPath || '')
 				setExcludedFilterPath(message.data.filePaths.excludedFilterPath || '')
 				break
@@ -37,7 +37,7 @@ export function App() {
 
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
-		postToProvider({ command: FilterViewCommands.viewLoaded })
+		postToProvider({ command: FilterViewProtocolCommands.viewLoaded })
 
 		return () => {
 			window.removeEventListener('message', handleExtensionMessages)
@@ -57,7 +57,7 @@ export function App() {
 					setIncludedFilterPath(newVal)
 					debounceTimer = setTimeout(() => {
 						postToProvider({
-							command: FilterViewCommands.includedFilterPathEdited,
+							command: FilterViewProtocolCommands.includedFilterPathEdited,
 							includedFilterPath: newVal
 						})
 					}, DEBOUNCE_DELAY)
@@ -66,7 +66,7 @@ export function App() {
 					setExcludedFilterPath(newVal)
 					debounceTimer = setTimeout(() => {
 						postToProvider({
-							command: FilterViewCommands.excludedFilterPathEdited,
+							command: FilterViewProtocolCommands.excludedFilterPathEdited,
 							excludedFilterPath: newVal
 						})
 					}, DEBOUNCE_DELAY)

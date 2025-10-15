@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
-	EditorFileMethodViewCommands,
+	EditorFileMethodViewProtocolCommands,
 	EditorFileMethodViewProtocol_ChildToParent,
 	EditorFileMethodViewProtocol_ParentToChild
 } from '../../protocols/editorFileMethodViewProtocol'
@@ -23,6 +23,7 @@ function postToProvider(message: EditorFileMethodViewProtocol_ChildToParent) {
 }
 
 type Props = {
+	debugMode: boolean
 	sourceFileMethodTree: ISourceFileMethodTree
 	sensorValueRepresentation: SensorValueRepresentation
 }
@@ -34,13 +35,14 @@ export function App() {
 		data: EditorFileMethodViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case EditorFileMethodViewCommands.updateMethodList:
+			case EditorFileMethodViewProtocolCommands.updateMethodList:
 				setProps({
+					debugMode: message.data.debugMode,
 					sourceFileMethodTree: message.data.sourceFileMethodTree,
 					sensorValueRepresentation: message.data.sensorValueRepresentation
 				})
 				break
-			case EditorFileMethodViewCommands.clearMethodList:
+			case EditorFileMethodViewProtocolCommands.clearMethodList:
 				setProps(undefined)
 				break
 		}
@@ -52,7 +54,9 @@ export function App() {
 
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
-		postToProvider({ command: EditorFileMethodViewCommands.initMethods })
+		postToProvider({
+			command: EditorFileMethodViewProtocolCommands.initMethods
+		})
 
 		return () => {
 			window.removeEventListener('message', handleExtensionMessages)
@@ -68,12 +72,27 @@ export function App() {
 							? ''
 							: SensorValueFormatHelper.formatSensorValueType(
 									props.sensorValueRepresentation
-							)}
+							  )}
 					</div>
 				}
 				rightSection={
 					<>
-						<SortButton sortDirection={sortDirection} setSortDirection={setSortDirection}/>
+						{props !== undefined && props.debugMode ? (
+							<CodiconButton
+								codiconName={'codicon-file-text highlighted'}
+								onClick={() => {
+									postToProvider({
+										command:
+											EditorFileMethodViewProtocolCommands.showPathIndex
+									})
+								}}
+								title="Show index of the source file"
+							></CodiconButton>
+						) : undefined}
+						<SortButton
+							sortDirection={sortDirection}
+							setSortDirection={setSortDirection}
+						/>
 						<CodiconButton
 							codiconName={flatMode ? 'codicon-list-flat' : 'codicon-list-tree'}
 							onClick={() => {
@@ -98,11 +117,11 @@ export function App() {
 				data={
 					props !== undefined
 						? {
-								filePath: '',
+								relativePath: '',
 								sourceFileMethodTree: props.sourceFileMethodTree,
 								sensorValueRepresentation: props.sensorValueRepresentation,
 								postToProvider
-						}
+						  }
 						: undefined
 				}
 			/>

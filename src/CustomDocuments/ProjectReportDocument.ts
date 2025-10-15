@@ -1,5 +1,5 @@
 import { ProjectReport, UnifiedPath } from '@oaklean/profiler-core'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 export class ProjectReportDocument
 	extends vscode.Disposable

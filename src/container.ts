@@ -13,17 +13,20 @@ import ChangeSortDirectionCommands from './commands/ChangeSortDirectionCommands'
 import ThemeColorViewerCommands from './commands/ThemeColorViewerCommands'
 import SettingsCommand from './commands/SettingsCommand'
 import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction } from './commands/ToggleLineAnnotationCommands'
-import { MethodViewProvider } from './providers/MethodViewProvider'
-import { FilterViewProvider } from './providers/FilterViewProvider'
+import { MethodViewProvider } from './WebViewProviders/MethodViewProvider'
+import { FilterViewProvider } from './WebViewProviders/FilterViewProvider'
 import SelectProfileCommand from './commands/SelectProfile'
 import ProfileHelper from './helper/ProfileHelper'
 import { SortDirection } from './types/sortDirection'
-import { ReportEditorProvider } from './providers/ReportEditorProvider'
-import { EditorFileMethodViewProvider } from './providers/EditorFileMethodViewProvider'
-import { GraphicalViewProvider } from './providers/GraphicalViewProvider'
+import { ReportEditorProvider } from './CustomEditorProviders/ReportEditorProvider'
+import { JsonTextDocumentContentProvider } from './TextDocumentContentProvider/JsonTextDocumentContentProvider'
+import { EditorFileMethodViewProvider } from './WebViewProviders/EditorFileMethodViewProvider'
+import { GraphicalViewProvider } from './WebViewProviders/GraphicalViewProvider'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from './types/sensorValueRepresentation'
 import ReportBackendStorageController from './controller/ReportBackendStorageController'
 import WorkspaceUtils from './helper/WorkspaceUtils'
+import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
+import { SensorValueHoverProvider } from './hover/SensorValueHoverProvider'
 
 export class Container {
 	static #instance: Container | undefined
@@ -91,6 +94,11 @@ export class Container {
 		return this._selectProfileCommand
 	}
 
+	private readonly _openSourceLocationCommand: OpenSourceLocationCommand
+	get openSourceLocationCommand() {
+		return this._openSourceLocationCommand
+	}
+
 	private readonly _changeSortDirectionAscToDescCommand: ChangeSortDirectionCommands
 	get changeSortDirectionAscToDescCommand() {
 		return this._changeSortDirectionAscToDescCommand
@@ -156,6 +164,11 @@ export class Container {
 		return this._reportEditorProvider
 	}
 
+	private readonly _jsonTextDocumentContentProvider: JsonTextDocumentContentProvider
+	get jsonTextDocumentContentProvider() {
+		return this._jsonTextDocumentContentProvider
+	}
+
 	private constructor(
 		context: ExtensionContext,
 		storage: Storage
@@ -170,6 +183,10 @@ export class Container {
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
+
+		// Hover Provider
+		this.context.subscriptions.push(SensorValueHoverProvider.register(this))
+
 		// TreeViews
 		this.context.subscriptions.push(this._treeDataProvider = new SourceFileMetaDataTreeProvider(this))
 		this.context.subscriptions.push(
@@ -191,6 +208,8 @@ export class Container {
 		this.context.subscriptions.push(this._showThemeColorViewerCommand.register())
 		this.context.subscriptions.push(this._selectReportCommand = new SelectReport(this))
 		this.context.subscriptions.push(this._selectReportCommand.register())
+		this.context.subscriptions.push(this._openSourceLocationCommand = new OpenSourceLocationCommand(this))
+		this.context.subscriptions.push(this._openSourceLocationCommand.register())
 
 		this.context.subscriptions.push(
 			this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
@@ -266,15 +285,10 @@ export class Container {
 				FilterViewProvider.viewType, this._filterViewProvider
 			))
 		this.context.subscriptions.push(this._reportEditorProvider = new ReportEditorProvider(this))
+		this.context.subscriptions.push(this._reportEditorProvider.register())
+
 		this.context.subscriptions.push(
-			vscode.window.registerCustomEditorProvider(
-				'oaklean.oak', this._reportEditorProvider, {
-					webviewOptions: {
-						retainContextWhenHidden: true
-					},
-					supportsMultipleEditorsPerDocument: false
-				}
-			)
+			this._jsonTextDocumentContentProvider = new JsonTextDocumentContentProvider(this)
 		)
 
 		this.context.subscriptions.push(

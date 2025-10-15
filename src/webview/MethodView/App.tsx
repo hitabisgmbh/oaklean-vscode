@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { MethodTree } from '../components/trees/MethodTree/MethodTree'
 import {
-	MethodViewCommands,
+	MethodViewProtocolCommands,
 	MethodViewProtocol_ParentToChild
 } from '../../protocols/methodViewProtocol'
 import { ISourceFileMethodTree } from '../../types/model/SourceFileMethodTree'
@@ -39,13 +39,13 @@ export function App() {
 		data: MethodViewProtocol_ParentToChild
 	}) {
 		switch (message.data.command) {
-			case MethodViewCommands.updateMethodList:
+			case MethodViewProtocolCommands.updateMethodList:
 				setProps({
 					methodTrees: message.data.methodTrees,
 					sensorValueRepresentation: message.data.sensorValueRepresentation
 				})
 				break
-			case MethodViewCommands.clearMethodList:
+			case MethodViewProtocolCommands.clearMethodList:
 				setProps(undefined)
 				break
 		}
@@ -53,7 +53,7 @@ export function App() {
 
 	useEffect(() => {
 		window.addEventListener('message', handleExtensionMessages)
-		postToProvider({ command: MethodViewCommands.initMethods })
+		postToProvider({ command: MethodViewProtocolCommands.initMethods })
 
 		return () => {
 			window.removeEventListener('message', handleExtensionMessages)
@@ -97,7 +97,7 @@ export function App() {
 			/>
 			{props === undefined
 				? undefined
-				: Object.entries(props.methodTrees || {}).map(([path, entry]) => {
+				: Object.entries(props.methodTrees || {}).map(([relativePath, entry]) => {
 						if (entry.tree.pioscChildrenCount === 0 && !showNPIOSC) {
 							return undefined
 						}
@@ -109,7 +109,7 @@ export function App() {
 									flatMode={flatMode}
 									showNPIOSC={showNPIOSC}
 									data={{
-										filePath: path,
+										relativePath,
 										sourceFileMethodTree: entry.tree,
 										sensorValueRepresentation: props.sensorValueRepresentation,
 										postToProvider

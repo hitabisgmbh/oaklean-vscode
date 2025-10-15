@@ -9,9 +9,9 @@ import './MethodTree.css'
 import { MethodTreeEntry } from './MethodTreeEntry'
 
 import {
-	EditorFileMethodViewCommands,
-	EditorFileMethodViewProtocol_ChildToParent
-} from '../../../../protocols/editorFileMethodViewProtocol'
+	OpenSourceLocationProtocolCommands,
+	OpenSourceLocationProtocol_ChildToParent
+} from '../../../../protocols/OpenSourceLocationProtocol'
 import { calcOrReturnSensorValue } from '../../../../helper/FormulaHelper'
 import { SensorValueFormatHelper } from '../../../../helper/SensorValueFormatHelper'
 import TreeView from '../Treeview'
@@ -51,18 +51,38 @@ const IDENTIFIER_TYPE_CODICONS: Record<ProgramStructureTreeType, string> = {
 	[ProgramStructureTreeType.IfStatement]: 'codicon-symbol-structure',
 	[ProgramStructureTreeType.IfThenStatement]: 'codicon-symbol-structure',
 	[ProgramStructureTreeType.IfElseStatement]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.WhileStatement]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.ForStatement]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.TryStatement]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.TryBlock]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.CatchClause]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.FinallyBlock]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.Block]: 'codicon-symbol-structure',
+	[ProgramStructureTreeType.ClassStaticBlockDeclaration]: 'codicon-symbol-method',
+	[ProgramStructureTreeType.SetAccessorDeclaration]: 'codicon-symbol-method',
+	[ProgramStructureTreeType.GetAccessorDeclaration]: 'codicon-symbol-method',
 	[ProgramStructureTreeType.SwitchStatement]: 'codicon-symbol-structure',
 	[ProgramStructureTreeType.SwitchCaseClause]: 'codicon-symbol-structure',
-	[ProgramStructureTreeType.ObjectLiteralExpression]: 'codicon-symbol-object'
+	[ProgramStructureTreeType.ObjectLiteralExpression]: 'codicon-symbol-object',
+	[ProgramStructureTreeType.ModuleDeclaration]: 'codicon-symbol-module'
+}
+
+function codiconByIdentifierType(
+	type: ProgramStructureTreeType | undefined
+): string {
+	if (type !== undefined) {
+		return IDENTIFIER_TYPE_CODICONS[type] || 'codicon-question'
+	}
+	return 'codicon-question'
 }
 
 export interface MethodTreeProps {
 	data?: {
-		filePath: string
+		relativePath: string
 		sourceFileMethodTree: ISourceFileMethodTree
 		sensorValueRepresentation: SensorValueRepresentation
 		postToProvider: (
-			message: EditorFileMethodViewProtocol_ChildToParent
+			message: OpenSourceLocationProtocol_ChildToParent
 		) => void
 	}
 	showNPIOSC: boolean
@@ -157,10 +177,9 @@ export function MethodTree({
 			SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(identifierPart)
 
 		const labelText = result?.name || 'UNKNOWN'
-		const labelIcon =
-			result?.type !== undefined
-				? IDENTIFIER_TYPE_CODICONS[result.type]
-				: 'codicon-question'
+		const labelIcon = codiconByIdentifierType(
+			result?.type
+		)
 
 		let sensorValueString: string | undefined = undefined
 		let sensorValueUnit: string | undefined = undefined
@@ -192,8 +211,8 @@ export function MethodTree({
 			<MethodTreeEntry
 				onClick={() => {
 					data?.postToProvider({
-						filePath: data.filePath,
-						command: EditorFileMethodViewCommands.open,
+						relativePath: data.relativePath,
+						command: OpenSourceLocationProtocolCommands.openSourceLocation,
 						identifier: identifierRoute.join('.')
 					})
 				}}

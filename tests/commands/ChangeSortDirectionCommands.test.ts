@@ -1,5 +1,5 @@
 import '../shared/mocks/vscode.mock'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import ChangeSortDirectionCommands, { ContextOptions, CommandIdentifiers } from '../../src/commands/ChangeSortDirectionCommands'
 import { Container } from '../../src/container'

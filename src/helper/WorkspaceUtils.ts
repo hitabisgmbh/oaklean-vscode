@@ -3,12 +3,50 @@ import { sync as globSync } from 'glob'
 import { PathUtils, UnifiedPath, ProfilerConfig } from '@oaklean/profiler-core'
 import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constants/config'
 
+/*
+ * WorkspaceUtils provides utility functions to interact with the workspace,
+ * such as getting the workspace directory, resolving paths, resolving in-report paths via configuration files.
+ * 
+ * terminology:
+ * - Workspace: The root directory of the project opened in VSCode.
+ * - Workspace Directory: The directory where the workspace is located.
+ * - Relative Workspace Path: A path relative to the workspace directory.
+ * - Relative Path: A path relative to the config of the current project report.
+ * - Full File Path: The absolute path to a file on disk.
+ */
+
 export default class WorkspaceUtils {
 	static getWorkspaceDir(): UnifiedPath | undefined {
 		if (vscode.workspace.workspaceFolders !== undefined) {
 			return new UnifiedPath(vscode.workspace.workspaceFolders[0].uri.fsPath)
 		}
 		return undefined
+	}
+
+	static getRelativeWorkspacePath(absolutePath: UnifiedPath | string): UnifiedPath | undefined {
+		const workspaceDir = this.getWorkspaceDir()
+		if (workspaceDir === undefined) {
+			return undefined
+		}
+		return workspaceDir.pathTo(absolutePath)
+	}
+
+	static getFullFilePathFromRelativeWorkspacePath(
+		relativeWorkspacePath: UnifiedPath | string
+	): UnifiedPath | undefined {
+		const workspaceDir = this.getWorkspaceDir()
+		if (workspaceDir === undefined) {
+			return undefined
+		}
+		return workspaceDir.join(relativeWorkspacePath)
+	}
+
+	static getRelativeWorkspacePathFromRelativePath(
+		config: ProfilerConfig,
+		relativePath: UnifiedPath | string
+	): UnifiedPath | undefined {
+		const absolutePath = WorkspaceUtils.getFullFilePath(config, relativePath)
+		return WorkspaceUtils.getRelativeWorkspacePath(absolutePath)
 	}
 
 	static getWorkspaceProfilerConfigPaths(): UnifiedPath[] {
@@ -46,8 +84,12 @@ export default class WorkspaceUtils {
 		return result.map((reportPath) => new UnifiedPath(reportPath))
 	}
 
-	static getFullFilePath(config: ProfilerConfig, filePath: string): UnifiedPath {
+	static getFullFilePath(config: ProfilerConfig, filePath: UnifiedPath | string): UnifiedPath {
 		return config.getRootDir().join(filePath)
+	}
+
+	static getRelativeFilePath(config: ProfilerConfig, filePath: UnifiedPath | string): UnifiedPath {
+		return config.getRootDir().pathTo(filePath)
 	}
 
 	static resolveConfigFromFile(configPath: UnifiedPath): {

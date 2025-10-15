@@ -1,10 +1,10 @@
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import { getUri } from '../utilities/getUri'
 import { getNonce } from '../utilities/getNonce'
 import { Container } from '../container'
 import {
-	SettingsViewCommands,
+	SettingsViewProtocolCommands,
 	SettingsViewProtocol_ChildToParent,
 	SettingsViewProtocol_ParentToChild
 } from '../protocols/SettingsViewProtocol'
@@ -81,19 +81,19 @@ export class SettingsViewPanel {
 
 	receiveMessageFromWebview(message: SettingsViewProtocol_ChildToParent) {
 		switch (message.command) {
-			case SettingsViewCommands.viewLoaded:
+			case SettingsViewProtocolCommands.viewLoaded:
 				this.loadProfiles()
 				break
-			case SettingsViewCommands.selectProfile:
+			case SettingsViewProtocolCommands.selectProfile:
 				this.selectProfile(message.profileName)
 				break
-			case SettingsViewCommands.updateProfile:
+			case SettingsViewProtocolCommands.updateProfile:
 				this.updateProfile(message.profile)
 				break
-			case SettingsViewCommands.addProfile:
+			case SettingsViewProtocolCommands.addProfile:
 				this.addProfile(message.profile)
 				break
-			case SettingsViewCommands.deleteProfile:
+			case SettingsViewProtocolCommands.deleteProfile:
 				this.deleteProfile(
 					message.profileName
 				)
@@ -179,7 +179,7 @@ export class SettingsViewPanel {
 
 	loadProfiles() {
 		this.postMessageToWebview({
-			command: SettingsViewCommands.loadProfiles,
+			command: SettingsViewProtocolCommands.loadProfiles,
 			profile: this._container.profileHelper.currentProfile,
 			profiles: this._container.profileHelper.profiles
 		})
@@ -188,7 +188,7 @@ export class SettingsViewPanel {
 	private profileChanges(event: ProfileChangeEvent) {
 		const profiles = this._container.profileHelper.profiles
 		this.postMessageToWebview({
-			command: SettingsViewCommands.loadProfiles,
+			command: SettingsViewProtocolCommands.loadProfiles,
 			profile: event.profile,
 			profiles: profiles
 		})
@@ -239,7 +239,7 @@ export class SettingsViewPanel {
 			this.selectProfile(profile.name)
 			if (SettingsViewPanel.currentPanel) {
 				SettingsViewPanel.currentPanel.postMessageToWebview({
-					command: SettingsViewCommands.clearInput
+					command: SettingsViewProtocolCommands.clearInput
 				})
 			}
 		} catch (error: any) {

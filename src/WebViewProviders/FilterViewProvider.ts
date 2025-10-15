@@ -1,10 +1,10 @@
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import {
-	FilterViewCommands,
+	FilterViewProtocolCommands,
 	FilterViewProtocol_ChildToParent,
 	FilterViewProtocol_ParentToChild
 } from '../protocols/FilterViewProtocol'
@@ -54,7 +54,7 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 			''
 
 		this.postMessageToWebview({
-			command: FilterViewCommands.renderFilterView,
+			command: FilterViewProtocolCommands.renderFilterView,
 			filePaths: {
 				includedFilterPath,
 				excludedFilterPath
@@ -63,17 +63,17 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	receiveMessageFromWebview(message: FilterViewProtocol_ChildToParent) {
-		if (message.command === FilterViewCommands.viewLoaded) {
+		if (message.command === FilterViewProtocolCommands.viewLoaded) {
 			this.refresh()
 			}
 
-		if (message.command === FilterViewCommands.includedFilterPathEdited) {
+		if (message.command === FilterViewProtocolCommands.includedFilterPathEdited) {
 			this._container.storage.storeWorkspace(
 				'includedFilterPath',
 				message.includedFilterPath
 			)
 		}
-		if (message.command === FilterViewCommands.excludedFilterPathEdited) {
+		if (message.command === FilterViewProtocolCommands.excludedFilterPathEdited) {
 			this._container.storage.storeWorkspace(
 				'excludedFilterPath',
 				message.excludedFilterPath

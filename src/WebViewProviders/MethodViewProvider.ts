@@ -1,21 +1,23 @@
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import {
-	SourceNodeIdentifier_string,
-	UnifiedPath
+	SourceNodeIdentifier_string
 } from '@oaklean/profiler-core'
 
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
 import {
-	MethodViewCommands,
+	MethodViewProtocolCommands,
 	MethodViewProtocol_ChildToParent,
 	MethodViewProtocol_ParentToChild
 } from '../protocols/MethodViewProtocol'
-import WorkspaceUtils from '../helper/WorkspaceUtils'
 import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
+import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
+import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
+import { OpenSourceLocationProtocolCommands } from '../protocols/OpenSourceLocationProtocol'
+import WorkspaceUtils from '../helper/WorkspaceUtils'
 
 export class MethodViewProvider implements vscode.WebviewViewProvider {
 	private subscriptions: vscode.Disposable[] = []
@@ -64,11 +66,31 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	receiveMessageFromWebview(message: MethodViewProtocol_ChildToParent) {
-		if (message.command === MethodViewCommands.open) {
+		if (message.command === OpenSourceLocationProtocolCommands.openSourceLocation) {
 			const identifier = message.identifier
-			const filePath = message.filePath
-			this.openMethodInEditor(identifier, filePath)
-		} else if (message.command === MethodViewCommands.initMethods) {
+			const relativePath = message.relativePath
+
+			const config = this._container.textDocumentController.config
+			if (config === undefined) {
+				return
+			}
+			const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePathFromRelativePath(
+				config,
+				relativePath
+			)
+			if (relativeWorkspacePath === undefined) {
+				return
+			}
+			OpenSourceLocationCommand.execute(
+				{
+					command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
+					args: {
+						relativeWorkspacePath: relativeWorkspacePath.toString(),
+						sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
+					}
+				}
+			)
+		} else if (message.command === MethodViewProtocolCommands.initMethods) {
 			this.refresh()
 		}
 	}
@@ -86,60 +108,6 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 
 	public postMessageToWebview(message: MethodViewProtocol_ParentToChild) {
 		this._view?.webview.postMessage(message)
-	}
-
-	async openMethodInEditor(identifier: string, filePath: string) {
-		const unifiedFilePath = new UnifiedPath(filePath)
-		const absolutePath = new UnifiedPath(filePath)
-		const config = this._container.textDocumentController.config
-		if (!config) {
-			return
-		}
-		const fullPath = WorkspaceUtils.getFullFilePath(config, filePath)
-		const uri = vscode.Uri.file(fullPath.toString())
-		const errorMessage = `Could not find file: ${filePath}`
-		try {
-			if (absolutePath) {
-				const document = await vscode.workspace.openTextDocument(uri)
-
-				if (document) {
-					const programStructureTreeOfFile =
-						this._container.textDocumentController.getProgramStructureTreeOfFile(
-							unifiedFilePath
-						)
-					let position
-					if (programStructureTreeOfFile) {
-						const sourceIdentifierString = identifier.replace(
-							/"/g,
-							''
-						) as SourceNodeIdentifier_string
-						const loc = programStructureTreeOfFile.sourceLocationOfIdentifier(
-							sourceIdentifierString
-						)
-						if (loc) {
-							position = new vscode.Position(
-								loc.beginLoc.line - 1,
-								loc.beginLoc.column
-							)
-						}
-					}
-					if (position) {
-						await vscode.window.showTextDocument(document, {
-							selection: new vscode.Range(position, position)
-						})
-					} else {
-						await vscode.window.showTextDocument(document)
-					}
-				}
-			} else {
-				console.error(errorMessage)
-				vscode.window.showErrorMessage(errorMessage)
-			}
-		} catch (error) {
-			vscode.window.showErrorMessage(errorMessage)
-			console.error(error)
-			console.error(errorMessage)
-		}
 	}
 
 	refresh() {
@@ -162,10 +130,10 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			}
 		}
 		this.postMessageToWebview({
-			command: MethodViewCommands.clearMethodList
+			command: MethodViewProtocolCommands.clearMethodList
 		})
 		this.postMessageToWebview({
-			command: MethodViewCommands.updateMethodList,
+			command: MethodViewProtocolCommands.updateMethodList,
 			methodTrees: sourceFileMethodTrees,
 			sensorValueRepresentation
 		})
