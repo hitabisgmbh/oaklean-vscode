@@ -315,6 +315,7 @@
 		"webpack-node-externals": "^3.0.0"
 	},
 	"dependencies": {
+		"@oaklean/profiler-core": "^0.1.5",
 		"@vscode/codicons": "^0.0.35",
 		"@vscode/webview-ui-toolkit": "^1.4.0",
 		"glob": "^10.3.12",
