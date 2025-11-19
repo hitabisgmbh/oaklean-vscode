@@ -8,7 +8,6 @@
 			"ES2020"
 		],
 		"sourceMap": true,
-		"moduleResolution": "node",
 		"jsx": "react-jsx",
 		"strict": true, /* enable all strict type-checking options */
 		"esModuleInterop": true,

@@ -268,12 +268,16 @@ export class SourceFileMetaDataTreeProvider implements vscode.TreeDataProvider<S
 	applyFilter() {
 		const includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
 		const excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
-		this.sourceFileMetaDataTree = this._originalSourceFileMetaDataTree?.filter(
-			includedFilterPath,
-			excludedFilterPath
-		).node || undefined
-		this.valueRepresentation(this.sensorValueRepresentation)
-		this.rerender()
+		if (this.container.textDocumentController.projectReport !== undefined) {
+			this.sourceFileMetaDataTree = this._originalSourceFileMetaDataTree?.filter(
+				this.container.textDocumentController.projectReport.asSourceNodeGraph(),
+				// true,
+				includedFilterPath,
+				excludedFilterPath
+			).node || undefined
+			this.valueRepresentation(this.sensorValueRepresentation)
+			this.rerender()
+		}
 	}
 
 	rerender() {
