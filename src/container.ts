@@ -21,6 +21,7 @@ import { SortDirection } from './types/sortDirection'
 import { ReportEditorProvider } from './CustomEditorProviders/ReportEditorProvider'
 import { JsonTextDocumentContentProvider } from './TextDocumentContentProvider/JsonTextDocumentContentProvider'
 import { EditorFileMethodViewProvider } from './WebViewProviders/EditorFileMethodViewProvider'
+import { EditorFileMethodReferenceViewProvider } from './WebViewProviders/EditorFileMethodReferenceViewProvider'
 import { GraphicalViewProvider } from './WebViewProviders/GraphicalViewProvider'
 import { SensorValueRepresentation, defaultSensorValueRepresentation } from './types/sensorValueRepresentation'
 import ReportBackendStorageController from './controller/ReportBackendStorageController'
@@ -146,6 +147,11 @@ export class Container {
 	private readonly _editorFileMethodViewProvider: EditorFileMethodViewProvider
 	get editorFileMethodViewProvider() {
 		return this._editorFileMethodViewProvider
+	}
+
+	private readonly _editorFileMethodReferenceViewProvider: EditorFileMethodReferenceViewProvider
+	get editorFileMethodReferenceViewProvider() {
+		return this._editorFileMethodReferenceViewProvider
 	}
 
 	private readonly _graphicalViewProvider: GraphicalViewProvider
@@ -310,6 +316,14 @@ export class Container {
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				EditorFileMethodViewProvider.viewType, this._editorFileMethodViewProvider
+			))
+
+		this.context.subscriptions.push(
+			this._editorFileMethodReferenceViewProvider = new EditorFileMethodReferenceViewProvider(context.extensionUri, this)
+		)
+		this.context.subscriptions.push(
+			vscode.window.registerWebviewViewProvider(
+				EditorFileMethodReferenceViewProvider.viewType, this._editorFileMethodReferenceViewProvider
 			))
 
 		this.context.subscriptions.push(
