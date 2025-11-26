@@ -1,26 +1,19 @@
 import vscode from 'vscode'
-import { SourceNodeIdentifier_string } from '@oaklean/profiler-core'
-import { TextEditor } from 'vscode'
 
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
 import { Container } from '../container'
-import WorkspaceUtils from '../helper/WorkspaceUtils'
-import { DEBUG_MODE } from '../constants/app'
-import {
-	TextEditorChangeEvent,
-	TextEditorsChangeVisibilityEvent
-} from '../helper/EventHandler'
 import {
 	EditorFileMethodReferenceViewProtocolCommands,
 	EditorFileMethodReferenceViewProtocol_ChildToParent,
 	EditorFileMethodReferenceViewProtocol_ParentToChild
 } from '../protocols/EditorFileMethodReferenceViewProtocol'
-import { OpenSourceLocationProtocolCommands } from '../protocols/OpenSourceLocationProtocol'
-import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
-import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
-import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
-import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
+import {
+	TextEditorChangeEvent,
+	TextEditorsChangeVisibilityEvent
+} from '../helper/EventHandler'
+import path from 'path'
+
 export class EditorFileMethodReferenceViewProvider
 	implements vscode.WebviewViewProvider {
 	private subscriptions: vscode.Disposable[] = []
@@ -28,27 +21,20 @@ export class EditorFileMethodReferenceViewProvider
 	public static readonly viewType = 'editorFileMethodReferenceView'
 	private _view?: vscode.WebviewView
 	_container: Container
-	editor: TextEditor | undefined
+	editor: vscode.TextEditor | undefined
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
 		container: Container
 	) {
 		this._container = container
-		this.subscriptions = [
-			this._container.eventHandler.onTextEditorChange(
-				this.textEditorChanged.bind(this)
-			),
-			this._container.eventHandler.onTextEditorsChangeVisibility(
-				this.onTextEditorsChangeVisibility.bind(this)
-			),
-			this._container.eventHandler.onSelectedSensorValueTypeChange(
-				this.refresh.bind(this)
-			),
-			this._container.eventHandler.onReportLoaded(this.refresh.bind(this)),
-			this._container.eventHandler.onWebpackRecompile(
-				this.hardRefresh.bind(this)
-			)
-		]
+		// In dev, refresh the view when webpack recompiles the webview bundle
+		this.subscriptions = [this._container.eventHandler.onWebpackRecompile(
+			this.hardRefresh.bind(this)
+		), this._container.eventHandler.onTextEditorChange(
+			this.textEditorChanged.bind(this)
+		), this._container.eventHandler.onTextEditorsChangeVisibility(
+			this.onTextEditorsChangeVisibility.bind(this)
+		)]
 	}
 
 	dispose() {
@@ -83,122 +69,75 @@ export class EditorFileMethodReferenceViewProvider
 			webviewView.webview,
 			this._extensionUri
 		)
-	}
-
-	getSourceFileMetaData() {
-		if (this.editor === undefined) {
-			return null
-		}
-		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
-			this.editor.document.fileName
-		)
-		if (relativeWorkspacePath === undefined) {
-			return null
-		}
-		return this._container.textDocumentController.getSourceFileMetaData(
-			relativeWorkspacePath
-		)
+		this.editor = vscode.window.activeTextEditor
+		this.sendFileName()
 	}
 
 	receiveMessageFromWebview(
 		message: EditorFileMethodReferenceViewProtocol_ChildToParent
 	) {
-		switch (message.command) {
-			case OpenSourceLocationProtocolCommands.openSourceLocation:
-				{
-					const identifier = message.identifier
-					if (this.editor !== undefined) {
-						const relativeWorkspacePath =
-							WorkspaceUtils.getRelativeWorkspacePath(
-								this.editor.document.fileName
-							)
-						if (relativeWorkspacePath === undefined) {
-							return
-						}
-						OpenSourceLocationCommand.execute({
-							command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
-							args: {
-								relativeWorkspacePath: relativeWorkspacePath.toString(),
-								sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
-							}
-						})
-					}
-				} break
-			case EditorFileMethodReferenceViewProtocolCommands.initMethods:
-				this.refresh()
-				break
-			case EditorFileMethodReferenceViewProtocolCommands.showPathIndex: {
-				if (this.editor === undefined) {
-					return
-				}
-				const sourceFileMetaData = this.getSourceFileMetaData()
-				if (sourceFileMetaData === null) {
-					return
-				}
-
-				this._container.jsonTextDocumentContentProvider.openFileJsonReadonly(
-					this.editor.document.uri,
-					JSON.stringify(sourceFileMetaData.pathIndex, null, 2)
-				)
-			} break
-			default:
-				break
+		if (message.command === EditorFileMethodReferenceViewProtocolCommands.closeActiveFile) {
+			void this.closeActiveFile()
+		} else if (message.command === EditorFileMethodReferenceViewProtocolCommands.requestFileName) {
+			this.sendFileName()
 		}
-	}
-
-	public postMessageToWebview(
-		message: EditorFileMethodReferenceViewProtocol_ParentToChild
-	) {
-		this._view?.webview.postMessage(message)
-	}
-
-	onTextEditorsChangeVisibility(event: TextEditorsChangeVisibilityEvent) {
-		if (event.editors.length === 0) {
-			this.editor = undefined
-			this.refresh()
-		}
-	}
-
-	textEditorChanged(event: TextEditorChangeEvent) {
-		this.setEditor(event.editor)
-	}
-
-	setEditor(editor: TextEditor) {
-		this.editor = editor
-		this.refresh()
 	}
 
 	hardRefresh() {
 		if (this._view === undefined) {
 			return
 		}
+		// Rebuild the HTML so the webview picks up the latest assets
 		this._view.webview.html = this._getHtmlForWebview(
 			this._view.webview,
 			this._extensionUri
 		)
-		this.refresh()
+		this.sendFileName()
 	}
 
-	refresh() {
-		const sourceFileMetaData = this.getSourceFileMetaData()
-		if (sourceFileMetaData === null) {
-			this.postMessageToWebview({
-				command: EditorFileMethodReferenceViewProtocolCommands.clearMethodList
-			})
+	// When the active text editor changes, track it and push the new name
+	textEditorChanged(event: TextEditorChangeEvent) {
+		this.editor = event.editor
+		this.sendFileName()
+	}
+
+	// When visible editors change (e.g., last editor closed), update tracking and name
+	onTextEditorsChangeVisibility(event: TextEditorsChangeVisibilityEvent) {
+		if (event.editors.length === 0) {
+			this.editor = undefined
+		} else {
+			this.editor = vscode.window.activeTextEditor
+		}
+		this.sendFileName()
+	}
+
+	private sendFileName() {
+		// If the webview isn't ready, there's nowhere to send the update
+		if (this._view === undefined) {
 			return
 		}
-		const sourceFileMethodTree =
-			SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
+		// Use the active editor's file name , or empty string when none
+		const fileName =
+			this.editor?.document?.fileName !== undefined
+				? path.basename(this.editor.document.fileName)
+				: ''
 
-		const sensorValueRepresentation = this._container.storage.getWorkspace(
-			'sensorValueRepresentation'
-		) as SensorValueRepresentation
-		this.postMessageToWebview({
-			debugMode: DEBUG_MODE,
-			command: EditorFileMethodReferenceViewProtocolCommands.updateMethodList,
-			sourceFileMethodTree: sourceFileMethodTree.toJSON(),
-			sensorValueRepresentation
-		})
+		// Build the protocol message and post it to the webview
+		const message: EditorFileMethodReferenceViewProtocol_ParentToChild = {
+			command: EditorFileMethodReferenceViewProtocolCommands.updateFileName,
+			fileName 
+		}
+		this._view.webview.postMessage(message)
+	}
+
+	// Closes the currently active editor tab
+	private async closeActiveFile() {
+		try {
+			
+			await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+		} catch (error) {
+			console.error('Failed to close active editor file from reference view', error)
+		}
 	}
 
 	private _getHtmlForWebview(

@@ -187,6 +187,7 @@ export class EditorFileMethodViewProvider
 			})
 			return
 		}
+		
 		const sourceFileMethodTree =
 			SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
 
