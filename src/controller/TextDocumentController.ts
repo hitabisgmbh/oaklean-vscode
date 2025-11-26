@@ -107,7 +107,8 @@ export default class TextDocumentController implements Disposable {
 		if (this.projectReport) {
 			try {
 				this._sourceFileMetaDataTree = SourceFileMetaDataTree.fromProjectReport(this.projectReport)
-				this._totalAndMaxMetaData = this._sourceFileMetaDataTree.totalAggregatedSourceMetaData
+				//this._sourceFileMetaDataTree.totalAggregatedSourceMetaData
+				this._totalAndMaxMetaData = this.projectReport.totalAndMaxMetaData()
 				for (const sourceFileInformation of this.sourceFileInformationPerDocument.values()) {
 					sourceFileInformation.update(
 						this.reportPath,
