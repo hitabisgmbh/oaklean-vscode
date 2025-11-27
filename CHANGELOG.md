@@ -2,6 +2,17 @@
 
 All notable changes to the "Oaklean" extension will be documented in this file.
 
+# 0.1.3
+### Added
+- Support for Oaklean Profiler v0.1.5
+
+### Improved
+- Enhanced readability of UI elements
+- improved the Method Browser to display function scopes
+
+### Bug fixes
+- Resolved issues with opening files from the file browser
+
 # 0.1.2
 ### Bug fixes
 - Display an error message if the report version the user attempts to load is not supported by the VSCode extension.
