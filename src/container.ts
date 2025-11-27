@@ -27,6 +27,7 @@ import ReportBackendStorageController from './controller/ReportBackendStorageCon
 import WorkspaceUtils from './helper/WorkspaceUtils'
 import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
 import { SensorValueHoverProvider } from './hover/SensorValueHoverProvider'
+import { MigrationHandler } from './helper/MigrationHandler'
 
 export class Container {
 	static #instance: Container | undefined
@@ -52,6 +53,11 @@ export class Container {
 	private readonly _eventHandler: EventHandler
 	get eventHandler() {
 		return this._eventHandler
+	}
+
+	private readonly _migrationHandler: MigrationHandler
+	get migrationHandler() {
+		return this._migrationHandler
 	}
 
 	private readonly _textEditorController: TextEditorController
@@ -183,6 +189,9 @@ export class Container {
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
+
+		// Migration Handler
+		this.context.subscriptions.push((this._migrationHandler = new MigrationHandler(this)))
 
 		// Hover Provider
 		this.context.subscriptions.push(SensorValueHoverProvider.register(this))
