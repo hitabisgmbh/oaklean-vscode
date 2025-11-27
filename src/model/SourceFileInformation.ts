@@ -13,11 +13,9 @@ import {
 	SourceNodeMetaDataType
 } from '@oaklean/profiler-core'
 
-import WorkspaceUtils from '../helper/WorkspaceUtils'
-
 const VALID_EXTENSIONS_TO_PARSE = ['.js', '.jsx', '.ts', '.tsx']
 
-type SourceNodeMetaDataDirect = SourceNodeMetaData<
+export type SourceNodeMetaDataDirect = SourceNodeMetaData<
 	| SourceNodeMetaDataType.SourceNode
 	| SourceNodeMetaDataType.LangInternalSourceNode
 >

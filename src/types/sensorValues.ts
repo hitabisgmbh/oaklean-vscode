@@ -1,4 +1,4 @@
-import { ISensorValues } from '@oaklean/profiler-core'
+import { ISensorValues } from '@oaklean/profiler-core/dist/src/types'
 
 export type SensorValueType = keyof Required<ISensorValues>
 

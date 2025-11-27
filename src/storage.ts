@@ -75,6 +75,15 @@ export class Storage implements Disposable {
 		this._onDidChange.fire({ key: key, workspace: false })
 	}
 
+	keys(): readonly string[] {
+		return this.context.globalState.keys().map(key => {
+			if (key.startsWith(`${APP_IDENTIFIER}:`)) {
+				return key.substring(APP_IDENTIFIER.length + 1)
+			}
+			return key
+		})
+	}
+
 	async getSecret(key: SecretKeys): Promise<string | undefined> {
 		return this.context.secrets.get(key)
 	}

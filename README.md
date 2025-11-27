@@ -1,6 +1,27 @@
+<div align="center">
+  <img src="media/oaklean-header.jpg" alt="Logo" style="max-width: 70%; height: auto;">
+</div>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@oaklean/profiler"><img src="https://img.shields.io/npm/v/@oaklean/profiler" alt="npm version"></a>
+  <a href="https://github.com/hitabisgmbh/oaklean-vscode/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="Oaklean-VSCode is released under the MIT license."></a>
+	<a href="https://github.com/hitabisgmbh/oaklean-vscode/actions/workflows/extension.yml"><img alt="GitHub CI Status" src="https://img.shields.io/github/actions/workflow/status/hitabisgmbh/oaklean-vscode/extension.yml?label=CI&logo=GitHub"></a>
+</p>
+
 # Oaklean
 
 Oaklean is a powerful Visual Studio Code extension designed to enhance your development workflow by providing insights into code optimization and resource usage in Node.js projects. This toolkit is specifically built to interpret reports generated from our [Oaklean Profiler](https://github.com/hitabisgmbh/oaklean), allowing you to identify areas of your codebase that can be optimized for improved performance and energy efficiency. Additionally, it offers a comprehensive overview of your project's Node.js dependencies and their resource consumption, enabling you to make informed decisions about optimizing your application's footprint.
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Working with Oaklean](#working-with-oaklean)
+- [For More Information](#for-more-information)
+- [Contributing](#contributing)
+	- [Contributing Guide](#contributing-guide)
+- [Credits](#credits)
+- [License](#license)
 
 ![Demo Gif](./images/marketplace/demo.gif)
 
@@ -24,10 +45,33 @@ To interpret profiler reports you need to generate them with our [Oaklean Profil
 3. The toolkit will automatically analyze and interpret the report, highlighting areas of code that can be optimized.
 4. Use the provided overview on the left sidebar to assess resource usage of Node.js dependencies and make informed decisions for optimization.
 
-## For more information
-
-* [Oaklean Profiler Github](https://github.com/hitabisgmbh/oaklean)
-* [Oaklean VS Code Extension Github](https://github.com/hitabisgmbh/oaklean-vscode)
+## For More Information
+### Website
 * [Oaklean Website](https://www.oaklean.io/)
-* [Oaklean NPM Packages](https://www.npmjs.com/search?q=%40oaklean)
 
+### Github Links
+* [Oaklean Profiler](https://github.com/hitabisgmbh/oaklean)
+* [Oaklean VS Code Extension](https://github.com/hitabisgmbh/oaklean-vscode)
+
+### NPM Packages
+* [Oaklean Packages](https://www.npmjs.com/search?q=%40oaklean)
+
+### VS Code Extension
+* [Oaklean Extension - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=HitabisGmbH.oaklean)
+* [Oaklean Extension - Open VSX Registry](https://open-vsx.org/extension/HitabisGmbH/oaklean)
+
+## Contributing
+
+### [Contributing Guide](CONTRIBUTING.md)
+
+Check out our [contributing guide](./CONTRIBUTE.md) to understand our development workflow, learn how to suggest bug fixes and enhancements, and discover how to build and test your changes in Oaklean.
+
+## Credits
+This project exists thanks to all the people who [contribute](https://github.com/hitabisgmbh/oaklean-vscode/graphs/contributors)
+
+<a href="https://github.com/hitabisgmbh/oaklean-vscode/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=hitabisgmbh/oaklean-vscode" />
+</a>
+
+## License
+Oaklean is [MIT licensed](./LICENSE)
