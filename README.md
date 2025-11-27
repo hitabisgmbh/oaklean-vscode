@@ -3,7 +3,6 @@
 </div>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@oaklean/profiler"><img src="https://img.shields.io/npm/v/@oaklean/profiler" alt="npm version"></a>
   <a href="https://github.com/hitabisgmbh/oaklean-vscode/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="Oaklean-VSCode is released under the MIT license."></a>
 	<a href="https://github.com/hitabisgmbh/oaklean-vscode/actions/workflows/extension.yml"><img alt="GitHub CI Status" src="https://img.shields.io/github/actions/workflow/status/hitabisgmbh/oaklean-vscode/extension.yml?label=CI&logo=GitHub"></a>
 </p>
