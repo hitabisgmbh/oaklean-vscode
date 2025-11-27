@@ -1,12 +1,12 @@
 import '../shared/mocks/vscode.mock'
 import '../shared/mocks/profiler-core.mock'
+import '../shared/mocks/AppConstants.mock.ts'
 import vscode from 'vscode'
 
 import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction, CommandIdentifiers, ContextOptions } from '../../src/commands/ToggleLineAnnotationCommands'
 import { Container } from '../../src/container'
 import EventHandler from '../../src/helper/EventHandler'
 import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
-
 
 
 describe('ToggleLineAnnotationCommands', () => {
