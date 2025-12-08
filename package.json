@@ -182,6 +182,11 @@
 					"command": "oaklean.selectProfiles",
 					"when": "view == SourceFileMetaDataTree",
 					"group": "navigation@5"
+				},
+				{
+					"command": "oaklean.showDocs",
+					"when": "view == SourceFileMetaDataTree",
+					"group": "navigation@6"
 				}
 			],
 			"explorer/context": [
@@ -214,6 +219,12 @@
 			{
 				"command": "oaklean.themeColorViewer.show",
 				"title": "[DEV] Oaklean: Show Theme Colors"
+			},
+			{
+				"command": "oaklean.showDocs",
+				"category": "Oaklean",
+				"title": "Show Documentation",
+				"icon": "$(book)"
 			},
 			{
 				"command": "oaklean.settings",

@@ -28,6 +28,7 @@ import WorkspaceUtils from './helper/WorkspaceUtils'
 import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
 import { SensorValueHoverProvider } from './hover/SensorValueHoverProvider'
 import { MigrationHandler } from './helper/MigrationHandler'
+import OpenDocumentationCommand from './commands/OpenDocumentationCommand'
 
 export class Container {
 	static #instance: Container | undefined
@@ -175,6 +176,12 @@ export class Container {
 		return this._jsonTextDocumentContentProvider
 	}
 
+	// openDocsWebview command integration
+	private readonly _openDocumentationCommand: OpenDocumentationCommand
+	get openDocumentationCommand() {
+		return this._openDocumentationCommand
+	}
+
 	private constructor(
 		context: ExtensionContext,
 		storage: Storage
@@ -219,6 +226,10 @@ export class Container {
 		this.context.subscriptions.push(this._selectReportCommand.register())
 		this.context.subscriptions.push(this._openSourceLocationCommand = new OpenSourceLocationCommand(this))
 		this.context.subscriptions.push(this._openSourceLocationCommand.register())
+
+		// New Documentation Command
+		this.context.subscriptions.push(this._openDocumentationCommand = new OpenDocumentationCommand(this))
+		this.context.subscriptions.push(this._openDocumentationCommand.register())
 
 		this.context.subscriptions.push(
 			this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
