@@ -29,6 +29,7 @@ import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
 import { SensorValueHoverProvider } from './hover/SensorValueHoverProvider'
 import { MigrationHandler } from './helper/MigrationHandler'
 import OpenDocumentationCommand from './commands/OpenDocumentationCommand'
+import DocumentationController from './controller/DocumentationController'
 
 export class Container {
 	static #instance: Container | undefined
@@ -59,6 +60,11 @@ export class Container {
 	private readonly _migrationHandler: MigrationHandler
 	get migrationHandler() {
 		return this._migrationHandler
+	}
+
+	private readonly _documentationController: DocumentationController
+	get documentationController() {
+		return this._documentationController
 	}
 
 	private readonly _textEditorController: TextEditorController
@@ -196,6 +202,7 @@ export class Container {
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
+		this.context.subscriptions.push((this._documentationController = new DocumentationController(this)))
 
 		// Migration Handler
 		this.context.subscriptions.push((this._migrationHandler = new MigrationHandler(this)))

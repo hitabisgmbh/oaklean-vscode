@@ -55,6 +55,17 @@ const extensionConfig = {
 			}
 		]
 	},
+	plugins: [
+		...baseConfig.plugins,
+		new CopyWebpackPlugin({
+			patterns: [
+				{
+					from: path.resolve(__dirname, 'docs'),
+					to: path.resolve(__dirname, 'dist', 'extension', 'docs')
+				}
+			]
+		})
+	],
 	externals:
 		mode === 'production'
 			? {
