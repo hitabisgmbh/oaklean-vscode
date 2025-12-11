@@ -30,6 +30,7 @@ import { SensorValueHoverProvider } from './hover/SensorValueHoverProvider'
 import { MigrationHandler } from './helper/MigrationHandler'
 import OpenDocumentationCommand from './commands/OpenDocumentationCommand'
 import DocumentationController from './controller/DocumentationController'
+import { DocumentationViewProvider } from './WebViewProviders/DocumentationViewProvider'
 
 export class Container {
 	static #instance: Container | undefined
@@ -65,6 +66,11 @@ export class Container {
 	private readonly _documentationController: DocumentationController
 	get documentationController() {
 		return this._documentationController
+	}
+	
+	private readonly _documentationViewProvider: DocumentationViewProvider
+	get documentationViewProvider() {
+		return this._documentationViewProvider
 	}
 
 	private readonly _textEditorController: TextEditorController
@@ -203,6 +209,13 @@ export class Container {
 		this.context.subscriptions.push((this._reportBackendStorageController =
 			new ReportBackendStorageController(this)))
 		this.context.subscriptions.push((this._documentationController = new DocumentationController(this)))
+		this._documentationViewProvider = new DocumentationViewProvider(this.context.extensionUri, this)
+		this.context.subscriptions.push(
+			vscode.window.registerWebviewViewProvider(
+				DocumentationViewProvider.viewType,
+				this._documentationViewProvider
+			)
+		)
 
 		// Migration Handler
 		this.context.subscriptions.push((this._migrationHandler = new MigrationHandler(this)))

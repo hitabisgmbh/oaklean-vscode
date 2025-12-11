@@ -114,6 +114,11 @@
 					"type": "webview",
 					"id": "filterView",
 					"name": "Filter"
+				},
+				{
+					"type": "webview",
+					"id": "oaklean.documentationView",
+					"name": "Documentation"
 				}
 			],
 			"measurementsPanel": [
@@ -297,6 +302,7 @@
 		"@types/glob-to-regexp": "^0.4.1",
 		"@types/jest": "^29.4.3",
 		"@types/node": "16.x",
+		"@types/markdown-it": "^12.2.3",
 		"@types/object-hash": "^3.0.2",
 		"@types/proxyquire": "^1.3.28",
 		"@types/react": "^19.1.8",
@@ -331,6 +337,7 @@
 		"@vscode/webview-ui-toolkit": "^1.4.0",
 		"glob": "^10.3.12",
 		"glob-to-regexp": "^0.4.1",
+		"markdown-it": "^12.3.2",
 		"jsonc": "^2.0.0",
 		"mathjs": "^12.4.0",
 		"object-hash": "^3.0.0",
