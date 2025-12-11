@@ -12,7 +12,7 @@ declare module 'markdown-it' {
 	}
 	export default class MarkdownIt {
 		constructor(options?: Options)
-		render(src: string): string
+		render(src: string, env?: any): string
 		renderer: {
 			rules: Record<
 				string,
@@ -33,6 +33,7 @@ declare module 'markdown-it/lib/token' {
 		content: string
 		children?: Token[]
 		attrSet(name: string, value: string): void
+		attrGet(name: string): string | null
 	}
 }
 

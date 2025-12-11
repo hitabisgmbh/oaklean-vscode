@@ -19,6 +19,24 @@ const md = new MarkdownIt({
 	linkify: true,
 	typographer: true
 })
+const originalImage = md.renderer.rules.image
+md.renderer.rules.image = (
+	tokens: Token[],
+	idx: number,
+	options: MarkdownOptions,
+	env: any,
+	self: Renderer
+) => {
+	const token = tokens[idx]
+	const src = token.attrGet('src') || ''
+	if (env?.resourceBase && env?.currentPath && src && !/^https?:\/\//i.test(src) && !src.startsWith('mailto:') && !src.startsWith('data:')) {
+		const resolved = resolveResource(env.resourceBase, env.currentPath, src)
+		token.attrSet('src', resolved)
+	}
+	return originalImage
+		? originalImage(tokens, idx, options, env, self)
+		: self.renderToken(tokens, idx, options)
+}
 
 // Add slugified ids to headings for anchor support
 const slugify = (str: string) =>
@@ -26,6 +44,26 @@ const slugify = (str: string) =>
 		.toLowerCase()
 		.replace(/[^\w]+/g, '-')
 		.replace(/^-+|-+$/g, '')
+
+function resolveResource(base: string, docPath: string, relativeSrc: string) {
+	// strip leading ./
+	const cleaned = relativeSrc.replace(/^\.\//, '')
+	// absolute-ish within docs
+	const docSegments = docPath.split('/').slice(0, -1)
+	const srcSegments = cleaned.split('/').filter(Boolean)
+	const stack = [...docSegments]
+	for (const seg of srcSegments) {
+		if (seg === '..') {
+			stack.pop()
+		} else if (seg !== '.') {
+			stack.push(seg)
+		}
+	}
+	const finalPath = stack.join('/')
+	// base already points to docs root
+	const suffix = finalPath.replace(/^docs\//i, '')
+	return `${base}/${suffix}`
+}
 
 const originalHeadingOpen = md.renderer.rules.heading_open
 md.renderer.rules.heading_open = (
@@ -49,6 +87,8 @@ export function App() {
 	const [selectedPath, setSelectedPath] = useState<string>('')
 	const [anchor, setAnchor] = useState<string | undefined>()
 	const [query, setQuery] = useState('')
+	const [highlightTerm, setHighlightTerm] = useState('')
+	const [resourceBase, setResourceBase] = useState<string>('')
 
 	const selectedDoc = useMemo(
 		() => files.find((doc) => doc.path === selectedPath) ?? files[0],
@@ -57,8 +97,11 @@ export function App() {
 
 	const html = useMemo(() => {
 		if (!selectedDoc) return '<p>No documentation available.</p>'
-		return md.render(selectedDoc.content)
-	}, [selectedDoc])
+		return md.render(selectedDoc.content, {
+			currentPath: selectedDoc.path,
+			resourceBase
+		})
+	}, [selectedDoc, resourceBase])
 
 	useEffect(() => {
 		function handleMessages(event: MessageEvent<DocumentationView_ParentToChild>) {
@@ -68,6 +111,7 @@ export function App() {
 					setFiles(message.files || [])
 					setSelectedPath(message.initialFile || message.files[0]?.path || '')
 					setAnchor(undefined)
+					setResourceBase(message.resourceBase || '')
 					break
 				case DocumentationViewCommands.open:
 					setSelectedPath(message.filePath)
@@ -101,37 +145,77 @@ export function App() {
 
 	const contentRef = useRef<HTMLDivElement>(null)
 
-	useEffect(() => {
-		const el = contentRef.current
-		if (!el) return
+	function handleLink(href: string) {
+		if (!href) return
 
-		function onClick(event: MouseEvent) {
-			const target = event.target as HTMLElement
-			if (!target) return
-			if (target.tagName.toLowerCase() !== 'a') return
-			const anchorEl = target as HTMLAnchorElement
-			const href = anchorEl.getAttribute('href')
-			if (!href || href.startsWith('http')) return
-
-			event.preventDefault()
-
-			const [pathPart, hashPart] = href.split('#')
-			let nextPath = selectedPath
-			if (pathPart) {
-				const match = files.find((f) =>
-					f.name.toLowerCase() === pathPart.toLowerCase() ||
-					f.path.toLowerCase().endsWith(pathPart.toLowerCase())
-				)
-				if (match) {
-					nextPath = match.path
-				}
-			}
-			setSelectedPath(nextPath)
-			setAnchor(hashPart || undefined)
+		// Fragment-only link (#section) -> same file, scroll to anchor
+		if (href.startsWith('#')) {
+			setAnchor(href.substring(1))
+			return
 		}
 
-		el.addEventListener('click', onClick)
-		return () => el.removeEventListener('click', onClick)
+		// External links -> ask extension to open externally
+		if (/^https?:\/\//i.test(href) || href.startsWith('mailto:')) {
+			vscode.postMessage({
+				command: DocumentationViewCommands.openExternal,
+				href
+			})
+			return
+		}
+
+		// Resolve relative markdown link
+		const [pathPart, hashPart] = href.split('#')
+		let targetPath = selectedPath
+
+		if (pathPart) {
+			// normalize by stripping leading './'
+			const normalized = pathPart.replace(/^\.\//, '').toLowerCase()
+
+			// try match by exact filename or path suffix
+			const match = files.find((f) =>
+				f.name.toLowerCase() === normalized ||
+				f.path.toLowerCase().endsWith(normalized)
+			)
+
+			if (match) {
+				targetPath = match.path
+			} else {
+				// Try resolving relative to current path
+				const baseSegments = selectedPath.split('/').slice(0, -1)
+				const targetSegments = normalized.split('/').filter(Boolean)
+				const resolvedSegments: string[] = []
+				for (const seg of targetSegments) {
+					if (seg === '..') {
+						baseSegments.pop()
+					} else if (seg !== '.') {
+						resolvedSegments.push(seg)
+					}
+				}
+				const candidate = [...baseSegments, ...resolvedSegments].join('/')
+				const relMatch = files.find((f) => f.path.toLowerCase().endsWith(candidate.toLowerCase()))
+				if (relMatch) {
+					targetPath = relMatch.path
+				}
+			}
+		}
+
+		setSelectedPath(targetPath)
+		setAnchor(hashPart || undefined)
+	}
+
+	useEffect(() => {
+		function onClick(event: MouseEvent) {
+			const target = event.target as HTMLElement
+			if (!target || target.tagName.toLowerCase() !== 'a') return
+			const anchorEl = target as HTMLAnchorElement
+			const href = anchorEl.getAttribute('href')
+			if (!href) return
+			event.preventDefault()
+			handleLink(href)
+		}
+
+		document.addEventListener('click', onClick)
+		return () => document.removeEventListener('click', onClick)
 	}, [files, selectedPath])
 
 	useEffect(() => {
@@ -141,6 +225,57 @@ export function App() {
 			element.scrollIntoView({ behavior: 'smooth', block: 'start' })
 		}
 	}, [anchor, html])
+
+	useEffect(() => {
+		const root = contentRef.current
+		if (!root) return
+
+		// clear previous highlights
+		root.querySelectorAll('.search-hit').forEach((hit) => {
+			const parent = hit.parentNode
+			if (!parent) return
+			parent.replaceChild(document.createTextNode(hit.textContent || ''), hit)
+			parent.normalize()
+		})
+
+		const term = highlightTerm.trim()
+		if (!term) return
+
+		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+		let node: Node | null = walker.nextNode()
+		const lowerTerm = term.toLowerCase()
+		let wrapped = false
+
+		while (node && !wrapped) {
+			const text = node.textContent || ''
+			const idx = text.toLowerCase().indexOf(lowerTerm)
+			if (idx !== -1 && node.parentNode) {
+				const before = text.slice(0, idx)
+				const match = text.slice(idx, idx + term.length)
+				const after = text.slice(idx + term.length)
+
+				const span = document.createElement('span')
+				span.className = 'search-hit'
+				span.textContent = match
+				span.setAttribute('data-pos', String(idx))
+
+				const frag = document.createDocumentFragment()
+				if (before) frag.appendChild(document.createTextNode(before))
+				frag.appendChild(span)
+				if (after) frag.appendChild(document.createTextNode(after))
+
+				node.parentNode.replaceChild(frag, node)
+				wrapped = true
+			} else {
+				node = walker.nextNode()
+			}
+		}
+
+		const firstHit = root.querySelector('.search-hit')
+		if (firstHit) {
+			firstHit.scrollIntoView({ behavior: 'smooth', block: 'center' })
+		}
+	}, [html, highlightTerm])
 
 	return (
 		<div className="doc-container">
@@ -161,6 +296,7 @@ export function App() {
 								onClick={() => {
 									setSelectedPath(res.path)
 									setAnchor(undefined)
+									setHighlightTerm(query.trim())
 									setQuery('')
 								}}
 							>

@@ -3,7 +3,8 @@ export enum DocumentationViewCommands {
 	open = 'open',
 	requestDocs = 'requestDocs',
 	search = 'search',
-	openFile = 'openFile'
+	openFile = 'openFile',
+	openExternal = 'openExternal'
 }
 
 export type DocumentationFile = {
@@ -18,6 +19,7 @@ export type DocumentationView_ParentToChild =
 		command: DocumentationViewCommands.init
 		files: DocumentationFile[]
 		initialFile: string
+		resourceBase?: string
 	}
 	| {
 		command: DocumentationViewCommands.open
@@ -30,3 +32,4 @@ export type DocumentationView_ChildToParent =
 	| { command: DocumentationViewCommands.requestDocs }
 	| { command: DocumentationViewCommands.search; query: string }
 	| { command: DocumentationViewCommands.openFile; path: string; anchor?: string }
+	| { command: DocumentationViewCommands.openExternal; href: string }

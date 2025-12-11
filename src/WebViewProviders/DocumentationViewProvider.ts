@@ -103,6 +103,15 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 				case DocumentationViewCommands.search:
 					// Search is handled client-side in the webview for now.
 					break
+				case DocumentationViewCommands.openExternal:
+					if (message.href) {
+						try {
+							await vscode.env.openExternal(vscode.Uri.parse(message.href))
+						} catch {
+							// ignore
+						}
+					}
+					break
 			}
 		})
 
@@ -116,10 +125,14 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 		}
 		const readme = docs.find((d) => d.name.toLowerCase() === 'readme.md')
 		const initialFile = readme?.path ?? docs[0].path
+		const resourceBase = webview.asWebviewUri(
+			vscode.Uri.joinPath(this._extensionUri, 'dist', 'extension', 'docs')
+		).toString()
 		webview.postMessage({
 			command: DocumentationViewCommands.init,
 			files: docs,
-			initialFile
+			initialFile,
+			resourceBase
 		})
 	}
 }

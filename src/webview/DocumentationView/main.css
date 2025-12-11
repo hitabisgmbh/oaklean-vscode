@@ -111,3 +111,8 @@
 	flex-direction: column;
 	gap: 12px;
 }
+
+.search-hit {
+	background: var(--vscode-editor-findMatchHighlightBackground, #ffe792);
+	color: inherit;
+}
