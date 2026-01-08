@@ -65,6 +65,7 @@
 .doc-result-title {
 	font-weight: 600;
 	margin-bottom: 4px;
+	color: var(--vscode-foreground, #fff);
 }
 
 .doc-result-snippet {

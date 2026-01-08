@@ -48,7 +48,10 @@ const slugify = (str: string) =>
 
 // Build a snippet of text around the first occurrence of the query
 function buildSnippet(content: string, query: string) {
-	const words = content.replace(/\s+/g, ' ').trim().split(' ')
+	// Strip markdown to get plain text
+	const plain = stripMarkdown(content)
+	
+	const words = plain.replace(/\s+/g, ' ').trim().split(' ')
 	const q = query.toLowerCase()
 	const matchIndex = words.findIndex((word) => word.toLowerCase().includes(q))
 	if (matchIndex === -1) {
@@ -64,6 +67,23 @@ function buildSnippet(content: string, query: string) {
 	const word = snippetWords[relativeIndex]
 	snippetWords[relativeIndex] = word.replace(new RegExp(q, 'i'), (match) => `<strong>${match}</strong>`)
 	return snippetWords.join(' ')
+}
+
+function stripMarkdown(text: string) {
+	return text
+		// images: ![alt](url) -> alt
+		.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+		// links: [text](url) -> text
+		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+		// inline code
+		.replace(/`([^`]+)`/g, '$1')
+		// emphasis/bold markers
+		.replace(/[*_~]+/g, '')
+		// headings/blockquotes
+		.replace(/^#{1,6}\s+/gm, '')
+		.replace(/^>\s+/gm, '')
+		// list markers
+		.replace(/^[\s>*+-]\s+/gm, '')
 }
 
 function resolveResource(base: string, docPath: string, relativeSrc: string) {
