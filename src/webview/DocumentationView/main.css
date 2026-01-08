@@ -49,10 +49,17 @@
 	display: block;
 	width: 100%;
 	text-align: left;
-	border: none;
-	background: transparent;
+	border: 1px solid var(--vscode-editorWidget-border, #ccc);
+	background: var(--vscode-editorWidget-background, #fff);
 	padding: 8px;
 	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+	border-radius: 4px;
+}
+
+.doc-result-button:hover {
+	background: var(--vscode-list-hoverBackground, #f0f0f0);
+	border-color: var(--vscode-focusBorder, #007acc);
 }
 
 .doc-result-title {
@@ -63,9 +70,10 @@
 .doc-result-snippet {
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground, #666);
-	white-space: nowrap;
 	overflow: hidden;
-	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
 }
 
 .doc-file-list {

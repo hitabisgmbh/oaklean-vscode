@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import FlexSearch from 'flexsearch'
 import MarkdownIt from 'markdown-it'
 import type Token from 'markdown-it/lib/token'
 import type Renderer from 'markdown-it/lib/renderer'
@@ -45,6 +46,26 @@ const slugify = (str: string) =>
 		.replace(/[^\w]+/g, '-')
 		.replace(/^-+|-+$/g, '')
 
+// Build a snippet of text around the first occurrence of the query
+function buildSnippet(content: string, query: string) {
+	const words = content.replace(/\s+/g, ' ').trim().split(' ')
+	const q = query.toLowerCase()
+	const matchIndex = words.findIndex((word) => word.toLowerCase().includes(q))
+	if (matchIndex === -1) {
+		return words.slice(0, 20).join(' ')
+	}
+
+	const beforeCount = 8
+	const afterCount = 8
+	const start = Math.max(0, matchIndex - beforeCount)
+	const end = Math.min(words.length, matchIndex + afterCount + 1)
+	const snippetWords = words.slice(start, end)
+	const relativeIndex = matchIndex - start
+	const word = snippetWords[relativeIndex]
+	snippetWords[relativeIndex] = word.replace(new RegExp(q, 'i'), (match) => `<strong>${match}</strong>`)
+	return snippetWords.join(' ')
+}
+
 function resolveResource(base: string, docPath: string, relativeSrc: string) {
 	// strip leading ./
 	const cleaned = relativeSrc.replace(/^\.\//, '')
@@ -87,8 +108,10 @@ export function App() {
 	const [selectedPath, setSelectedPath] = useState<string>('')
 	const [anchor, setAnchor] = useState<string | undefined>()
 	const [query, setQuery] = useState('')
+	const [debouncedQuery, setDebouncedQuery] = useState('')
 	const [highlightTerm, setHighlightTerm] = useState('')
 	const [resourceBase, setResourceBase] = useState<string>('')
+	const searchIndexRef = useRef<any>(null)
 
 	const selectedDoc = useMemo(
 		() => files.find((doc) => doc.path === selectedPath) ?? files[0],
@@ -112,10 +135,25 @@ export function App() {
 					setSelectedPath(message.initialFile || message.files[0]?.path || '')
 					setAnchor(undefined)
 					setResourceBase(message.resourceBase || '')
+					setHighlightTerm('')
+					// Build search index when files are received
+					{
+						const index = new (FlexSearch as any).Document({
+							document: {
+								id: 'path',
+								index: ['name', 'content']
+							}
+						})
+						;(message.files || []).forEach((doc) => {
+							index.add(doc)
+						})
+						searchIndexRef.current = index
+					}
 					break
 				case DocumentationViewCommands.open:
 					setSelectedPath(message.filePath)
 					setAnchor(message.anchor)
+					setHighlightTerm('')
 					break
 			}
 		}
@@ -126,22 +164,54 @@ export function App() {
 		return () => window.removeEventListener('message', handleMessages)
 	}, [])
 
+	// Debounce typing so we search only after the user pauses.
+	useEffect(() => {
+		const handle = setTimeout(() => {
+			setDebouncedQuery(query)
+			setHighlightTerm('')
+		}, 150)
+		return () => clearTimeout(handle)
+	}, [query])
+
+	// Clear highlight when Escape is pressed
+	useEffect(() => {
+		function onKeyDown(event: KeyboardEvent) {
+			if (event.key === 'Escape') {
+				setHighlightTerm('')
+			}
+		}
+		
+		document.addEventListener('keydown', onKeyDown)
+		return () => document.removeEventListener('keydown', onKeyDown)
+	}, [])
+
 	const results = useMemo(() => {
-		const q = query.trim().toLowerCase()
+		// Use the debounced query to avoid searching on every keystroke.
+		const q = debouncedQuery.trim()
 		if (!q) return []
-		return files.flatMap((doc) => {
-			const idx = doc.content.toLowerCase().indexOf(q)
-			if (idx === -1) return []
-			const start = Math.max(0, idx - 40)
-			const end = Math.min(doc.content.length, idx + q.length + 40)
-			const snippet = doc.content.substring(start, end).replace(/\s+/g, ' ')
-			return [{
+		const index = searchIndexRef.current
+		if (!index) return []
+
+		// Map file paths to DocumentationFile for easy lookup.
+		const fileById = new Map(files.map((doc) => [doc.path, doc]))
+		
+		// Query the in-memory FlexSearch index and map hits to files.
+		// limit to top 10 results so that the dropdown isn't too long.
+		const matches = index.search(q, { limit: 10 }) || []
+		
+		// Collect unique file IDs from all fields
+		const ids = new Set(matches.flatMap((match: any) => match.result || []))
+		
+		// Map IDs back to files
+		return Array.from(ids)
+			.map((id) => fileById.get(id as string))
+			.filter((doc): doc is DocumentationFile => Boolean(doc))
+			.map((doc) => ({
 				path: doc.path,
 				name: doc.name,
-				snippet
-			}]
-		})
-	}, [files, query])
+				snippet: buildSnippet(doc.content, q)
+			}))
+	}, [files, debouncedQuery])
 
 	const contentRef = useRef<HTMLDivElement>(null)
 
@@ -275,7 +345,7 @@ export function App() {
 		if (firstHit) {
 			firstHit.scrollIntoView({ behavior: 'smooth', block: 'center' })
 		}
-	}, [html, highlightTerm])
+	}, [html, highlightTerm, debouncedQuery])
 
 	return (
 		<div className="doc-container">
@@ -289,19 +359,23 @@ export function App() {
 				/>
 				{query && (
 					<div className="doc-search-dropdown">
-						{results.map((res) => (
+						{results.map((res: { path: string; name: string; snippet: string }) => (
 							<button
 								key={res.path}
 								className="doc-result-button"
 								onClick={() => {
 									setSelectedPath(res.path)
 									setAnchor(undefined)
-									setHighlightTerm(query.trim())
-									setQuery('')
+									const term = debouncedQuery.trim()
+									setHighlightTerm(term)
+									setQuery(term)
 								}}
 							>
 								<div className="doc-result-title">{res.name}</div>
-								<div className="doc-result-snippet">{res.snippet}</div>
+								<div
+									className="doc-result-snippet"
+									dangerouslySetInnerHTML={{ __html: res.snippet }}
+								/>
 							</button>
 						))}
 						{results.length === 0 && (
