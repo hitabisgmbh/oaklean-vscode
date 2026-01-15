@@ -16,20 +16,21 @@ export type DocumentationFile = {
 // Parent -> Child
 export type DocumentationView_ParentToChild =
 	| {
-		command: DocumentationViewCommands.init
+		type: DocumentationViewCommands.init
 		files: DocumentationFile[]
 		initialFile: string
 		resourceBase?: string
+		imageWhitelist?: string[]
 	}
 	| {
-		command: DocumentationViewCommands.open
+		type: DocumentationViewCommands.open
 		filePath: string
 		anchor?: string
 	}
 
 // Child -> Parent
 export type DocumentationView_ChildToParent =
-	| { command: DocumentationViewCommands.requestDocs }
-	| { command: DocumentationViewCommands.search; query: string }
-	| { command: DocumentationViewCommands.openFile; path: string; anchor?: string }
-	| { command: DocumentationViewCommands.openExternal; href: string }
+	| { type: DocumentationViewCommands.requestDocs }
+	| { type: DocumentationViewCommands.search; query: string }
+	| { type: DocumentationViewCommands.openFile; path: string; anchor?: string }
+	| { type: DocumentationViewCommands.openExternal; href: string }

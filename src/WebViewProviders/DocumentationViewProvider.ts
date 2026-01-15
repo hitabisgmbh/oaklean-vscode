@@ -11,6 +11,55 @@ import {
 export class DocumentationViewProvider implements WebviewViewProvider, vscode.Disposable {
 	public static readonly viewType = 'oaklean.documentationView'
 
+	private getImageWhitelist() {
+		const config = vscode.workspace.getConfiguration('oaklean')
+		return config.get<string[]>('docs.imageWhitelist', [])
+	}
+
+	private getImageCspSources(whitelist: string[]) {
+		const sources = new Set<string>()
+		for (const entry of whitelist) {
+			const trimmed = entry.trim()
+			if (!trimmed) continue
+			const lower = trimmed.toLowerCase()
+			if (lower.startsWith('http(s)://')) {
+				const rest = trimmed.slice('http(s)://'.length)
+				const host = rest.split('/')[0]
+				if (host) {
+					sources.add(`http://${host}`)
+					sources.add(`https://${host}`)
+				}
+				continue
+			}
+			if (lower.startsWith('http://') || lower.startsWith('https://')) {
+				const wildcardIndex = trimmed.indexOf('*')
+				if (wildcardIndex !== -1) {
+					const scheme = lower.startsWith('https://') ? 'https' : 'http'
+					const host = trimmed.replace(/^https?:\/\//i, '').split('/')[0]
+					if (host) {
+						sources.add(`${scheme}://${host}`)
+					}
+					continue
+				}
+				try {
+					const url = new URL(trimmed)
+					sources.add(`${url.protocol}//${url.host}`)
+				} catch {
+					// ignore invalid entries
+				}
+				continue
+			}
+			const wildcardHost = trimmed.replace(/^\*\./, '').replace(/^\*/, '')
+			if (wildcardHost) {
+				sources.add(`http://*.${wildcardHost}`)
+				sources.add(`https://*.${wildcardHost}`)
+				sources.add(`http://${wildcardHost}`)
+				sources.add(`https://${wildcardHost}`)
+			}
+		}
+		return Array.from(sources).join(' ')
+	}
+
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
 		private readonly _container: Container
@@ -20,7 +69,11 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 		// Nothing to dispose yet
 	}
 
-	public static buildHtml(webview: vscode.Webview, extensionUri: vscode.Uri) {
+	private _getHtmlForWebview(
+		webview: vscode.Webview,
+		extensionUri: vscode.Uri,
+		imageCspSources: string
+	) {
 		const scriptUri = getUri(webview, extensionUri, [
 			'dist',
 			'webview',
@@ -42,6 +95,8 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 
 		const nonce = getNonce()
 
+		const imgSrc = imageCspSources ? ` ${imageCspSources}` : ''
+
 		return /* html */ `
 			<!DOCTYPE html>
 			<html lang="en">
@@ -50,7 +105,7 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<meta http-equiv="Content-Security-Policy" content="
 					default-src 'none';
-					img-src ${webview.cspSource} https: data:;
+					img-src ${webview.cspSource} data:${imgSrc};
 					style-src ${webview.cspSource} 'unsafe-inline';
 					script-src 'nonce-${nonce}';
 				">
@@ -71,6 +126,9 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 		_context: WebviewViewResolveContext<unknown>,
 		_token: CancellationToken
 	): void | Thenable<void> {
+		const imageWhitelist = this.getImageWhitelist()
+		const imageCspSources = this.getImageCspSources(imageWhitelist)
+
 		webviewView.webview.options = {
 			enableScripts: true,
 			localResourceRoots: [
@@ -79,23 +137,24 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 			]
 		}
 
-		webviewView.webview.html = DocumentationViewProvider.buildHtml(
+		webviewView.webview.html = this._getHtmlForWebview(
 			webviewView.webview,
-			this._extensionUri
+			this._extensionUri,
+			imageCspSources
 		)
 
 		this.initializeWebview(webviewView.webview)
 	}
 
-	public initializeWebview(webview: vscode.Webview) {
+	private initializeWebview(webview: vscode.Webview) {
 		webview.onDidReceiveMessage(async (message: DocumentationView_ChildToParent) => {
-			switch (message?.command) {
+			switch (message?.type) {
 				case DocumentationViewCommands.requestDocs:
 					await this.sendInit(webview)
 					break
 				case DocumentationViewCommands.openFile:
 					webview.postMessage({
-						command: DocumentationViewCommands.open,
+						type: DocumentationViewCommands.open,
 						filePath: message.path,
 						anchor: message.anchor
 					})
@@ -128,11 +187,13 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 		const resourceBase = webview.asWebviewUri(
 			vscode.Uri.joinPath(this._extensionUri, 'dist', 'extension', 'docs')
 		).toString()
+		const imageWhitelist = this.getImageWhitelist()
 		webview.postMessage({
-			command: DocumentationViewCommands.init,
+			type: DocumentationViewCommands.init,
 			files: docs,
 			initialFile,
-			resourceBase
+			resourceBase,
+			imageWhitelist
 		})
 	}
 }

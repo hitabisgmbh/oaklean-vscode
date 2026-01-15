@@ -5,42 +5,43 @@ import { DocumentationViewProvider } from '../WebViewProviders/DocumentationView
 import { DocumentationViewCommands } from '../protocols/DocumentationViewProtocol'
 
 export class DocumentationViewPanel {
+	public static readonly viewType = 'oaklean.documentationViewPanel'
 	public static currentPanel: DocumentationViewPanel | undefined
 	private readonly _panel: vscode.WebviewPanel
 	private subscriptions: vscode.Disposable[] = []
+	private webViewProvider: DocumentationViewProvider
 
 	private constructor(
 		private readonly _extensionUri: vscode.Uri,
 		private readonly _container: Container
 	) {
 		this._panel = vscode.window.createWebviewPanel(
-			DocumentationViewProvider.viewType,
+			DocumentationViewPanel.viewType,
 			'Oaklean Documentation',
 			vscode.ViewColumn.Beside,
 			{
 				enableScripts: true,
-				localResourceRoots: [
-					vscode.Uri.joinPath(this._extensionUri, 'dist', 'webview', 'webpack'),
-					this._extensionUri
-				],
 				retainContextWhenHidden: true
 			}
 		)
+
+		this.subscriptions.push(
+			this.webViewProvider = new DocumentationViewProvider(this._extensionUri, this._container)
+		)
+		this.webViewProvider.resolveWebviewView(
+			{ webview: this._panel.webview } as vscode.WebviewView,
+			{} as vscode.WebviewViewResolveContext,
+			{} as vscode.CancellationToken
+		)
+		
 
 		this.subscriptions.push(
 			this._panel,
 			this._panel.onDidDispose(() => this.dispose())
 		)
 
-		this._panel.webview.html = DocumentationViewProvider.buildHtml(
-			this._panel.webview,
-			this._extensionUri
-		)
-
-		this._container.documentationViewProvider.initializeWebview(this._panel.webview)
-
 		this._panel.onDidChangeViewState(() => {
-			this._panel.webview.postMessage({ command: DocumentationViewCommands.requestDocs })
+			this._panel.webview.postMessage({ type: DocumentationViewCommands.requestDocs })
 		})
 	}
 

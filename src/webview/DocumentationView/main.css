@@ -85,6 +85,61 @@
 	gap: 4px;
 }
 
+.doc-tree-node {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.doc-tree-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.doc-tree-toggle,
+.doc-tree-toggle-placeholder {
+	width: 18px;
+	height: 18px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.doc-tree-toggle {
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--vscode-foreground, #111);
+	cursor: pointer;
+	border-radius: 3px;
+}
+
+.doc-tree-toggle:hover {
+	border-color: var(--vscode-focusBorder, #007acc);
+	background: var(--vscode-list-hoverBackground, #f0f0f0);
+}
+
+.doc-folder-button {
+	text-align: left;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	padding: 6px 8px;
+	background: transparent;
+	color: var(--vscode-foreground, #111);
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.doc-folder-button:hover {
+	background: var(--vscode-list-hoverBackground, #f0f0f0);
+}
+
+.doc-tree-children {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
 .doc-file-button {
 	text-align: left;
 	border: 1px solid transparent;
@@ -111,6 +166,42 @@
 	background: var(--vscode-editor-background, #fff);
 	color: var(--vscode-foreground, #111);
 	box-sizing: border-box;
+}
+
+.doc-breadcrumbs {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--vscode-descriptionForeground, #666);
+	margin-bottom: 12px;
+}
+
+.doc-breadcrumb-group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.doc-breadcrumb {
+	color: inherit;
+}
+
+.doc-breadcrumb-root {
+	font-weight: 600;
+}
+
+.doc-breadcrumb-link {
+	border: none;
+	background: transparent;
+	color: var(--vscode-textLink-foreground, #007acc);
+	cursor: pointer;
+	padding: 0;
+}
+
+.doc-breadcrumb-link:hover {
+	text-decoration: underline;
 }
 
 .doc-content {

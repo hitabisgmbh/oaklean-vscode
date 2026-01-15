@@ -16,7 +16,7 @@ declare const acquireVsCodeApi: any
 const vscode = acquireVsCodeApi()
 
 const md = new MarkdownIt({
-	html: false,
+	html: true,
 	linkify: true,
 	typographer: true
 })
@@ -30,7 +30,24 @@ md.renderer.rules.image = (
 ) => {
 	const token = tokens[idx]
 	const src = token.attrGet('src') || ''
-	if (env?.resourceBase && env?.currentPath && src && !/^https?:\/\//i.test(src) && !src.startsWith('mailto:') && !src.startsWith('data:')) {
+	if (!src) {
+		return ''
+	}
+	if (src.startsWith('data:')) {
+		return originalImage
+			? originalImage(tokens, idx, options, env, self)
+			: self.renderToken(tokens, idx, options)
+	}
+	if (isExternalHttpUrl(src)) {
+		const whitelist = (env?.imageWhitelist as string[]) || []
+		if (!isWhitelistedUrl(src, whitelist)) {
+			return ''
+		}
+		return originalImage
+			? originalImage(tokens, idx, options, env, self)
+			: self.renderToken(tokens, idx, options)
+	}
+	if (env?.resourceBase && env?.currentPath) {
 		const resolved = resolveResource(env.resourceBase, env.currentPath, src)
 		token.attrSet('src', resolved)
 	}
@@ -86,6 +103,89 @@ function stripMarkdown(text: string) {
 		.replace(/^[\s>*+-]\s+/gm, '')
 }
 
+function isExternalHttpUrl(src: string) {
+	return /^https?:\/\//i.test(src)
+}
+
+function isWhitelistedUrl(src: string, whitelist: string[]) {
+	for (const entry of whitelist) {
+		const trimmed = entry.trim()
+		if (!trimmed) continue
+		const lower = trimmed.toLowerCase()
+		if (lower.startsWith('http(s)://')) {
+			const rest = trimmed.slice('http(s)://'.length)
+			if (src.startsWith(`http://${rest}`) || src.startsWith(`https://${rest}`)) {
+				return true
+			}
+		}
+		if (/^https?:\/\//i.test(trimmed) && !trimmed.includes('*') && trimmed.includes('/')) {
+			if (src.startsWith(trimmed)) {
+				return true
+			}
+		}
+		let url: URL
+		try {
+			url = new URL(src)
+		} catch {
+			continue
+		}
+		const schemes = lower.startsWith('http(s)://')
+			? ['http:', 'https:']
+			: lower.startsWith('https://')
+				? ['https:']
+				: lower.startsWith('http://')
+					? ['http:']
+					: ['http:', 'https:']
+		if (!schemes.includes(url.protocol)) continue
+		let hostPattern = trimmed
+			.replace(/^http\(s\):\/\//i, '')
+			.replace(/^https?:\/\//i, '')
+			.split('/')[0]
+		hostPattern = hostPattern.replace(/^\*\./, '').replace(/^\*/, '')
+		if (!hostPattern) continue
+		const host = url.hostname.toLowerCase()
+		const pattern = hostPattern.toLowerCase()
+		if (host === pattern || host.endsWith(`.${pattern}`)) {
+			return true
+		}
+	}
+	return false
+}
+
+function rewriteHtmlImages(
+	html: string,
+	options: { currentPath: string; resourceBase: string; imageWhitelist: string[] }
+) {
+	const parser = new DOMParser()
+	const doc = parser.parseFromString(html, 'text/html')
+	const images = Array.from(doc.querySelectorAll('img'))
+
+	for (const img of images) {
+		const src = img.getAttribute('src') || ''
+		if (!src) {
+			img.remove()
+			continue
+		}
+		if (src.startsWith('data:')) {
+			continue
+		}
+		if (/^vscode-webview-resource:|^vscode-resource:|^vscode-webview:/i.test(src)) {
+			continue
+		}
+		if (isExternalHttpUrl(src)) {
+			if (!isWhitelistedUrl(src, options.imageWhitelist)) {
+				img.remove()
+			}
+			continue
+		}
+		if (options.resourceBase && options.currentPath) {
+			img.setAttribute('src', resolveResource(options.resourceBase, options.currentPath, src))
+		}
+	}
+
+	return doc.body.innerHTML
+}
+
 function resolveResource(base: string, docPath: string, relativeSrc: string) {
 	// strip leading ./
 	const cleaned = relativeSrc.replace(/^\.\//, '')
@@ -123,6 +223,72 @@ md.renderer.rules.heading_open = (
 		: self.renderToken(tokens, idx, options)
 }
 
+type FolderNode = {
+	name: string
+	path: string
+	folders: FolderNode[]
+	files: DocumentationFile[]
+	indexFile?: DocumentationFile
+}
+
+function buildFolderTree(files: DocumentationFile[]) {
+	const root: FolderNode = { name: '', path: '', folders: [], files: [] }
+	const byPath = new Map<string, FolderNode>([['', root]])
+
+	for (const file of files) {
+		const parts = file.path.split('/').filter(Boolean)
+		const fileName = parts.pop()
+		let currentPath = ''
+		let node = root
+
+		for (const part of parts) {
+			currentPath = currentPath ? `${currentPath}/${part}` : part
+			let child = byPath.get(currentPath)
+			if (!child) {
+				child = { name: part, path: currentPath, folders: [], files: [] }
+				byPath.set(currentPath, child)
+				node.folders.push(child)
+			}
+			node = child
+		}
+
+		if (fileName && fileName.toLowerCase() === 'index.md') {
+			node.indexFile = file
+		} else {
+			node.files.push(file)
+		}
+	}
+
+	const sortNode = (node: FolderNode) => {
+		node.folders.sort((a, b) => a.name.localeCompare(b.name))
+		node.files.sort((a, b) => a.name.localeCompare(b.name))
+		node.folders.forEach(sortNode)
+	}
+	sortNode(root)
+
+	return root
+}
+
+function getFolderFiles(node: FolderNode) {
+	return node.indexFile ? [node.indexFile, ...node.files] : node.files
+}
+
+function buildIndexMap(node: FolderNode) {
+	const map = new Map<string, string>()
+	const walk = (folder: FolderNode) => {
+		if (folder.indexFile) {
+			map.set(folder.path, folder.indexFile.path)
+		}
+		folder.folders.forEach(walk)
+	}
+	walk(node)
+	return map
+}
+
+function stripExtension(name: string) {
+	return name.replace(/\.md$/i, '')
+}
+
 export function App() {
 	const [files, setFiles] = useState<DocumentationFile[]>([])
 	const [selectedPath, setSelectedPath] = useState<string>('')
@@ -131,6 +297,8 @@ export function App() {
 	const [debouncedQuery, setDebouncedQuery] = useState('')
 	const [highlightTerm, setHighlightTerm] = useState('')
 	const [resourceBase, setResourceBase] = useState<string>('')
+	const [imageWhitelist, setImageWhitelist] = useState<string[]>([])
+	const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
 	const searchIndexRef = useRef<any>(null)
 
 	const selectedDoc = useMemo(
@@ -138,23 +306,56 @@ export function App() {
 		[files, selectedPath]
 	)
 
+	const folderTree = useMemo(() => buildFolderTree(files), [files])
+	const folderIndexMap = useMemo(() => buildIndexMap(folderTree), [folderTree])
+
 	const html = useMemo(() => {
 		if (!selectedDoc) return '<p>No documentation available.</p>'
-		return md.render(selectedDoc.content, {
+		const rendered = md.render(selectedDoc.content, {
 			currentPath: selectedDoc.path,
-			resourceBase
+			resourceBase,
+			imageWhitelist
 		})
-	}, [selectedDoc, resourceBase])
+		return rewriteHtmlImages(rendered, {
+			currentPath: selectedDoc.path,
+			resourceBase,
+			imageWhitelist
+		})
+	}, [selectedDoc, resourceBase, imageWhitelist])
+
+	const breadcrumbs = useMemo(() => {
+		if (!selectedDoc) return []
+		const parts = selectedDoc.path.split('/').filter(Boolean)
+		const isIndex = parts[parts.length - 1]?.toLowerCase() === 'index.md'
+		const crumbs: { label: string; path: string; clickable: boolean }[] = []
+		let current = ''
+		for (let i = 0; i < parts.length; i++) {
+			const part = parts[i]
+			if (i === parts.length - 1 && isIndex) {
+				break
+			}
+			current = current ? `${current}/${part}` : part
+			const isFile = i === parts.length - 1 && !isIndex
+			const clickable = !isFile && folderIndexMap.has(current)
+			crumbs.push({
+				label: stripExtension(part),
+				path: current,
+				clickable
+			})
+		}
+		return crumbs
+	}, [selectedDoc, folderIndexMap])
 
 	useEffect(() => {
 		function handleMessages(event: MessageEvent<DocumentationView_ParentToChild>) {
 			const message = event.data
-			switch (message?.command) {
+			switch (message?.type) {
 				case DocumentationViewCommands.init:
 					setFiles(message.files || [])
 					setSelectedPath(message.initialFile || message.files[0]?.path || '')
 					setAnchor(undefined)
 					setResourceBase(message.resourceBase || '')
+					setImageWhitelist(message.imageWhitelist || [])
 					setHighlightTerm('')
 					// Build search index when files are received
 					{
@@ -164,7 +365,7 @@ export function App() {
 								index: ['name', 'content']
 							}
 						})
-						;(message.files || []).forEach((doc) => {
+						;(message.files || []).forEach((doc: DocumentationFile) => {
 							index.add(doc)
 						})
 						searchIndexRef.current = index
@@ -179,10 +380,25 @@ export function App() {
 		}
 
 		window.addEventListener('message', handleMessages)
-		vscode.postMessage({ command: DocumentationViewCommands.requestDocs })
+		vscode.postMessage({ type: DocumentationViewCommands.requestDocs })
 
 		return () => window.removeEventListener('message', handleMessages)
 	}, [])
+
+	useEffect(() => {
+		if (!selectedPath) return
+		const segments = selectedPath.split('/').slice(0, -1)
+		if (segments.length === 0) return
+		setExpandedFolders((prev) => {
+			const next = new Set(prev)
+			let current = ''
+			for (const seg of segments) {
+				current = current ? `${current}/${seg}` : seg
+				next.add(current)
+			}
+			return next
+		})
+	}, [selectedPath])
 
 	// Debounce typing so we search only after the user pauses.
 	useEffect(() => {
@@ -234,6 +450,90 @@ export function App() {
 	}, [files, debouncedQuery])
 
 	const contentRef = useRef<HTMLDivElement>(null)
+	const indentSize = 12
+
+	function handleFolderToggle(path: string) {
+		setExpandedFolders((prev) => {
+			const next = new Set(prev)
+			if (next.has(path)) {
+				next.delete(path)
+			} else {
+				next.add(path)
+			}
+			return next
+		})
+	}
+
+	function handleFolderSelect(path: string) {
+		const indexPath = folderIndexMap.get(path)
+		if (indexPath) {
+			setSelectedPath(indexPath)
+			setAnchor(undefined)
+			setHighlightTerm('')
+		}
+		setExpandedFolders((prev) => {
+			if (prev.has(path)) return prev
+			const next = new Set(prev)
+			next.add(path)
+			return next
+		})
+	}
+
+	function renderFileButton(doc: DocumentationFile, depth: number) {
+		return (
+			<button
+				key={doc.path}
+				type="button"
+				className={`doc-file-button${doc.path === selectedPath ? ' doc-file-button-active' : ''}`}
+				style={{ paddingLeft: 16 + depth * indentSize }}
+				onClick={() => {
+					setSelectedPath(doc.path)
+					setAnchor(undefined)
+					setHighlightTerm('')
+				}}
+			>
+				{doc.name}
+			</button>
+		)
+	}
+
+	function renderFolderNode(folder: FolderNode, depth: number) {
+		const isExpanded = expandedFolders.has(folder.path)
+		const folderFiles = getFolderFiles(folder)
+		const hasChildren = folder.folders.length > 0 || folderFiles.length > 0
+
+		return (
+			<div key={folder.path} className="doc-tree-node">
+				<div className="doc-tree-row" style={{ paddingLeft: depth * indentSize }}>
+					{hasChildren ? (
+						<button
+							className="doc-tree-toggle"
+							type="button"
+							onClick={() => handleFolderToggle(folder.path)}
+							aria-label={isExpanded ? 'Collapse folder' : 'Expand folder'}
+						>
+							{isExpanded ? '▾' : '▸'}
+						</button>
+					) : (
+						<span className="doc-tree-toggle-placeholder" />
+					)}
+					<button
+						type="button"
+						className="doc-folder-button"
+						onClick={() => handleFolderSelect(folder.path)}
+					>
+						{folder.name}
+					</button>
+				</div>
+				{isExpanded && (
+					<div className="doc-tree-children">
+						{folderFiles.map((doc) => renderFileButton(doc, depth + 1))}
+						{folder.folders.map((child) => renderFolderNode(child, depth + 1))}
+					</div>
+				)}
+			</div>
+		)
+	}
 
 	function handleLink(href: string) {
 		if (!href) return
@@ -247,7 +547,7 @@ export function App() {
 		// External links -> ask extension to open externally
 		if (/^https?:\/\//i.test(href) || href.startsWith('mailto:')) {
 			vscode.postMessage({
-				command: DocumentationViewCommands.openExternal,
+				type: DocumentationViewCommands.openExternal,
 				href
 			})
 			return
@@ -404,21 +704,42 @@ export function App() {
 					</div>
 				)}
 				<div className="doc-file-list">
-					{files.map((doc) => (
-						<button
-							key={doc.path}
-							className={`doc-file-button${doc.path === selectedPath ? ' doc-file-button-active' : ''}`}
-							onClick={() => setSelectedPath(doc.path)}
-						>
-							{doc.name}
-						</button>
-					))}
+					{folderTree.folders.map((folder) => renderFolderNode(folder, 0))}
+					{getFolderFiles(folderTree).map((doc) => renderFileButton(doc, 0))}
 					{files.length === 0 && (
 						<div className="doc-empty">No matches</div>
 					)}
 				</div>
 			</aside>
 			<main className="doc-main">
+				{breadcrumbs.length > 0 && (
+					<div className="doc-breadcrumbs">
+						<span className="doc-breadcrumb doc-breadcrumb-root">Docs</span>
+						{breadcrumbs.map((crumb) => (
+							<div key={crumb.path} className="doc-breadcrumb-group">
+								<span className="doc-breadcrumb-sep">/</span>
+								{crumb.clickable ? (
+									<button
+										type="button"
+										className="doc-breadcrumb doc-breadcrumb-link"
+										onClick={() => {
+											const indexPath = folderIndexMap.get(crumb.path)
+											if (indexPath) {
+												setSelectedPath(indexPath)
+												setAnchor(undefined)
+												setHighlightTerm('')
+											}
+										}}
+									>
+										{crumb.label}
+									</button>
+								) : (
+									<span className="doc-breadcrumb">{crumb.label}</span>
+								)}
+							</div>
+						))}
+					</div>
+				)}
 				<div className="doc-content" ref={contentRef}>
 					{selectedDoc ? (
 						<div

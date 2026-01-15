@@ -78,6 +78,18 @@
 						}
 					},
 					"description": "Enter your profiles manually or through the UI with the command 'Oaklean: Settings'."
+				},
+				"oaklean.docs.imageWhitelist": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"https://github.com/hitabisgmbh",
+						"http(s)://*.hitabis.de",
+						"http(s)://*.oaklean.io"
+					],
+					"description": "Allowed URL prefixes for external images in documentation."
 				}
 			}
 		},
