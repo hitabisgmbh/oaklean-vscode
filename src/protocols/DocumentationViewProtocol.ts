@@ -20,6 +20,7 @@ export type DocumentationView_ParentToChild =
 		files: DocumentationFile[]
 		initialFile: string
 		resourceBase?: string
+		docsBasePath?: string
 		imageWhitelist?: string[]
 	}
 	| {

@@ -15,44 +15,8 @@ function createMarkdownRenderer() {
 	const md = new MarkdownIt({
 		html: true,
 		linkify: true,
-		typographer: true
+		typographer: false
 	})
-
-	const originalImage = md.renderer.rules.image
-	md.renderer.rules.image = (
-		tokens: Token[],
-		idx: number,
-		options: MarkdownOptions,
-		env: any,
-		self: Renderer
-	) => {
-		const token = tokens[idx]
-		const src = token.attrGet('src') || ''
-		if (!src) {
-			return ''
-		}
-		if (src.startsWith('data:')) {
-			return originalImage
-				? originalImage(tokens, idx, options, env, self)
-				: self.renderToken(tokens, idx, options)
-		}
-		if (isExternalHttpUrl(src)) {
-			const whitelist = (env?.imageWhitelist as string[]) || []
-			if (!isWhitelistedUrl(src, whitelist)) {
-				return ''
-			}
-			return originalImage
-				? originalImage(tokens, idx, options, env, self)
-				: self.renderToken(tokens, idx, options)
-		}
-		if (env?.resourceBase && env?.currentPath) {
-			const resolved = resolveResource(env.resourceBase, env.currentPath, src)
-			token.attrSet('src', resolved)
-		}
-		return originalImage
-			? originalImage(tokens, idx, options, env, self)
-			: self.renderToken(tokens, idx, options)
-	}
 
 	const originalHeadingOpen = md.renderer.rules.heading_open
 	md.renderer.rules.heading_open = (
@@ -129,6 +93,38 @@ export function rewriteHtmlImages(
 	return doc.body.innerHTML
 }
 
+export function rewriteHtmlLinks(
+	html: string,
+	options: { currentPath: string; docPaths: Set<string> }
+) {
+	const parser = new DOMParser()
+	const doc = parser.parseFromString(html, 'text/html')
+	const anchors = Array.from(doc.querySelectorAll('a'))
+
+	for (const anchor of anchors) {
+		const href = anchor.getAttribute('href') || ''
+		if (!href) continue
+		if (href.startsWith('#')) continue
+		if (isExternalHttpUrl(href) || href.startsWith('mailto:')) continue
+		if (/^vscode-webview-resource:|^vscode-resource:|^vscode-webview:/i.test(href)) {
+			continue
+		}
+		const [pathPart] = href.split('#')
+		if (!pathPart) continue
+		const lowerPath = pathPart.toLowerCase()
+		if (!lowerPath.endsWith('.md') && !lowerPath.endsWith('.markdown')) {
+			continue
+		}
+		const resolved = resolveDocPath(options.currentPath, pathPart)
+		if (!options.docPaths.has(resolved)) {
+			anchor.removeAttribute('href')
+			anchor.classList.add('doc-link-disabled')
+		}
+	}
+
+	return doc.body.innerHTML
+}
+
 export function resolveResource(base: string, docPath: string, relativeSrc: string) {
 	const cleaned = relativeSrc.replace(/^\.\//, '')
 	const docSegments = docPath.split('/').slice(0, -1)
@@ -142,8 +138,22 @@ export function resolveResource(base: string, docPath: string, relativeSrc: stri
 		}
 	}
 	const finalPath = stack.join('/')
-	const suffix = finalPath.replace(/^docs\//i, '')
-	return `${base}/${suffix}`
+	return `${base}/${finalPath}`
+}
+
+export function resolveDocPath(docPath: string, relativePath: string) {
+	const cleaned = relativePath.replace(/^\.\//, '')
+	const docSegments = docPath.split('/').slice(0, -1)
+	const srcSegments = cleaned.split('/').filter(Boolean)
+	const stack = [...docSegments]
+	for (const seg of srcSegments) {
+		if (seg === '..') {
+			stack.pop()
+		} else if (seg !== '.') {
+			stack.push(seg)
+		}
+	}
+	return stack.join('/')
 }
 
 function stripMarkdown(text: string) {

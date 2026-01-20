@@ -5,7 +5,7 @@ import {
 	DocumentationViewCommands,
 	DocumentationView_ParentToChild
 } from '../../protocols/DocumentationViewProtocol'
-import { markdown, rewriteHtmlImages } from './markdownUtils'
+import { markdown, rewriteHtmlImages, rewriteHtmlLinks } from './markdownUtils'
 import {
 	buildBreadcrumbs,
 	buildDefaultFileMap,
@@ -27,6 +27,7 @@ export function App() {
 	const [anchor, setAnchor] = useState<string | undefined>()
 	const [highlightTerm, setHighlightTerm] = useState('')
 	const [resourceBase, setResourceBase] = useState<string>('')
+	const [docsBasePath, setDocsBasePath] = useState<string>('')
 	const [imageWhitelist, setImageWhitelist] = useState<string[]>([])
 	const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
 	const [zoomedImage, setZoomedImage] = useState<{ src: string; alt?: string } | null>(null)
@@ -43,24 +44,49 @@ export function App() {
 
 	const folderTree = useMemo(() => buildFolderTree(files), [files])
 	const folderDefaultMap = useMemo(() => buildDefaultFileMap(folderTree), [folderTree])
+	const overviewPath = useMemo(
+		() =>
+			files.find(
+				(doc) =>
+					doc.name.toLowerCase() === 'readme.md' &&
+					!doc.path.includes('/')
+			)?.path,
+		[files]
+	)
 
 	const html = useMemo(() => {
 		if (!selectedDoc) return '<p>No documentation available.</p>'
+		const base = docsBasePath.trim().replace(/\/+$/, '')
+		const currentPath = base ? `${base}/${selectedDoc.path}` : selectedDoc.path
+		const docPaths = new Set(
+			files.map((doc) => (base ? `${base}/${doc.path}` : doc.path))
+		)
 		const rendered = markdown.render(selectedDoc.content, {
-			currentPath: selectedDoc.path,
+			currentPath,
 			resourceBase,
 			imageWhitelist
 		})
-		return rewriteHtmlImages(rendered, {
-			currentPath: selectedDoc.path,
+		const linked = rewriteHtmlLinks(rendered, { currentPath, docPaths })
+		return rewriteHtmlImages(linked, {
+			currentPath,
 			resourceBase,
 			imageWhitelist
 		})
-	}, [selectedDoc, resourceBase, imageWhitelist])
+	}, [selectedDoc, docsBasePath, resourceBase, imageWhitelist, files])
 
 	const breadcrumbs = useMemo(
-		() => buildBreadcrumbs(selectedDoc, folderDefaultMap),
-		[selectedDoc, folderDefaultMap]
+		() => {
+			const crumbs = buildBreadcrumbs(selectedDoc, folderDefaultMap)
+			if (overviewPath && selectedDoc?.path === overviewPath && crumbs.length > 0) {
+				crumbs[crumbs.length - 1] = {
+					...crumbs[crumbs.length - 1],
+					label: 'Overview',
+					clickable: false
+				}
+			}
+			return crumbs
+		},
+		[selectedDoc, folderDefaultMap, overviewPath]
 	)
 
 	const handleInit = useCallback((message: DocumentationView_ParentToChild) => {
@@ -69,6 +95,7 @@ export function App() {
 		setSelectedPath(message.initialFile || message.files[0]?.path || '')
 		setAnchor(undefined)
 		setResourceBase(message.resourceBase || '')
+		setDocsBasePath(message.docsBasePath || '')
 		setImageWhitelist(message.imageWhitelist || [])
 		setHighlightTerm('')
 	}, [])
@@ -170,6 +197,7 @@ export function App() {
 				selectedPath={selectedPath}
 				expandedFolders={expandedFolders}
 				isEmpty={files.length === 0}
+				overviewPath={overviewPath}
 				onQueryChange={setQuery}
 				onResultSelect={(path) => {
 					setSelectedPath(path)

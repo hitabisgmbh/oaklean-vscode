@@ -11,17 +11,21 @@ export interface DocumentationEntry {
 
 export default class DocumentationController implements vscode.Disposable {
 	private docs: DocumentationEntry[] = []
-	private readonly docsRoot: vscode.Uri
+	private docsRoot: vscode.Uri | null = null
+	private readonly docsRootCandidates: vscode.Uri[]
 
 	constructor(container: Container) {
-		// NB: read from build output (webpack copies docs to dist/extension/docs)
-		
-		this.docsRoot = vscode.Uri.joinPath(container.context.extensionUri, 'dist', 'extension', 'docs')
+		// Prefer workspace docs to match Markdown preview; fall back to build output.
+		this.docsRootCandidates = [
+			vscode.Uri.joinPath(container.context.extensionUri, 'docs'),
+			vscode.Uri.joinPath(container.context.extensionUri, 'dist', 'extension', 'docs')
+		]
 	}
 
 	async getAllDocs(): Promise<DocumentationEntry[]> {
 		if (this.docs.length === 0) {
-			this.docs = await this.loadDocsRecursive(this.docsRoot)
+			const root = await this.resolveDocsRoot()
+			this.docs = await this.loadDocsRecursive(root)
 			
 			// Debuging output
 			//console.debug(`Loaded ${this.docs.length} documentation files from ${this.docsRoot.toString()}`)
@@ -29,8 +33,33 @@ export default class DocumentationController implements vscode.Disposable {
 		return this.docs
 	}
 
+	async getDocsRoot(): Promise<vscode.Uri> {
+		return this.resolveDocsRoot()
+	}
+
 	dispose(): void {
 		// nothing 
+	}
+
+	private async resolveDocsRoot(): Promise<vscode.Uri> {
+		if (this.docsRoot) return this.docsRoot
+		for (const candidate of this.docsRootCandidates) {
+			if (await this.isDirectory(candidate)) {
+				this.docsRoot = candidate
+				return candidate
+			}
+		}
+		this.docsRoot = this.docsRootCandidates[this.docsRootCandidates.length - 1]
+		return this.docsRoot
+	}
+
+	private async isDirectory(uri: vscode.Uri) {
+		try {
+			const stat = await vscode.workspace.fs.stat(uri)
+			return (stat.type & vscode.FileType.Directory) !== 0
+		} catch {
+			return false
+		}
 	}
 
 	private async loadDocsRecursive(dir: vscode.Uri, relativeBase = ''): Promise<DocumentationEntry[]> {

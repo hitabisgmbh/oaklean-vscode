@@ -1,4 +1,5 @@
 import vscode, { WebviewView, WebviewViewProvider, WebviewViewResolveContext, CancellationToken } from 'vscode'
+import * as path from 'path'
 
 import { getUri } from '../utilities/getUri'
 import { getNonce } from '../utilities/getNonce'
@@ -184,15 +185,17 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 		}
 		const readme = docs.find((d) => d.name.toLowerCase() === 'readme.md')
 		const initialFile = readme?.path ?? docs[0].path
-		const resourceBase = webview.asWebviewUri(
-			vscode.Uri.joinPath(this._extensionUri, 'dist', 'extension', 'docs')
-		).toString()
+		const docsRoot = await this._container.documentationController.getDocsRoot()
+		const docsRootParent = docsRoot.with({ path: path.posix.dirname(docsRoot.path) })
+		const docsBasePath = path.posix.relative(docsRootParent.path, docsRoot.path)
+		const resourceBase = webview.asWebviewUri(docsRootParent).toString()
 		const imageWhitelist = this.getImageWhitelist()
 		webview.postMessage({
 			type: DocumentationViewCommands.init,
 			files: docs,
 			initialFile,
 			resourceBase,
+			docsBasePath,
 			imageWhitelist
 		})
 	}

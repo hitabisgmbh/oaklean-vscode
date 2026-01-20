@@ -65,7 +65,7 @@ const extensionConfig = {
 				},
 				{
 					from: path.resolve(__dirname, 'images'),
-					to: path.resolve(__dirname, 'dist', 'extension', 'docs', 'images')
+					to: path.resolve(__dirname, 'dist', 'extension', 'images')
 				}
 			]
 		})

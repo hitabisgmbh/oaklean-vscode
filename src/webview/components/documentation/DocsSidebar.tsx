@@ -1,5 +1,5 @@
 import { DocumentationFile } from '../../../protocols/DocumentationViewProtocol'
-import { FolderNode, getFolderFiles } from '../../DocumentationView/treeUtils'
+import { FolderNode, getFolderFiles, stripExtension } from '../../DocumentationView/treeUtils'
 
 type SearchResult = {
 	path: string
@@ -14,6 +14,7 @@ type DocsSidebarProps = {
 	selectedPath: string
 	expandedFolders: Set<string>
 	isEmpty: boolean
+	overviewPath?: string
 	onQueryChange: (value: string) => void
 	onResultSelect: (path: string) => void
 	onSelectFile: (path: string) => void
@@ -28,6 +29,7 @@ export function DocsSidebar({
 	selectedPath,
 	expandedFolders,
 	isEmpty,
+	overviewPath,
 	onQueryChange,
 	onResultSelect,
 	onSelectFile,
@@ -36,17 +38,34 @@ export function DocsSidebar({
 }: DocsSidebarProps) {
 	const indentSize = 12
 
+	function renderOverview() {
+		if (!overviewPath) return null
+		return (
+			<div key="doc-overview" className="doc-tree-row" style={{ paddingLeft: 0 }}>
+				<span className="doc-tree-toggle-placeholder" />
+				<button
+					type="button"
+					className={`doc-file-button${overviewPath === selectedPath ? ' doc-file-button-active' : ''}`}
+					onClick={() => onSelectFile(overviewPath)}
+				>
+					Overview
+				</button>
+			</div>
+		)
+	}
+
 	function renderFileButton(doc: DocumentationFile, depth: number) {
 		return (
-			<button
-				key={doc.path}
-				type="button"
-				className={`doc-file-button${doc.path === selectedPath ? ' doc-file-button-active' : ''}`}
-				style={{ paddingLeft: 16 + depth * indentSize }}
-				onClick={() => onSelectFile(doc.path)}
-			>
-				{doc.name}
-			</button>
+			<div key={doc.path} className="doc-tree-row" style={{ paddingLeft: depth * indentSize }}>
+				<span className="doc-tree-toggle-placeholder" />
+				<button
+					type="button"
+					className={`doc-file-button${doc.path === selectedPath ? ' doc-file-button-active' : ''}`}
+					onClick={() => onSelectFile(doc.path)}
+				>
+					{stripExtension(doc.name)}
+				</button>
+			</div>
 		)
 	}
 
@@ -105,7 +124,7 @@ export function DocsSidebar({
 							className="doc-result-button"
 							onClick={() => onResultSelect(res.path)}
 						>
-							<div className="doc-result-title">{res.name}</div>
+							<div className="doc-result-title">{stripExtension(res.name)}</div>
 							<div
 								className="doc-result-snippet"
 								dangerouslySetInnerHTML={{ __html: res.snippet }}
@@ -118,6 +137,7 @@ export function DocsSidebar({
 				</div>
 			)}
 			<div className="doc-file-list">
+				{renderOverview()}
 				{folderTree.folders.map((folder) => renderFolderNode(folder, 0))}
 				{getFolderFiles(folderTree).map((doc) => renderFileButton(doc, 0))}
 				{isEmpty && (

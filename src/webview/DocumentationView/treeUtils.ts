@@ -105,6 +105,9 @@ export function buildBreadcrumbs(
 			clickable
 		})
 	}
+	if (crumbs.length > 0) {
+		crumbs[crumbs.length - 1].clickable = false
+	}
 	return crumbs
 }
 
