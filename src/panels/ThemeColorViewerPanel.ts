@@ -10,6 +10,7 @@ type IColorData = {
 }
 
 export class ThemeColorViewerPanel {
+	public static readonly viewType = 'oaklean.themeColorViewerPanel'
 	public static currentPanel: ThemeColorViewerPanel | undefined
 	private readonly _panel: vscode.WebviewPanel
 	private subscriptions: vscode.Disposable[] = []
@@ -18,11 +19,12 @@ export class ThemeColorViewerPanel {
 	_container: Container
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
-		container: Container
+		container: Container,
+		panel?: vscode.WebviewPanel
 	) {
 		this._container = container
 		this.subscriptions.push(
-			this._panel = vscode.window.createWebviewPanel('ThemeColorViewer', 'ThemeColorViewer', vscode.ViewColumn.Beside, {
+			this._panel = panel ?? vscode.window.createWebviewPanel(ThemeColorViewerPanel.viewType, 'ThemeColorViewer', vscode.ViewColumn.Beside, {
 				enableScripts: true,
 				// Restrict the webview to only load resources from the `dist` directory
 				localResourceRoots: [this._extensionUri],
@@ -76,12 +78,25 @@ export class ThemeColorViewerPanel {
 		if (ThemeColorViewerPanel.currentPanel) {
 			ThemeColorViewerPanel.currentPanel._panel.reveal()
 		} else {
+			container.context.subscriptions.push(
+				ThemeColorViewerPanel.currentPanel = new ThemeColorViewerPanel(
+					container.context.extensionUri,
+					container
+				)
+			)
+		}
+		return ThemeColorViewerPanel.currentPanel
+	}
+
+	public static async revive(panel: vscode.WebviewPanel, container: Container) {
+		await ThemeColorViewerPanel.retrieveColorItems()
+		container.context.subscriptions.push(
 			ThemeColorViewerPanel.currentPanel = new ThemeColorViewerPanel(
 				container.context.extensionUri,
-				container
+				container,
+				panel
 			)
-
-		}
+		)
 		return ThemeColorViewerPanel.currentPanel
 	}
 

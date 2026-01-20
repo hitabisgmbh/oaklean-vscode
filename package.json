@@ -41,7 +41,9 @@
 	"activationEvents": [
 		"onLanguage:typescript",
 		"onLanguage:javascript",
-		"workspaceContains:**/.oaklean"
+		"workspaceContains:**/.oaklean",
+		"onWebviewPanel:oaklean.settingsViewPanel",
+		"onWebviewPanel:oaklean.themeColorViewerPanel"
 	],
 	"main": "./dist/extension/extension.js",
 	"browser": "./dist/extension/extension.js",

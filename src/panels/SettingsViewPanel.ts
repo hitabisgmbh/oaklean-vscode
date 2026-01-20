@@ -107,23 +107,26 @@ export class SettingsViewPanel {
 		if (SettingsViewPanel.currentPanel) {
 			SettingsViewPanel.currentPanel._panel.reveal()
 		} else {
-			SettingsViewPanel.currentPanel = new SettingsViewPanel(
-				container.context.extensionUri,
-				container
+			container.context.subscriptions.push(
+				SettingsViewPanel.currentPanel = new SettingsViewPanel(
+					container.context.extensionUri,
+					container
+				)
 			)
 		}
 		return SettingsViewPanel.currentPanel
 	}
 
 	public static revive(panel: vscode.WebviewPanel, container: Container) {
-		SettingsViewPanel.currentPanel = new SettingsViewPanel(
-			container.context.extensionUri,
-			container,
-			panel
+		container.context.subscriptions.push(
+			SettingsViewPanel.currentPanel = new SettingsViewPanel(
+				container.context.extensionUri,
+				container,
+				panel
+			)
 		)
 		return SettingsViewPanel.currentPanel
 	}
-
 
 	public dispose() {
 		SettingsViewPanel.currentPanel = undefined
