@@ -231,6 +231,13 @@ type FolderNode = {
 	indexFile?: DocumentationFile
 }
 
+function getIndexFileRank(fileName: string) {
+	const lower = fileName.toLowerCase()
+	if (lower === 'readme.md') return 2
+	if (lower === 'index.md') return 1
+	return 0
+}
+
 function buildFolderTree(files: DocumentationFile[]) {
 	const root: FolderNode = { name: '', path: '', folders: [], files: [] }
 	const byPath = new Map<string, FolderNode>([['', root]])
@@ -252,9 +259,17 @@ function buildFolderTree(files: DocumentationFile[]) {
 			node = child
 		}
 
-		if (fileName && fileName.toLowerCase() === 'index.md') {
-			node.indexFile = file
-		} else {
+		if (fileName) {
+			const rank = getIndexFileRank(fileName)
+			if (rank > 0) {
+				const currentRank = node.indexFile ? getIndexFileRank(node.indexFile.name) : 0
+				if (rank > currentRank) {
+					node.indexFile = file
+				}
+				continue
+			}
+		}
+		{
 			node.files.push(file)
 		}
 	}
@@ -270,14 +285,19 @@ function buildFolderTree(files: DocumentationFile[]) {
 }
 
 function getFolderFiles(node: FolderNode) {
-	return node.indexFile ? [node.indexFile, ...node.files] : node.files
+	if (node.indexFile && node.indexFile.name.toLowerCase() !== 'readme.md') {
+		return [node.indexFile, ...node.files]
+	}
+	return node.files
 }
 
-function buildIndexMap(node: FolderNode) {
+function buildDefaultFileMap(node: FolderNode) {
 	const map = new Map<string, string>()
 	const walk = (folder: FolderNode) => {
 		if (folder.indexFile) {
 			map.set(folder.path, folder.indexFile.path)
+		} else if (folder.files.length > 0) {
+			map.set(folder.path, folder.files[0].path)
 		}
 		folder.folders.forEach(walk)
 	}
@@ -299,6 +319,7 @@ export function App() {
 	const [resourceBase, setResourceBase] = useState<string>('')
 	const [imageWhitelist, setImageWhitelist] = useState<string[]>([])
 	const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+	const [zoomedImage, setZoomedImage] = useState<{ src: string; alt?: string } | null>(null)
 	const searchIndexRef = useRef<any>(null)
 
 	const selectedDoc = useMemo(
@@ -307,7 +328,7 @@ export function App() {
 	)
 
 	const folderTree = useMemo(() => buildFolderTree(files), [files])
-	const folderIndexMap = useMemo(() => buildIndexMap(folderTree), [folderTree])
+	const folderDefaultMap = useMemo(() => buildDefaultFileMap(folderTree), [folderTree])
 
 	const html = useMemo(() => {
 		if (!selectedDoc) return '<p>No documentation available.</p>'
@@ -326,7 +347,10 @@ export function App() {
 	const breadcrumbs = useMemo(() => {
 		if (!selectedDoc) return []
 		const parts = selectedDoc.path.split('/').filter(Boolean)
-		const isIndex = parts[parts.length - 1]?.toLowerCase() === 'index.md'
+		const lastPart = parts[parts.length - 1]?.toLowerCase()
+		const isIndex =
+			lastPart === 'index.md' ||
+			(lastPart === 'readme.md' && parts.length > 1)
 		const crumbs: { label: string; path: string; clickable: boolean }[] = []
 		let current = ''
 		for (let i = 0; i < parts.length; i++) {
@@ -336,7 +360,7 @@ export function App() {
 			}
 			current = current ? `${current}/${part}` : part
 			const isFile = i === parts.length - 1 && !isIndex
-			const clickable = !isFile && folderIndexMap.has(current)
+			const clickable = !isFile && folderDefaultMap.has(current)
 			crumbs.push({
 				label: stripExtension(part),
 				path: current,
@@ -344,7 +368,7 @@ export function App() {
 			})
 		}
 		return crumbs
-	}, [selectedDoc, folderIndexMap])
+	}, [selectedDoc, folderDefaultMap])
 
 	useEffect(() => {
 		function handleMessages(event: MessageEvent<DocumentationView_ParentToChild>) {
@@ -414,6 +438,7 @@ export function App() {
 		function onKeyDown(event: KeyboardEvent) {
 			if (event.key === 'Escape') {
 				setHighlightTerm('')
+				setZoomedImage(null)
 			}
 		}
 		
@@ -465,9 +490,9 @@ export function App() {
 	}
 
 	function handleFolderSelect(path: string) {
-		const indexPath = folderIndexMap.get(path)
-		if (indexPath) {
-			setSelectedPath(indexPath)
+		const targetPath = folderDefaultMap.get(path)
+		if (targetPath) {
+			setSelectedPath(targetPath)
 			setAnchor(undefined)
 			setHighlightTerm('')
 		}
@@ -596,6 +621,13 @@ export function App() {
 	useEffect(() => {
 		function onClick(event: MouseEvent) {
 			const target = event.target as HTMLElement
+			if (target?.tagName?.toLowerCase() === 'img') {
+				const img = target as HTMLImageElement
+				if (img.src) {
+					setZoomedImage({ src: img.src, alt: img.alt })
+				}
+				return
+			}
 			if (!target || target.tagName.toLowerCase() !== 'a') return
 			const anchorEl = target as HTMLAnchorElement
 			const href = anchorEl.getAttribute('href')
@@ -714,7 +746,24 @@ export function App() {
 			<main className="doc-main">
 				{breadcrumbs.length > 0 && (
 					<div className="doc-breadcrumbs">
-						<span className="doc-breadcrumb doc-breadcrumb-root">Docs</span>
+						{folderDefaultMap.get('') ? (
+							<button
+								type="button"
+								className="doc-breadcrumb doc-breadcrumb-link doc-breadcrumb-root"
+								onClick={() => {
+									const rootPath = folderDefaultMap.get('')
+									if (rootPath) {
+										setSelectedPath(rootPath)
+										setAnchor(undefined)
+										setHighlightTerm('')
+									}
+								}}
+							>
+								Docs
+							</button>
+						) : (
+							<span className="doc-breadcrumb doc-breadcrumb-root">Docs</span>
+						)}
 						{breadcrumbs.map((crumb) => (
 							<div key={crumb.path} className="doc-breadcrumb-group">
 								<span className="doc-breadcrumb-sep">/</span>
@@ -723,9 +772,9 @@ export function App() {
 										type="button"
 										className="doc-breadcrumb doc-breadcrumb-link"
 										onClick={() => {
-											const indexPath = folderIndexMap.get(crumb.path)
-											if (indexPath) {
-												setSelectedPath(indexPath)
+											const targetPath = folderDefaultMap.get(crumb.path)
+											if (targetPath) {
+												setSelectedPath(targetPath)
 												setAnchor(undefined)
 												setHighlightTerm('')
 											}
@@ -738,6 +787,21 @@ export function App() {
 								)}
 							</div>
 						))}
+					</div>
+				)}
+				{zoomedImage && (
+					<div
+						className="doc-image-overlay"
+						role="dialog"
+						aria-modal="true"
+						onClick={() => setZoomedImage(null)}
+					>
+						<img
+							src={zoomedImage.src}
+							alt={zoomedImage.alt || 'Documentation image'}
+							className="doc-image-zoom"
+							onClick={(event) => event.stopPropagation()}
+						/>
 					</div>
 				)}
 				<div className="doc-content" ref={contentRef}>

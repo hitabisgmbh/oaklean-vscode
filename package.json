@@ -126,11 +126,6 @@
 					"type": "webview",
 					"id": "filterView",
 					"name": "Filter"
-				},
-				{
-					"type": "webview",
-					"id": "oaklean.documentationView",
-					"name": "Documentation"
 				}
 			],
 			"measurementsPanel": [

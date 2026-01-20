@@ -13,9 +13,10 @@ export class DocumentationViewPanel {
 
 	private constructor(
 		private readonly _extensionUri: vscode.Uri,
-		private readonly _container: Container
+		private readonly _container: Container,
+		panel?: vscode.WebviewPanel
 	) {
-		this._panel = vscode.window.createWebviewPanel(
+		this._panel = panel ?? vscode.window.createWebviewPanel(
 			DocumentationViewPanel.viewType,
 			'Oaklean Documentation',
 			vscode.ViewColumn.Beside,
@@ -54,6 +55,15 @@ export class DocumentationViewPanel {
 				container
 			)
 		}
+		return DocumentationViewPanel.currentPanel
+	}
+
+	public static revive(panel: vscode.WebviewPanel, container: Container) {
+		DocumentationViewPanel.currentPanel = new DocumentationViewPanel(
+			container.context.extensionUri,
+			container,
+			panel
+		)
 		return DocumentationViewPanel.currentPanel
 	}
 

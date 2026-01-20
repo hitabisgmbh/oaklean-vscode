@@ -195,9 +195,10 @@
 .doc-breadcrumb-link {
 	border: none;
 	background: transparent;
-	color: var(--vscode-textLink-foreground, #007acc);
+	color: var(--vscode-foreground, #ffffff);
 	cursor: pointer;
 	padding: 0;
+	text-decoration: underline;
 }
 
 .doc-breadcrumb-link:hover {
@@ -210,6 +211,28 @@
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+}
+
+.doc-content img {
+	cursor: zoom-in;
+}
+
+.doc-image-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 2000;
+}
+
+.doc-image-zoom {
+	max-width: min(92vw, 1200px);
+	max-height: 92vh;
+	border-radius: 6px;
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+	cursor: zoom-out;
 }
 
 .search-hit {
