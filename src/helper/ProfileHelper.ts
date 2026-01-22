@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import { jsonc } from 'jsonc'
+import * as jsoncParser from 'jsonc-parser'
 import { UnifiedPath } from '@oaklean/profiler-core'
 import vscode, { Disposable } from 'vscode'
 
@@ -59,7 +59,24 @@ export default class ProfileHelper implements Disposable {
 			if (fs.existsSync(settingsPath.toPlatformString())) {
 				const content = fs.readFileSync(settingsPath.toPlatformString(), 'utf8')
 				try {
-					const settings = jsonc.parse(content)
+					// Use jsonc-parser which handles comments and trailing commas
+					const errors: jsoncParser.ParseError[] = []
+					const settings = jsoncParser.parse(content, errors, {
+						allowTrailingComma: true,
+						allowEmptyContent: true
+					})
+					
+					// Check for parsing errors
+					if (errors.length > 0) {
+						const errorMessages = errors.map(err => 
+							`Line ${err.offset}: ${jsoncParser.printParseErrorCode(err.error)}`
+						).join(', ')
+						return {
+							profiles: [],
+							error: `Failed to parse settings file: ${settingsPath}. Errors: ${errorMessages}`
+						}
+					}
+					
 					const profiles: Profile[] = settings[PROFILE_IDENTIFIER] || []
 					return {
 						profiles
@@ -67,7 +84,7 @@ export default class ProfileHelper implements Disposable {
 				} catch (error) {
 					return {
 						profiles: [],
-						error: `Failed to parse settings file: ${settingsPath}, check if the file is valid JSON.`
+						error: `Failed to parse settings file: ${settingsPath}, check if the file is valid JSON. ${error instanceof Error ? error.message : ''}`
 					}
 				}
 			}
@@ -114,15 +131,34 @@ export default class ProfileHelper implements Disposable {
 		try {
 			const settingsPath = this.returnSettingsPath()
 			if (settingsPath !== undefined) {
-				let settings: any = {}
 				if (!fs.existsSync(settingsPath.dirName().toPlatformString())) {
 					fs.mkdirSync(settingsPath.dirName().toPlatformString(), { recursive: true })
 				}
+				
+				let content = ''
 				if (fs.existsSync(settingsPath.toPlatformString())) {
-					settings = jsonc.parse(fs.readFileSync(settingsPath.toPlatformString(), 'utf8').toString())
+					content = fs.readFileSync(settingsPath.toPlatformString(), 'utf8')
+				} else {
+					// Create new file with empty JSON object
+					content = '{}'
 				}
-				settings[PROFILE_IDENTIFIER] = profiles
-				fs.writeFileSync(settingsPath.toPlatformString(), jsonc.stringify(settings, undefined, 2))
+				
+				// Use modify to preserve comments and formatting
+				const edits = jsoncParser.modify(
+					content,
+					[PROFILE_IDENTIFIER],
+					profiles,
+					{
+						formattingOptions: {
+							tabSize: 2,
+							insertSpaces: false,
+							eol: '\n'
+						}
+					}
+				)
+				
+				const updatedContent = jsoncParser.applyEdits(content, edits)
+				fs.writeFileSync(settingsPath.toPlatformString(), updatedContent)
 			}
 		} catch (error) {
 			vscode.window.showErrorMessage(ERROR_FAILED_TO_SAVE_PROFILE)

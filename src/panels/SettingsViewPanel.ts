@@ -25,6 +25,7 @@ import {
 import { ProfileChangeEvent } from '../helper/EventHandler'
 
 export class SettingsViewPanel {
+	public static readonly viewType = 'oaklean.settingsViewPanel'
 	public static currentPanel: SettingsViewPanel | undefined
 	private readonly _panel: vscode.WebviewPanel
 	private subscriptions: vscode.Disposable[] = []
@@ -32,13 +33,14 @@ export class SettingsViewPanel {
 	_container: Container
 	private constructor(
 		private readonly _extensionUri: vscode.Uri,
-		container: Container
+		container: Container,
+		panel?: vscode.WebviewPanel
 	) {
 		this._container = container
 		this.subscriptions.push(
-			(this._panel = vscode.window.createWebviewPanel(
-				'Settings',
-				'Settings',
+			(this._panel = panel ?? vscode.window.createWebviewPanel(
+				SettingsViewPanel.viewType,
+				'Oaklean Settings',
 				vscode.ViewColumn.Beside,
 				{
 					enableScripts: true,
@@ -105,11 +107,24 @@ export class SettingsViewPanel {
 		if (SettingsViewPanel.currentPanel) {
 			SettingsViewPanel.currentPanel._panel.reveal()
 		} else {
-			SettingsViewPanel.currentPanel = new SettingsViewPanel(
-				container.context.extensionUri,
-				container
+			container.context.subscriptions.push(
+				SettingsViewPanel.currentPanel = new SettingsViewPanel(
+					container.context.extensionUri,
+					container
+				)
 			)
 		}
+		return SettingsViewPanel.currentPanel
+	}
+
+	public static revive(panel: vscode.WebviewPanel, container: Container) {
+		container.context.subscriptions.push(
+			SettingsViewPanel.currentPanel = new SettingsViewPanel(
+				container.context.extensionUri,
+				container,
+				panel
+			)
+		)
 		return SettingsViewPanel.currentPanel
 	}
 
