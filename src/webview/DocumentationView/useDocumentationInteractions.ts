@@ -10,6 +10,7 @@ type InteractionOptions = {
 	onSelectPath: (path: string) => void
 	onSetAnchor: (anchor?: string) => void
 	onOpenExternal: (href: string) => void
+	onMissingFile: (path: string) => void
 	onZoomImage: (image: { src: string; alt?: string } | null) => void
 }
 
@@ -21,6 +22,7 @@ export function useDocumentationInteractions({
 	onSelectPath,
 	onSetAnchor,
 	onOpenExternal,
+	onMissingFile,
 	onZoomImage
 }: InteractionOptions) {
 	useEffect(() => {
@@ -37,35 +39,37 @@ export function useDocumentationInteractions({
 
 			const [pathPart, hashPart] = href.split('#')
 			let targetPath = selectedPath
+			let missingPath: string | null = null
+			const isDocLink = Boolean(pathPart && /\.md|\.markdown/i.test(pathPart))
 
 			if (pathPart) {
-				const normalized = pathPart.replace(/^\.\//, '').toLowerCase()
-				const match = files.find((f) =>
-					f.name.toLowerCase() === normalized ||
-					f.path.toLowerCase().endsWith(normalized)
+				const isAbsolute = pathPart.startsWith('/')
+				const normalized = pathPart.replace(/^\//, '').replace(/^\.\//, '')
+				const baseSegments = isAbsolute ? [] : selectedPath.split('/').slice(0, -1)
+				const targetSegments = normalized.split('/').filter(Boolean)
+				const resolvedSegments: string[] = []
+				for (const seg of targetSegments) {
+					if (seg === '..') {
+						baseSegments.pop()
+					} else if (seg !== '.') {
+						resolvedSegments.push(seg)
+					}
+				}
+				const candidate = [...baseSegments, ...resolvedSegments].join('/')
+				const relMatch = files.find(
+					(f) => f.path.toLowerCase() === candidate.toLowerCase()
 				)
-
-				if (match) {
-					targetPath = match.path
+				if (relMatch) {
+					targetPath = relMatch.path
 				} else {
-					const baseSegments = selectedPath.split('/').slice(0, -1)
-					const targetSegments = normalized.split('/').filter(Boolean)
-					const resolvedSegments: string[] = []
-					for (const seg of targetSegments) {
-						if (seg === '..') {
-							baseSegments.pop()
-						} else if (seg !== '.') {
-							resolvedSegments.push(seg)
-						}
-					}
-					const candidate = [...baseSegments, ...resolvedSegments].join('/')
-					const relMatch = files.find((f) => f.path.toLowerCase().endsWith(candidate.toLowerCase()))
-					if (relMatch) {
-						targetPath = relMatch.path
-					}
+					missingPath = candidate || normalized
 				}
 			}
 
+			if (missingPath && isDocLink) {
+				onMissingFile(missingPath)
+				return
+			}
 			onSelectPath(targetPath)
 			onSetAnchor(hashPart || undefined)
 		}
@@ -89,7 +93,15 @@ export function useDocumentationInteractions({
 
 		document.addEventListener('click', onClick)
 		return () => document.removeEventListener('click', onClick)
-	}, [files, onOpenExternal, onSelectPath, onSetAnchor, onZoomImage, selectedPath])
+	}, [
+		files,
+		onMissingFile,
+		onOpenExternal,
+		onSelectPath,
+		onSetAnchor,
+		onZoomImage,
+		selectedPath
+	])
 
 	useEffect(() => {
 		if (!anchor) return

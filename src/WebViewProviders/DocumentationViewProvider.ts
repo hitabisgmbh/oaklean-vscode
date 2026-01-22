@@ -160,6 +160,21 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 						anchor: message.anchor
 					})
 					break
+				case DocumentationViewCommands.openMissingFile: {
+					const rawPath = (message.path || '').replace(/^\/*/, '')
+					if (!rawPath) break
+					const docsRoot = await this._container.documentationController.getDocsRoot()
+					const safeSegments = rawPath
+						.split('/')
+						.filter((segment) => segment && segment !== '.' && segment !== '..')
+					const targetUri = vscode.Uri.joinPath(docsRoot, ...safeSegments)
+					try {
+						await vscode.commands.executeCommand('vscode.open', targetUri)
+					} catch {
+						// ignore
+					}
+					break
+				}
 				case DocumentationViewCommands.search:
 					// Search is handled client-side in the webview for now.
 					break

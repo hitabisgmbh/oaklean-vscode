@@ -40,23 +40,41 @@ function createMarkdownRenderer() {
 }
 
 export function buildSnippet(content: string, query: string) {
-	const plain = stripMarkdown(content)
-	const words = plain.replace(/\s+/g, ' ').trim().split(' ')
+	const plain = normalizeSearchContent(content)
+	const words = plain.split(' ').filter(Boolean)
 	const q = query.toLowerCase()
 	const matchIndex = words.findIndex((word) => word.toLowerCase().includes(q))
 	if (matchIndex === -1) {
 		return words.slice(0, 20).join(' ')
 	}
 
+	return buildSnippetAt(content, query, findWordStartIndex(words, matchIndex))
+}
+
+export function buildSnippetAt(content: string, query: string, matchIndex: number) {
+	const plain = normalizeSearchContent(content)
+	if (!plain) return ''
+	const words = plain.split(' ').filter(Boolean)
+	let wordIndex = 0
+	let cursor = 0
+	for (let i = 0; i < words.length; i++) {
+		const start = cursor
+		const end = start + words[i].length
+		if (matchIndex >= start && matchIndex < end) {
+			wordIndex = i
+			break
+		}
+		cursor = end + 1
+	}
+
 	const beforeCount = 8
 	const afterCount = 8
-	const start = Math.max(0, matchIndex - beforeCount)
-	const end = Math.min(words.length, matchIndex + afterCount + 1)
+	const start = Math.max(0, wordIndex - beforeCount)
+	const end = Math.min(words.length, wordIndex + afterCount + 1)
 	const snippetWords = words.slice(start, end)
-	const relativeIndex = matchIndex - start
-	const word = snippetWords[relativeIndex]
-	snippetWords[relativeIndex] = word.replace(new RegExp(q, 'i'), (match) => `<strong>${match}</strong>`)
-	return snippetWords.join(' ')
+	const snippet = snippetWords.join(' ')
+	const pattern = new RegExp(escapeRegExp(query), 'i')
+	return snippet.replace(pattern, (match) => `<strong>${match}</strong>`)
 }
 
 export function rewriteHtmlImages(
@@ -156,8 +174,9 @@ export function resolveDocPath(docPath: string, relativePath: string) {
 	return stack.join('/')
 }
 
-function stripMarkdown(text: string) {
+export function stripMarkdown(text: string) {
 	return text
+		.replace(/<[^>]*>/g, '')
 		.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
 		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
 		.replace(/`([^`]+)`/g, '$1')
@@ -165,6 +184,25 @@ function stripMarkdown(text: string) {
 		.replace(/^#{1,6}\s+/gm, '')
 		.replace(/^>\s+/gm, '')
 		.replace(/^[\s>*+-]\s+/gm, '')
+}
+
+export function normalizeSearchContent(text: string) {
+	let cleaned = stripMarkdown(text)
+	cleaned = cleaned.replace(/^\s*\|?[\s:-]+(\|[\s:-]+)+\|?\s*$/gm, ' ')
+	cleaned = cleaned.replace(/\|/g, ' ')
+	return cleaned.replace(/\s+/g, ' ').trim()
+}
+
+function escapeRegExp(value: string) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function findWordStartIndex(words: string[], wordIndex: number) {
+	let index = 0
+	for (let i = 0; i < wordIndex; i++) {
+		index += words[i].length + 1
+	}
+	return index
 }
 
 function isExternalHttpUrl(src: string) {

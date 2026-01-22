@@ -4,6 +4,7 @@ export enum DocumentationViewCommands {
 	requestDocs = 'requestDocs',
 	search = 'search',
 	openFile = 'openFile',
+	openMissingFile = 'openMissingFile',
 	openExternal = 'openExternal'
 }
 
@@ -34,4 +35,5 @@ export type DocumentationView_ChildToParent =
 	| { type: DocumentationViewCommands.requestDocs }
 	| { type: DocumentationViewCommands.search; query: string }
 	| { type: DocumentationViewCommands.openFile; path: string; anchor?: string }
+	| { type: DocumentationViewCommands.openMissingFile; path: string }
 	| { type: DocumentationViewCommands.openExternal; href: string }

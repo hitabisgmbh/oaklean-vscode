@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import FlexSearch from 'flexsearch'
 
 import { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
-import { buildSnippet } from './markdownUtils'
+import { buildSnippetAt, normalizeSearchContent } from './markdownUtils'
 
 export function useDocumentationSearch(
 	files: DocumentationFile[],
@@ -24,7 +24,10 @@ export function useDocumentationSearch(
 			}
 		})
 		files.forEach((doc) => {
-			index.add(doc)
+			index.add({
+				...doc,
+				content: normalizeSearchContent(doc.content)
+			})
 		})
 		searchIndexRef.current = index
 	}, [files])
@@ -46,14 +49,44 @@ export function useDocumentationSearch(
 		const fileById = new Map(files.map((doc) => [doc.path, doc]))
 		const matches = index.search(q, { limit: 10 }) || []
 		const ids = new Set(matches.flatMap((match: any) => match.result || []))
-		return Array.from(ids)
-			.map((id) => fileById.get(id as string))
-			.filter((doc): doc is DocumentationFile => Boolean(doc))
-			.map((doc) => ({
-				path: doc.path,
-				name: doc.name,
-				snippet: buildSnippet(doc.content, q)
-			}))
+		const maxResults = 10
+		const qLower = q.toLowerCase()
+		const results: { path: string; name: string; snippet: string; occurrence: number }[] = []
+		const appendMatches = (doc: DocumentationFile) => {
+			const plain = normalizeSearchContent(doc.content)
+			if (!plain) return
+			const lower = plain.toLowerCase()
+			let fromIndex = 0
+			let occurrence = 0
+			while (results.length < maxResults) {
+				const idx = lower.indexOf(qLower, fromIndex)
+				if (idx === -1) break
+				results.push({
+					path: doc.path,
+					name: doc.name,
+					snippet: buildSnippetAt(doc.content, q, idx),
+					occurrence
+				})
+				occurrence += 1
+				fromIndex = idx + q.length
+			}
+		}
+
+		if (ids.size === 0) {
+			for (const doc of files) {
+				appendMatches(doc)
+				if (results.length >= maxResults) break
+			}
+			return results
+		}
+
+		for (const id of ids) {
+			const doc = fileById.get(id as string)
+			if (!doc) continue
+			appendMatches(doc)
+			if (results.length >= maxResults) break
+		}
+		return results
 	}, [files, debouncedQuery])
 
 	return {

@@ -5,7 +5,9 @@ export function useSearchHighlight(
 	contentRef: RefObject<HTMLDivElement | null>,
 	html: string,
 	highlightTerm: string,
-	debouncedQuery: string
+	debouncedQuery: string,
+	highlightOccurrence: number | null,
+	highlightBump: number
 ) {
 	useEffect(() => {
 		const root = contentRef.current
@@ -25,28 +27,40 @@ export function useSearchHighlight(
 		let node: Node | null = walker.nextNode()
 		const lowerTerm = term.toLowerCase()
 		let wrapped = false
+		let occurrenceIndex = 0
+		const targetOccurrence = highlightOccurrence ?? 0
 
 		while (node && !wrapped) {
 			const text = node.textContent || ''
-			const idx = text.toLowerCase().indexOf(lowerTerm)
-			if (idx !== -1 && node.parentNode) {
-				const before = text.slice(0, idx)
-				const match = text.slice(idx, idx + term.length)
-				const after = text.slice(idx + term.length)
+			const lowerText = text.toLowerCase()
+			let searchFrom = 0
+			let idx = lowerText.indexOf(lowerTerm, searchFrom)
+			while (idx !== -1 && !wrapped) {
+				if (occurrenceIndex === targetOccurrence && node.parentNode) {
+					const before = text.slice(0, idx)
+					const match = text.slice(idx, idx + term.length)
+					const after = text.slice(idx + term.length)
 
-				const span = document.createElement('span')
-				span.className = 'search-hit'
-				span.textContent = match
-				span.setAttribute('data-pos', String(idx))
+					const span = document.createElement('span')
+					span.className = 'search-hit'
+					span.textContent = match
+					span.setAttribute('data-pos', String(idx))
 
-				const frag = document.createDocumentFragment()
-				if (before) frag.appendChild(document.createTextNode(before))
-				frag.appendChild(span)
-				if (after) frag.appendChild(document.createTextNode(after))
+					const frag = document.createDocumentFragment()
+					if (before) frag.appendChild(document.createTextNode(before))
+					frag.appendChild(span)
+					if (after) frag.appendChild(document.createTextNode(after))
 
-				node.parentNode.replaceChild(frag, node)
-				wrapped = true
-			} else {
+					node.parentNode.replaceChild(frag, node)
+					wrapped = true
+					break
+				}
+				occurrenceIndex += 1
+				searchFrom = idx + term.length
+				idx = lowerText.indexOf(lowerTerm, searchFrom)
+			}
+
+			if (!wrapped) {
 				node = walker.nextNode()
 			}
 		}
@@ -55,5 +69,5 @@ export function useSearchHighlight(
 		if (firstHit) {
 			firstHit.scrollIntoView({ behavior: 'smooth', block: 'center' })
 		}
-	}, [contentRef, html, highlightTerm, debouncedQuery])
+	}, [contentRef, html, highlightTerm, debouncedQuery, highlightOccurrence, highlightBump])
 }

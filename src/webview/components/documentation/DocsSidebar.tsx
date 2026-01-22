@@ -5,6 +5,7 @@ type SearchResult = {
 	path: string
 	name: string
 	snippet: string
+	occurrence: number
 }
 
 type DocsSidebarProps = {
@@ -16,7 +17,7 @@ type DocsSidebarProps = {
 	isEmpty: boolean
 	overviewPath?: string
 	onQueryChange: (value: string) => void
-	onResultSelect: (path: string) => void
+	onResultSelect: (path: string, occurrence: number) => void
 	onSelectFile: (path: string) => void
 	onToggleFolder: (path: string) => void
 	onSelectFolder: (path: string) => void
@@ -120,9 +121,9 @@ export function DocsSidebar({
 				<div className="doc-search-dropdown">
 					{results.map((res) => (
 						<button
-							key={res.path}
+							key={`${res.path}:${res.occurrence}`}
 							className="doc-result-button"
-							onClick={() => onResultSelect(res.path)}
+							onClick={() => onResultSelect(res.path, res.occurrence)}
 						>
 							<div className="doc-result-title">{stripExtension(res.name)}</div>
 							<div

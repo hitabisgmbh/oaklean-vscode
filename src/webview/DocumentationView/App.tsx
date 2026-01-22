@@ -5,7 +5,7 @@ import {
 	DocumentationViewCommands,
 	DocumentationView_ParentToChild
 } from '../../protocols/DocumentationViewProtocol'
-import { markdown, rewriteHtmlImages, rewriteHtmlLinks } from './markdownUtils'
+import { markdown, rewriteHtmlImages } from './markdownUtils'
 import {
 	buildBreadcrumbs,
 	buildDefaultFileMap,
@@ -26,12 +26,20 @@ export function App() {
 	const [selectedPath, setSelectedPath] = useState<string>('')
 	const [anchor, setAnchor] = useState<string | undefined>()
 	const [highlightTerm, setHighlightTerm] = useState('')
+	const [highlightOccurrence, setHighlightOccurrence] = useState<number | null>(null)
+	const [highlightBump, setHighlightBump] = useState(0)
 	const [resourceBase, setResourceBase] = useState<string>('')
 	const [docsBasePath, setDocsBasePath] = useState<string>('')
 	const [imageWhitelist, setImageWhitelist] = useState<string[]>([])
 	const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
 	const [zoomedImage, setZoomedImage] = useState<{ src: string; alt?: string } | null>(null)
-	const clearHighlight = useCallback(() => setHighlightTerm(''), [])
+	const [missingLink, setMissingLink] = useState<string | null>(null)
+	const suppressExpandRef = useRef(false)
+	const clearHighlight = useCallback(() => {
+		setHighlightTerm('')
+		setHighlightOccurrence(null)
+		setHighlightBump((prev) => prev + 1)
+	}, [])
 	const { query, setQuery, debouncedQuery, results } = useDocumentationSearch(
 		files,
 		clearHighlight
@@ -58,21 +66,17 @@ export function App() {
 		if (!selectedDoc) return '<p>No documentation available.</p>'
 		const base = docsBasePath.trim().replace(/\/+$/, '')
 		const currentPath = base ? `${base}/${selectedDoc.path}` : selectedDoc.path
-		const docPaths = new Set(
-			files.map((doc) => (base ? `${base}/${doc.path}` : doc.path))
-		)
 		const rendered = markdown.render(selectedDoc.content, {
 			currentPath,
 			resourceBase,
 			imageWhitelist
 		})
-		const linked = rewriteHtmlLinks(rendered, { currentPath, docPaths })
-		return rewriteHtmlImages(linked, {
+		return rewriteHtmlImages(rendered, {
 			currentPath,
 			resourceBase,
 			imageWhitelist
 		})
-	}, [selectedDoc, docsBasePath, resourceBase, imageWhitelist, files])
+	}, [selectedDoc, docsBasePath, resourceBase, imageWhitelist])
 
 	const breadcrumbs = useMemo(
 		() => {
@@ -98,6 +102,8 @@ export function App() {
 		setDocsBasePath(message.docsBasePath || '')
 		setImageWhitelist(message.imageWhitelist || [])
 		setHighlightTerm('')
+		setHighlightOccurrence(null)
+		setHighlightBump((prev) => prev + 1)
 	}, [])
 
 	const handleOpen = useCallback((message: DocumentationView_ParentToChild) => {
@@ -105,12 +111,18 @@ export function App() {
 		setSelectedPath(message.filePath)
 		setAnchor(message.anchor)
 		setHighlightTerm('')
+		setHighlightOccurrence(null)
+		setHighlightBump((prev) => prev + 1)
 	}, [])
 
 	useDocumentationMessaging(vscode, handleInit, handleOpen)
 
 	useEffect(() => {
 		if (!selectedPath) return
+		if (suppressExpandRef.current) {
+			suppressExpandRef.current = false
+			return
+		}
 		const segments = selectedPath.split('/').slice(0, -1)
 		if (segments.length === 0) return
 		setExpandedFolders((prev) => {
@@ -129,7 +141,10 @@ export function App() {
 		function onKeyDown(event: KeyboardEvent) {
 			if (event.key === 'Escape') {
 				setHighlightTerm('')
+				setHighlightOccurrence(null)
+				setHighlightBump((prev) => prev + 1)
 				setZoomedImage(null)
+				setMissingLink(null)
 			}
 		}
 		
@@ -154,22 +169,21 @@ export function App() {
 	function handleFolderSelect(path: string) {
 		const targetPath = folderDefaultMap.get(path)
 		if (targetPath) {
+			suppressExpandRef.current = true
 			setSelectedPath(targetPath)
 			setAnchor(undefined)
 			setHighlightTerm('')
+			setHighlightOccurrence(null)
+			setHighlightBump((prev) => prev + 1)
 		}
-		setExpandedFolders((prev) => {
-			if (prev.has(path)) return prev
-			const next = new Set(prev)
-			next.add(path)
-			return next
-		})
 	}
 
 	function handleSelectFile(path: string) {
 		setSelectedPath(path)
 		setAnchor(undefined)
 		setHighlightTerm('')
+		setHighlightOccurrence(null)
+		setHighlightBump((prev) => prev + 1)
 	}
 
 	useDocumentationInteractions({
@@ -184,10 +198,18 @@ export function App() {
 				type: DocumentationViewCommands.openExternal,
 				href
 			}),
+		onMissingFile: (path) => setMissingLink(path),
 		onZoomImage: setZoomedImage
 	})
 
-	useSearchHighlight(contentRef, html, highlightTerm, debouncedQuery)
+	useSearchHighlight(
+		contentRef,
+		html,
+		highlightTerm,
+		debouncedQuery,
+		highlightOccurrence,
+		highlightBump
+	)
 	return (
 		<div className="doc-container">
 			<DocsSidebar
@@ -199,11 +221,13 @@ export function App() {
 				isEmpty={files.length === 0}
 				overviewPath={overviewPath}
 				onQueryChange={setQuery}
-				onResultSelect={(path) => {
+				onResultSelect={(path, occurrence) => {
 					setSelectedPath(path)
 					setAnchor(undefined)
 					const term = debouncedQuery.trim()
 					setHighlightTerm(term)
+					setHighlightOccurrence(occurrence)
+					setHighlightBump((prev) => prev + 1)
 					setQuery(term)
 				}}
 				onSelectFile={handleSelectFile}
@@ -235,6 +259,26 @@ export function App() {
 					image={zoomedImage}
 					onClose={() => setZoomedImage(null)}
 				/>
+				{missingLink && (
+					<div
+						className="doc-missing-overlay"
+						role="alertdialog"
+						aria-live="assertive"
+						onClick={() => setMissingLink(null)}
+					>
+						<div
+							className="doc-missing-card"
+							onClick={(event) => event.stopPropagation()}
+						>
+							<div className="doc-missing-icon" aria-hidden="true">
+								X
+							</div>
+							<div className="doc-missing-text">
+								The editor could not be opened because the file was not found.
+							</div>
+						</div>
+					</div>
+				)}
 				<div className="doc-content" ref={contentRef}>
 					{selectedDoc ? (
 						<div
