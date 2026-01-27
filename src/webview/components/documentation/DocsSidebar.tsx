@@ -125,7 +125,11 @@ export function DocsSidebar({
 							className="doc-result-button"
 							onClick={() => onResultSelect(res.path, res.occurrence)}
 						>
-							<div className="doc-result-title">{stripExtension(res.name)}</div>
+							<div className="doc-result-title">
+								{overviewPath && res.path === overviewPath
+									? 'Overview'
+									: stripExtension(res.name)}
+							</div>
 							<div
 								className="doc-result-snippet"
 								dangerouslySetInnerHTML={{ __html: res.snippet }}

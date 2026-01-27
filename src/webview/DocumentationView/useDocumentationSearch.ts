@@ -52,7 +52,10 @@ export function useDocumentationSearch(
 		const maxResults = 10
 		const qLower = q.toLowerCase()
 		const results: { path: string; name: string; snippet: string; occurrence: number }[] = []
+		const processed = new Set<string>()
 		const appendMatches = (doc: DocumentationFile) => {
+			if (processed.has(doc.path)) return
+			processed.add(doc.path)
 			const plain = normalizeSearchContent(doc.content)
 			if (!plain) return
 			const lower = plain.toLowerCase()
@@ -85,6 +88,12 @@ export function useDocumentationSearch(
 			if (!doc) continue
 			appendMatches(doc)
 			if (results.length >= maxResults) break
+		}
+		if (results.length < maxResults) {
+			for (const doc of files) {
+				appendMatches(doc)
+				if (results.length >= maxResults) break
+			}
 		}
 		return results
 	}, [files, debouncedQuery])
