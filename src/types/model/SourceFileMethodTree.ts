@@ -1,7 +1,7 @@
 import {
 	ISourceNodeMetaData,
 	SourceNodeIdentifierPart_string,
-	SourceNodeMetaDataType,
+	SourceNodeMetaDataType
 } from '@oaklean/profiler-core/dist/src/types'
 
 export type ISourceFileMethodTree = {

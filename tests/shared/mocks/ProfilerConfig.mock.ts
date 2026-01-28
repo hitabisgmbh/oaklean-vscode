@@ -10,7 +10,7 @@ import {
 export const stub_ProfilerConfig = () => {
 	const profilerConfigStub = sinon
 		.stub(ProfilerConfig, 'autoResolveFromPath')
-		.callsFake((startDir: UnifiedPath): ProfilerConfig => {
+		.callsFake((): ProfilerConfig => {
 			return new ProfilerConfig(new UnifiedPath(STATIC_CONFIG_FILENAME), {
 				exportOptions: {
 					outDir: 'profiles',

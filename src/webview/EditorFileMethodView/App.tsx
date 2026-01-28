@@ -14,6 +14,7 @@ import { SensorValueFormatHelper } from '../../helper/SensorValueFormatHelper'
 import { SortButton } from '../components/buttons/SortButton'
 import { SortDirection } from '../../types/sortDirection'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const acquireVsCodeApi: any
 
 export const vscode = acquireVsCodeApi()
@@ -82,8 +83,7 @@ export function App() {
 								codiconName={'codicon-file-text highlighted'}
 								onClick={() => {
 									postToProvider({
-										command:
-											EditorFileMethodViewProtocolCommands.showPathIndex
+										command: EditorFileMethodViewProtocolCommands.showPathIndex
 									})
 								}}
 								title="Show index of the source file"

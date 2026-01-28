@@ -11,8 +11,8 @@ if (!packageJsonPath) {
 	throw new Error('Module cannot access its own package.json')
 }
 
-const package_version = JSON.parse(fs.readFileSync(
-	new UnifiedPath(packageJsonPath).toString()
-	, 'utf-8')).version
+const package_version = JSON.parse(
+	fs.readFileSync(new UnifiedPath(packageJsonPath).toString(), 'utf-8')
+).version
 
 export const EXTENSION_VERSION = package_version

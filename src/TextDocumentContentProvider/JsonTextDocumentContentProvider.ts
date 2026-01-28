@@ -5,7 +5,8 @@ import { Container } from '../container'
 const SCHEMA_NAME = `${APP_IDENTIFIER}.json`
 
 export class JsonTextDocumentContentProvider
-	implements vscode.TextDocumentContentProvider {
+	implements vscode.TextDocumentContentProvider
+{
 	private _container: Container
 	private _contentMap: Map<string, string> = new Map()
 

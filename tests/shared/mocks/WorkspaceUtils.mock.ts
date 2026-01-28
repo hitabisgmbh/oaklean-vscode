@@ -18,10 +18,9 @@ import {
 const WORKSPACE_PATH_UNIFIED = new UnifiedPath(WORKSPACE_PATH)
 
 export const stub_globSync = () => {
-	const globSyncStub = sinon.stub(globSync, 'sync').callsFake(
-		(
-			pattern: string | string[]
-		): string[] => {
+	const globSyncStub = sinon
+		.stub(globSync, 'sync')
+		.callsFake((pattern: string | string[]): string[] => {
 			if ((pattern as string).endsWith('/**/*.oak')) {
 				return [
 					PROJECT_REPORT_PATH_003.toString(),
@@ -36,14 +35,12 @@ export const stub_globSync = () => {
 				return [
 					WORKSPACE_PATH_UNIFIED.join(PROFILE_PATH_003).toString(),
 					WORKSPACE_PATH_UNIFIED.join(PROFILE_PATH_001).toString(),
-					WORKSPACE_PATH_UNIFIED.join(PROFILE_PATH_002).toString(),
+					WORKSPACE_PATH_UNIFIED.join(PROFILE_PATH_002).toString()
 				]
 			}
 
 			if ((pattern as string).endsWith('/**/.oaklean')) {
-				return [
-					WORKSPACE_PATH_UNIFIED.join('/**/.oaklean').toString()
-				]
+				return [WORKSPACE_PATH_UNIFIED.join('/**/.oaklean').toString()]
 			}
 			return []
 		})
@@ -58,16 +55,17 @@ export const stub_getWorkspaceDirStub = () => {
 }
 
 export const stub_getProjectReportPathsFromWorkspaceStub = () => {
-	const getWorkspaceDirStub = sinon.stub(WorkspaceUtils, 'getProjectReportPathsFromWorkspace')
-	getWorkspaceDirStub.returns(
-		[
-			new UnifiedPath(PROJECT_REPORT_PATH_001),
-			new UnifiedPath(PROJECT_REPORT_PATH_002),
-			new UnifiedPath(PROJECT_REPORT_PATH_003),
-			new UnifiedPath(PROJECT_REPORT_PATH_004),
-			new UnifiedPath(PROJECT_REPORT_PATH_005)
-		]
+	const getWorkspaceDirStub = sinon.stub(
+		WorkspaceUtils,
+		'getProjectReportPathsFromWorkspace'
 	)
+	getWorkspaceDirStub.returns([
+		new UnifiedPath(PROJECT_REPORT_PATH_001),
+		new UnifiedPath(PROJECT_REPORT_PATH_002),
+		new UnifiedPath(PROJECT_REPORT_PATH_003),
+		new UnifiedPath(PROJECT_REPORT_PATH_004),
+		new UnifiedPath(PROJECT_REPORT_PATH_005)
+	])
 
 	return getWorkspaceDirStub
 }

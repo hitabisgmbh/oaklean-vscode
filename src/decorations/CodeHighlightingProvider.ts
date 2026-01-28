@@ -45,7 +45,7 @@ export class CodeHighlightingProvider extends vscode.Disposable {
 		if (editor.document.uri.scheme !== 'file') {
 			// Only provide decorations for file URIs
 			return
-		}	
+		}
 		const enableLineAnnotations = this._container.storage.getWorkspace(
 			'enableLineAnnotations',
 			true

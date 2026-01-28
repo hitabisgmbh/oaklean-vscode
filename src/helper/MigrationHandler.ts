@@ -1,5 +1,4 @@
 import { Disposable } from 'vscode'
-import { VersionHelper } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
 import { EXTENSION_VERSION } from '../constants/app'
@@ -23,7 +22,7 @@ export class MigrationHandler implements Disposable {
 		) as string | undefined
 		if (lastInstalledVersion === undefined) {
 			// earlier than 0.1.3
-			this.migrate_from_v012()	
+			this.migrate_from_v012()
 		}
 		this.container.storage.store(
 			'INSTALLED_EXTENSION_VERSION',

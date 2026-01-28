@@ -42,5 +42,5 @@ export const enum GlyphChars {
 	SquareWithBottomShadow = '\u274F',
 	SquareWithTopShadow = '\u2750',
 	Warning = '\u26a0',
-	ZeroWidthSpace = '\u200b',
+	ZeroWidthSpace = '\u200b'
 }

@@ -37,19 +37,25 @@ export class SourceFileMethodTree {
 	static fromSourceFileMetaData(
 		sourceFileMetaData: SourceFileMetaData
 	): SourceFileMethodTree {
-		const root = new SourceFileMethodTree(true, '' as SourceNodeIdentifierPart_string, undefined)
+		const root = new SourceFileMethodTree(
+			true,
+			'' as SourceNodeIdentifierPart_string,
+			undefined
+		)
 		root.addSourceFileMetaData(sourceFileMetaData)
 		return root
 	}
 
-	addSourceFileMetaData(
-		sourceFileMetaData: SourceFileMetaData
-	) {
+	addSourceFileMetaData(sourceFileMetaData: SourceFileMetaData) {
 		for (const sourceNodeMetaData of sourceFileMetaData.functions.values()) {
 			const identifierParts = SourceNodeIdentifierHelper.split(
 				sourceNodeMetaData.sourceNodeIndex.identifier
 			)
-			this.addChild(identifierParts, sourceNodeMetaData.presentInOriginalSourceCode, sourceNodeMetaData)
+			this.addChild(
+				identifierParts,
+				sourceNodeMetaData.presentInOriginalSourceCode,
+				sourceNodeMetaData
+			)
 		}
 	}
 
@@ -59,7 +65,7 @@ export class SourceFileMethodTree {
 		sourceNodeMetaData: SourceNodeMetaData<
 			| SourceNodeMetaDataType.SourceNode
 			| SourceNodeMetaDataType.LangInternalSourceNode
-		>,
+		>
 	) {
 		const identifierPart = identifierParts.shift()
 		if (identifierPart === undefined) {
@@ -77,10 +83,14 @@ export class SourceFileMethodTree {
 		if (presentInOriginalSourceCode) {
 			if (!child.piosc) {
 				this.pioscChildrenCount++
-				child.piosc = true	
+				child.piosc = true
 			}
 		}
-		child.addChild(identifierParts, presentInOriginalSourceCode, sourceNodeMetaData)
+		child.addChild(
+			identifierParts,
+			presentInOriginalSourceCode,
+			sourceNodeMetaData
+		)
 	}
 
 	toJSON(): ISourceFileMethodTree {

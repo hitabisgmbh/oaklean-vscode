@@ -6,7 +6,7 @@ import { Container } from '../container'
 
 export enum CommandIdentifiers {
 	disableLineAnnotations = 'disableLineAnnotations',
-	enableLineAnnotations = 'enableLineAnnotations',
+	enableLineAnnotations = 'enableLineAnnotations'
 }
 
 export enum ToggleLineAnnotationAction {
@@ -29,8 +29,14 @@ export default class ToggleLineAnnotationCommands extends BaseCommand {
 		this.action = action
 		this._disposable = vscode.Disposable.from()
 
-		const lineAnnotationsEnabled = !!container.storage.getWorkspace('enableLineAnnotations')
-		vscode.commands.executeCommand('setContext', ContextOptions.lineAnnotationsEnabled, lineAnnotationsEnabled)
+		const lineAnnotationsEnabled = !!container.storage.getWorkspace(
+			'enableLineAnnotations'
+		)
+		vscode.commands.executeCommand(
+			'setContext',
+			ContextOptions.lineAnnotationsEnabled,
+			lineAnnotationsEnabled
+		)
 	}
 
 	dispose() {
@@ -49,11 +55,18 @@ export default class ToggleLineAnnotationCommands extends BaseCommand {
 	execute() {
 		if (this.action === 'disable') {
 			this.container.storage.storeWorkspace('enableLineAnnotations', false)
-			vscode.commands.executeCommand('setContext', ContextOptions.lineAnnotationsEnabled, false)
+			vscode.commands.executeCommand(
+				'setContext',
+				ContextOptions.lineAnnotationsEnabled,
+				false
+			)
 		} else if (this.action === 'enable') {
 			this.container.storage.storeWorkspace('enableLineAnnotations', true)
-			vscode.commands.executeCommand('setContext', ContextOptions.lineAnnotationsEnabled, true)
+			vscode.commands.executeCommand(
+				'setContext',
+				ContextOptions.lineAnnotationsEnabled,
+				true
+			)
 		}
 	}
-
 }

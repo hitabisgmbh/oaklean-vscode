@@ -7,6 +7,7 @@ type ImageButtonProps = {
 }
 
 export function ImageButton({ imagePath, title, onClick }: ImageButtonProps) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const mediaPath = (window as any).__MEDIA_PATH__
 
 	return (

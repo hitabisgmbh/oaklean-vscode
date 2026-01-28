@@ -13,6 +13,7 @@ import { CodiconButton } from '../components/buttons/CodiconButton'
 import { SensorValueFormatHelper } from '../../helper/SensorValueFormatHelper'
 import { SortDirection } from '../../types/sortDirection'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const acquireVsCodeApi: any
 
 export const vscode = acquireVsCodeApi()
@@ -73,7 +74,7 @@ export function App() {
 							? ''
 							: SensorValueFormatHelper.formatSensorValueType(
 									props.sensorValueRepresentation
-							)}
+								)}
 					</div>
 				}
 				rightSection={
@@ -97,27 +98,30 @@ export function App() {
 			/>
 			{props === undefined
 				? undefined
-				: Object.entries(props.methodTrees || {}).map(([relativePath, entry]) => {
-						if (entry.tree.pioscChildrenCount === 0 && !showNPIOSC) {
-							return undefined
-						}
+				: Object.entries(props.methodTrees || {}).map(
+						([relativePath, entry]) => {
+							if (entry.tree.pioscChildrenCount === 0 && !showNPIOSC) {
+								return undefined
+							}
 
-						return (
-							<TreeView nodeLabel={entry.fileName} itemClassName="row">
-								<MethodTree
-									sortDirection={SortDirection.default}
-									flatMode={flatMode}
-									showNPIOSC={showNPIOSC}
-									data={{
-										relativePath,
-										sourceFileMethodTree: entry.tree,
-										sensorValueRepresentation: props.sensorValueRepresentation,
-										postToProvider
-									}}
-								/>
-							</TreeView>
-						)
-				})}
+							return (
+								<TreeView nodeLabel={entry.fileName} itemClassName="row">
+									<MethodTree
+										sortDirection={SortDirection.default}
+										flatMode={flatMode}
+										showNPIOSC={showNPIOSC}
+										data={{
+											relativePath,
+											sourceFileMethodTree: entry.tree,
+											sensorValueRepresentation:
+												props.sensorValueRepresentation,
+											postToProvider
+										}}
+									/>
+								</TreeView>
+							)
+						}
+					)}
 		</>
 	)
 }

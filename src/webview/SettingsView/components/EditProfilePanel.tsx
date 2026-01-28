@@ -52,6 +52,7 @@ export function EditProfilePanel(props: EditProfilePanelProps) {
 							value={name}
 							onChange={(e) => {
 								if (e.target) {
+									// eslint-disable-next-line @typescript-eslint/no-explicit-any
 									const profileName = (e.target as any).value as string
 									props.onProfileChange(profileName)
 								}

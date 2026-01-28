@@ -1,6 +1,4 @@
-import {
-	OpenSourceLocationProtocol_ChildToParent,
-} from './OpenSourceLocationProtocol'
+import { OpenSourceLocationProtocol_ChildToParent } from './OpenSourceLocationProtocol'
 
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import { ISourceFileMethodTree } from '../types/model/SourceFileMethodTree'
@@ -26,5 +24,5 @@ export type MethodViewProtocol_ParentToChild =
 				}
 			>
 			sensorValueRepresentation: SensorValueRepresentation
-	}
+	  }
 	| { command: MethodViewProtocolCommands.clearMethodList }
