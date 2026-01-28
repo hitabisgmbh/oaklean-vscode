@@ -12,9 +12,26 @@
 	"typescript.tsc.autoDetect": "off",
 	"editor.tabSize": 2,
 	"editor.insertSpaces": false,
-	"editor.formatOnSave": false,
-	"editor.formatOnPaste": false,
 	"editor.detectIndentation": false,
 	"javascript.preferences.quoteStyle": "single",
-	"typescript.preferences.quoteStyle": "single"
+	"typescript.preferences.quoteStyle": "single",
+	"editor.formatOnSave": false,
+	"editor.formatOnPaste": false,
+	// Enable specifically for Javascript and TypeScript
+	"[javascript]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
+	"[javascriptreact]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
+	"[typescript]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
+	"[typescriptreact]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
 }
