@@ -12,7 +12,9 @@ import SelectSensorValueTypeCommand from './commands/SelectSensorValueTypeComman
 import ChangeSortDirectionCommands from './commands/ChangeSortDirectionCommands'
 import ThemeColorViewerCommands from './commands/ThemeColorViewerCommands'
 import SettingsCommand from './commands/SettingsCommand'
-import ToggleLineAnnotationCommands, { ToggleLineAnnotationAction } from './commands/ToggleLineAnnotationCommands'
+import ToggleLineAnnotationCommands, {
+	ToggleLineAnnotationAction
+} from './commands/ToggleLineAnnotationCommands'
 import { MethodViewProvider } from './WebViewProviders/MethodViewProvider'
 import { FilterViewProvider } from './WebViewProviders/FilterViewProvider'
 import SelectProfileCommand from './commands/SelectProfile'
@@ -22,7 +24,10 @@ import { ReportEditorProvider } from './CustomEditorProviders/ReportEditorProvid
 import { JsonTextDocumentContentProvider } from './TextDocumentContentProvider/JsonTextDocumentContentProvider'
 import { EditorFileMethodViewProvider } from './WebViewProviders/EditorFileMethodViewProvider'
 import { GraphicalViewProvider } from './WebViewProviders/GraphicalViewProvider'
-import { SensorValueRepresentation, defaultSensorValueRepresentation } from './types/sensorValueRepresentation'
+import {
+	SensorValueRepresentation,
+	defaultSensorValueRepresentation
+} from './types/sensorValueRepresentation'
 import ReportBackendStorageController from './controller/ReportBackendStorageController'
 import WorkspaceUtils from './helper/WorkspaceUtils'
 import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
@@ -157,7 +162,6 @@ export class Container {
 	private readonly _graphicalViewProvider: GraphicalViewProvider
 	get graphicalViewProvider() {
 		return this._graphicalViewProvider
-
 	}
 
 	private readonly _filterViewProvider: FilterViewProvider
@@ -175,29 +179,40 @@ export class Container {
 		return this._jsonTextDocumentContentProvider
 	}
 
-	private constructor(
-		context: ExtensionContext,
-		storage: Storage
-	) {
+	private constructor(context: ExtensionContext, storage: Storage) {
 		this._context = context
 		this.context.subscriptions.push((this._storage = storage))
-		this.context.subscriptions.push((this._eventHandler = new EventHandler(this)))
+		this.context.subscriptions.push(
+			(this._eventHandler = new EventHandler(this))
+		)
 
 		// Controllers
-		this.context.subscriptions.push((this._textEditorController = new TextEditorController(this)))
-		this.context.subscriptions.push((this._textDocumentController = new TextDocumentController(this)))
-		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
-		this.context.subscriptions.push((this._reportBackendStorageController =
-			new ReportBackendStorageController(this)))
+		this.context.subscriptions.push(
+			(this._textEditorController = new TextEditorController(this))
+		)
+		this.context.subscriptions.push(
+			(this._textDocumentController = new TextDocumentController(this))
+		)
+		this.context.subscriptions.push(
+			(this._profileHelper = new ProfileHelper(this))
+		)
+		this.context.subscriptions.push(
+			(this._reportBackendStorageController =
+				new ReportBackendStorageController(this))
+		)
 
 		// Migration Handler
-		this.context.subscriptions.push((this._migrationHandler = new MigrationHandler(this)))
+		this.context.subscriptions.push(
+			(this._migrationHandler = new MigrationHandler(this))
+		)
 
 		// Hover Provider
 		this.context.subscriptions.push(SensorValueHoverProvider.register(this))
 
 		// TreeViews
-		this.context.subscriptions.push(this._treeDataProvider = new SourceFileMetaDataTreeProvider(this))
+		this.context.subscriptions.push(
+			(this._treeDataProvider = new SourceFileMetaDataTreeProvider(this))
+		)
 		this.context.subscriptions.push(
 			vscode.window.registerTreeDataProvider(
 				'SourceFileMetaDataTree',
@@ -211,138 +226,207 @@ export class Container {
 		)
 
 		// Commands
-		this.context.subscriptions.push((this._settingsCommand = new SettingsCommand(this)))
+		this.context.subscriptions.push(
+			(this._settingsCommand = new SettingsCommand(this))
+		)
 		this.context.subscriptions.push(this._settingsCommand.register())
-		this.context.subscriptions.push(this._showThemeColorViewerCommand = new ThemeColorViewerCommands(this))
-		this.context.subscriptions.push(this._showThemeColorViewerCommand.register())
-		this.context.subscriptions.push(this._selectReportCommand = new SelectReport(this))
+		this.context.subscriptions.push(
+			(this._showThemeColorViewerCommand = new ThemeColorViewerCommands(this))
+		)
+		this.context.subscriptions.push(
+			this._showThemeColorViewerCommand.register()
+		)
+		this.context.subscriptions.push(
+			(this._selectReportCommand = new SelectReport(this))
+		)
 		this.context.subscriptions.push(this._selectReportCommand.register())
-		this.context.subscriptions.push(this._openSourceLocationCommand = new OpenSourceLocationCommand(this))
+		this.context.subscriptions.push(
+			(this._openSourceLocationCommand = new OpenSourceLocationCommand(this))
+		)
 		this.context.subscriptions.push(this._openSourceLocationCommand.register())
 
 		this.context.subscriptions.push(
-			this._selectReportFromContextMenuCommand = new SelectReportFromContextMenu(this)
+			(this._selectReportFromContextMenuCommand =
+				new SelectReportFromContextMenu(this))
 		)
-		this.context.subscriptions.push(this._selectReportFromContextMenuCommand.register())
+		this.context.subscriptions.push(
+			this._selectReportFromContextMenuCommand.register()
+		)
 
 		this.context.subscriptions.push(
-			this._selectValueRepresentationCommand = new SelectValueRepresentationCommand(this, this._treeDataProvider)
+			(this._selectValueRepresentationCommand =
+				new SelectValueRepresentationCommand(this, this._treeDataProvider))
 		)
-		this.context.subscriptions.push(this._selectValueRepresentationCommand.register())
+		this.context.subscriptions.push(
+			this._selectValueRepresentationCommand.register()
+		)
 
 		this.context.subscriptions.push(
-			this._selectSensorValueTypeCommand = new SelectSensorValueTypeCommand(this, this._treeDataProvider)
+			(this._selectSensorValueTypeCommand = new SelectSensorValueTypeCommand(
+				this,
+				this._treeDataProvider
+			))
 		)
-		this.context.subscriptions.push(this._selectSensorValueTypeCommand.register())
+		this.context.subscriptions.push(
+			this._selectSensorValueTypeCommand.register()
+		)
 
 		this.context.subscriptions.push(
-			this._selectProfileCommand = new SelectProfileCommand(this)
+			(this._selectProfileCommand = new SelectProfileCommand(this))
 		)
 		this.context.subscriptions.push(this._selectProfileCommand.register())
 
 		this.context.subscriptions.push(
-			this._disableLineAnnotationsCommand =
-				new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.disable)
+			(this._disableLineAnnotationsCommand = new ToggleLineAnnotationCommands(
+				this,
+				ToggleLineAnnotationAction.disable
+			))
 		)
-		this.context.subscriptions.push(this._disableLineAnnotationsCommand.register())
+		this.context.subscriptions.push(
+			this._disableLineAnnotationsCommand.register()
+		)
 
 		this.context.subscriptions.push(
-			this._enableLineAnnotationsCommand =
-				new ToggleLineAnnotationCommands(this, ToggleLineAnnotationAction.enable)
+			(this._enableLineAnnotationsCommand = new ToggleLineAnnotationCommands(
+				this,
+				ToggleLineAnnotationAction.enable
+			))
 		)
-		this.context.subscriptions.push(this._enableLineAnnotationsCommand.register())
+		this.context.subscriptions.push(
+			this._enableLineAnnotationsCommand.register()
+		)
 
 		this.context.subscriptions.push(
-			this._changeSortDirectionAscToDescCommand = new ChangeSortDirectionCommands(
-				this,
-				this._treeDataProvider,
-				SortDirection.desc
-			)
+			(this._changeSortDirectionAscToDescCommand =
+				new ChangeSortDirectionCommands(
+					this,
+					this._treeDataProvider,
+					SortDirection.desc
+				))
 		)
 		this.context.subscriptions.push(
-			this._changeSortDirectionDescToDefaultCommand = new ChangeSortDirectionCommands(
-				this,
-				this._treeDataProvider,
-				SortDirection.default
-			)
+			(this._changeSortDirectionDescToDefaultCommand =
+				new ChangeSortDirectionCommands(
+					this,
+					this._treeDataProvider,
+					SortDirection.default
+				))
 		)
 		this.context.subscriptions.push(
-			this._changeSortDirectionDefaultToAscCommand = new ChangeSortDirectionCommands(
-				this,
-				this._treeDataProvider,
-				SortDirection.asc
-			)
+			(this._changeSortDirectionDefaultToAscCommand =
+				new ChangeSortDirectionCommands(
+					this,
+					this._treeDataProvider,
+					SortDirection.asc
+				))
 		)
-		this.context.subscriptions.push(this._changeSortDirectionAscToDescCommand.register())
-		this.context.subscriptions.push(this._changeSortDirectionDescToDefaultCommand.register())
-		this.context.subscriptions.push(this._changeSortDirectionDefaultToAscCommand.register())
+		this.context.subscriptions.push(
+			this._changeSortDirectionAscToDescCommand.register()
+		)
+		this.context.subscriptions.push(
+			this._changeSortDirectionDescToDefaultCommand.register()
+		)
+		this.context.subscriptions.push(
+			this._changeSortDirectionDefaultToAscCommand.register()
+		)
 
 		//webview providers
 		this.context.subscriptions.push(
-			this._methodViewProvider = new MethodViewProvider(this.context.extensionUri, this)
+			(this._methodViewProvider = new MethodViewProvider(
+				this.context.extensionUri,
+				this
+			))
 		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
-				MethodViewProvider.viewType, this._methodViewProvider
-			))
+				MethodViewProvider.viewType,
+				this._methodViewProvider
+			)
+		)
 
 		this.context.subscriptions.push(
-			this._filterViewProvider = new FilterViewProvider(this.context.extensionUri, this)
+			(this._filterViewProvider = new FilterViewProvider(
+				this.context.extensionUri,
+				this
+			))
 		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
-				FilterViewProvider.viewType, this._filterViewProvider
-			))
-		this.context.subscriptions.push(this._reportEditorProvider = new ReportEditorProvider(this))
+				FilterViewProvider.viewType,
+				this._filterViewProvider
+			)
+		)
+		this.context.subscriptions.push(
+			(this._reportEditorProvider = new ReportEditorProvider(this))
+		)
 		this.context.subscriptions.push(this._reportEditorProvider.register())
 
 		this.context.subscriptions.push(
-			this._jsonTextDocumentContentProvider = new JsonTextDocumentContentProvider(this)
+			(this._jsonTextDocumentContentProvider =
+				new JsonTextDocumentContentProvider(this))
 		)
 
 		this.context.subscriptions.push(
-			vscode.commands.registerCommand('oaklean.openDynamicFile', (file: string) => {
-				const config = this._textDocumentController.config
-				if (!config) {
-					return
+			vscode.commands.registerCommand(
+				'oaklean.openDynamicFile',
+				(file: string) => {
+					const config = this._textDocumentController.config
+					if (!config) {
+						return
+					}
+					const resolvedPath = WorkspaceUtils.getFullFilePath(config, file)
+					if (resolvedPath) {
+						vscode.commands.executeCommand(
+							'vscode.open',
+							vscode.Uri.file(resolvedPath.toPlatformString())
+						)
+					}
 				}
-				const resolvedPath = WorkspaceUtils.getFullFilePath(config, file)
-				if (resolvedPath) {
-					vscode.commands.executeCommand('vscode.open', vscode.Uri.file(resolvedPath.toPlatformString()))
-				}
-			})
+			)
 		)
 
 		this.context.subscriptions.push(
-			this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(context.extensionUri, this)
+			(this._editorFileMethodViewProvider = new EditorFileMethodViewProvider(
+				context.extensionUri,
+				this
+			))
 		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
-				EditorFileMethodViewProvider.viewType, this._editorFileMethodViewProvider
-			))
+				EditorFileMethodViewProvider.viewType,
+				this._editorFileMethodViewProvider
+			)
+		)
 
 		this.context.subscriptions.push(
-			this._graphicalViewProvider = new GraphicalViewProvider(context.extensionUri, this)
+			(this._graphicalViewProvider = new GraphicalViewProvider(
+				context.extensionUri,
+				this
+			))
 		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
-				GraphicalViewProvider.viewType, this._graphicalViewProvider
-			))
+				GraphicalViewProvider.viewType,
+				this._graphicalViewProvider
+			)
+		)
 		this._eventHandler.fireInitialEvents()
 	}
 
-	static create(
-		context: ExtensionContext,
-		storage: Storage
-	) {
+	static create(context: ExtensionContext, storage: Storage) {
 		if (Container.#instance !== undefined) {
 			throw new Error('Container is already initialized')
 		}
 
 		Container.#instance = new Container(context, storage)
-		const sensorValueRepresentation = storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+		const sensorValueRepresentation = storage.getWorkspace(
+			'sensorValueRepresentation'
+		) as SensorValueRepresentation
 		if (sensorValueRepresentation === undefined) {
-			storage.storeWorkspace('sensorValueRepresentation', defaultSensorValueRepresentation())
+			storage.storeWorkspace(
+				'sensorValueRepresentation',
+				defaultSensorValueRepresentation()
+			)
 		}
 
 		return Container.#instance

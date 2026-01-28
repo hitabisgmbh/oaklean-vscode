@@ -5,6 +5,7 @@ type IColorData = {
 	description: string
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const acquireVsCodeApi: any
 
 export const vscode = acquireVsCodeApi()
@@ -16,6 +17,7 @@ export function App() {
 	>({})
 
 	useEffect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const themeColors = (window as any).__THEME_COLORS__ as IColorData[]
 		themeColors.sort((a, b) => a.key.localeCompare(b.key))
 		const groups: Record<string, IColorData[]> = {}

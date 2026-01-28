@@ -1,7 +1,5 @@
 import vscode from 'vscode'
-import {
-	SourceNodeIdentifier_string
-} from '@oaklean/profiler-core'
+import { SourceNodeIdentifier_string } from '@oaklean/profiler-core'
 
 import { getNonce } from '../utilities/getNonce'
 import { getUri } from '../utilities/getUri'
@@ -31,9 +29,13 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 	) {
 		this._container = container
 		this.subscriptions = [
-			this._container.eventHandler.onSelectedSensorValueTypeChange(this.refresh.bind(this)),
+			this._container.eventHandler.onSelectedSensorValueTypeChange(
+				this.refresh.bind(this)
+			),
 			this._container.eventHandler.onReportLoaded(this.refresh.bind(this)),
-			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this))
+			this._container.eventHandler.onWebpackRecompile(
+				this.hardRefresh.bind(this)
+			)
 		]
 	}
 
@@ -41,11 +43,7 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 		this.subscriptions.forEach((d) => d.dispose())
 	}
 
-	public resolveWebviewView(
-		webviewView: vscode.WebviewView,
-		context: vscode.WebviewViewResolveContext,
-		_token: vscode.CancellationToken
-	) {
+	public resolveWebviewView(webviewView: vscode.WebviewView) {
 		this._view = webviewView
 
 		webviewView.webview.options = {
@@ -66,7 +64,9 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	receiveMessageFromWebview(message: MethodViewProtocol_ChildToParent) {
-		if (message.command === OpenSourceLocationProtocolCommands.openSourceLocation) {
+		if (
+			message.command === OpenSourceLocationProtocolCommands.openSourceLocation
+		) {
 			const identifier = message.identifier
 			const relativePath = message.relativePath
 
@@ -74,22 +74,21 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			if (config === undefined) {
 				return
 			}
-			const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePathFromRelativePath(
-				config,
-				relativePath
-			)
+			const relativeWorkspacePath =
+				WorkspaceUtils.getRelativeWorkspacePathFromRelativePath(
+					config,
+					relativePath
+				)
 			if (relativeWorkspacePath === undefined) {
 				return
 			}
-			OpenSourceLocationCommand.execute(
-				{
-					command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
-					args: {
-						relativeWorkspacePath: relativeWorkspacePath.toString(),
-						sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
-					}
+			OpenSourceLocationCommand.execute({
+				command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
+				args: {
+					relativeWorkspacePath: relativeWorkspacePath.toString(),
+					sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
 				}
-			)
+			})
 		} else if (message.command === MethodViewProtocolCommands.initMethods) {
 			this.refresh()
 		}
@@ -116,17 +115,23 @@ export class MethodViewProvider implements vscode.WebviewViewProvider {
 			return
 		}
 		const sensorValueRepresentation = this._container.storage.getWorkspace(
-					'sensorValueRepresentation'
-				) as SensorValueRepresentation
+			'sensorValueRepresentation'
+		) as SensorValueRepresentation
 
-		const sourceFileMethodTrees: Record<string, {
-			fileName: string,
-			tree: ISourceFileMethodTree
-		}>  = {}
+		const sourceFileMethodTrees: Record<
+			string,
+			{
+				fileName: string
+				tree: ISourceFileMethodTree
+			}
+		> = {}
 		for (const sourceFileMetaData of projectReport.intern.values()) {
 			sourceFileMethodTrees[sourceFileMetaData.path] = {
-				fileName: sourceFileMetaData.pathIndex.identifier.split('/').pop() || '',
-				tree: SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData).toJSON()
+				fileName:
+					sourceFileMetaData.pathIndex.identifier.split('/').pop() || '',
+				tree: SourceFileMethodTree.fromSourceFileMetaData(
+					sourceFileMetaData
+				).toJSON()
 			}
 		}
 		this.postMessageToWebview({

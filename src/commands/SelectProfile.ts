@@ -42,11 +42,15 @@ export default class SelectProfileCommand extends BaseCommand {
 		}
 		quickPickOptions.set(REQUEST_ADD_NEW_PROFILE, {
 			selectionCallback: () => {
-				vscode.commands.executeCommand(`${APP_IDENTIFIER}.${SETTINGS_IDENTIFIER}`)
+				vscode.commands.executeCommand(
+					`${APP_IDENTIFIER}.${SETTINGS_IDENTIFIER}`
+				)
 			}
 		})
 
-		const currentProfile = this.container.storage.getWorkspace('profile') as Profile
+		const currentProfile = this.container.storage.getWorkspace(
+			'profile'
+		) as Profile
 		const quickPick = new QuickPick(quickPickOptions)
 		if (currentProfile) {
 			quickPick.setCurrentItem(currentProfile.name)

@@ -58,7 +58,8 @@ const IDENTIFIER_TYPE_CODICONS: Record<ProgramStructureTreeType, string> = {
 	[ProgramStructureTreeType.CatchClause]: 'codicon-symbol-structure',
 	[ProgramStructureTreeType.FinallyBlock]: 'codicon-symbol-structure',
 	[ProgramStructureTreeType.Block]: 'codicon-symbol-structure',
-	[ProgramStructureTreeType.ClassStaticBlockDeclaration]: 'codicon-symbol-method',
+	[ProgramStructureTreeType.ClassStaticBlockDeclaration]:
+		'codicon-symbol-method',
 	[ProgramStructureTreeType.SetAccessorDeclaration]: 'codicon-symbol-method',
 	[ProgramStructureTreeType.GetAccessorDeclaration]: 'codicon-symbol-method',
 	[ProgramStructureTreeType.SwitchStatement]: 'codicon-symbol-structure',
@@ -81,9 +82,7 @@ export interface MethodTreeProps {
 		relativePath: string
 		sourceFileMethodTree: ISourceFileMethodTree
 		sensorValueRepresentation: SensorValueRepresentation
-		postToProvider: (
-			message: OpenSourceLocationProtocol_ChildToParent
-		) => void
+		postToProvider: (message: OpenSourceLocationProtocol_ChildToParent) => void
 	}
 	showNPIOSC: boolean
 	flatMode: boolean
@@ -177,9 +176,7 @@ export function MethodTree({
 			SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(identifierPart)
 
 		const labelText = result?.name || 'UNKNOWN'
-		const labelIcon = codiconByIdentifierType(
-			result?.type
-		)
+		const labelIcon = codiconByIdentifierType(result?.type)
 
 		let sensorValueString: string | undefined = undefined
 		let sensorValueUnit: string | undefined = undefined

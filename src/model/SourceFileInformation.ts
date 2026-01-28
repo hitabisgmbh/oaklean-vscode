@@ -35,7 +35,7 @@ export class SourceFileInformation {
 	private _sourceNodeMetaDataIndex:
 		| {
 				byLine: Map<number, SourceNodeMetaDataDirect[]>
-		}
+		  }
 		| undefined
 
 	constructor(
@@ -51,10 +51,7 @@ export class SourceFileInformation {
 		this._absoluteFilePath = new UnifiedPath(document.fileName)
 	}
 
-	update(
-		reportPath: UnifiedPath,
-		projectReport: ProjectReport,
-	) {
+	update(reportPath: UnifiedPath, projectReport: ProjectReport) {
 		this._reportPath = reportPath
 		this._projectReport = projectReport
 		this.invalidate()

@@ -26,6 +26,7 @@ export class ProjectReportHelper {
 			}
 
 			return loadedReport
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		} catch (e) {
 			ProjectReportHelper.showReportErrorReason(reportPath)
 			return null
@@ -36,6 +37,7 @@ export class ProjectReportHelper {
 		let reportVersion
 		try {
 			reportVersion = ProjectReport.versionFromBinFile(reportPath)
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		} catch (error) {
 			vscode.window.showErrorMessage(
 				'The selected file is not a valid Oaklean report file.'

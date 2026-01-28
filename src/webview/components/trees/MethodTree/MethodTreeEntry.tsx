@@ -29,7 +29,9 @@ export function MethodTreeEntry({
 			) : undefined}
 			<>
 				<span className="sensorValue">
-					<span className="self" title='value of this node'>{sensorValue}</span>
+					<span className="self" title="value of this node">
+						{sensorValue}
+					</span>
 					<span className="unit"> {sensorValueUnit}</span>
 				</span>
 			</>

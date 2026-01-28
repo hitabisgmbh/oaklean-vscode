@@ -19,20 +19,23 @@ export type ReportViewProtocol_ParentToChild = {
 		os: {
 			platform: string
 			distro: string
-			release: string,
+			release: string
 			arch: string
-		},
-		runtime: number
-		sensorInterface: undefined | {
-			type: string
-			sampleInterval: number
 		}
+		runtime: number
+		sensorInterface:
+			| undefined
+			| {
+					type: string
+					sampleInterval: number
+			  }
 	}
 }
 
-
-export type ReportViewProtocol_ChildToParent = {
-	command: ReportViewProtocolCommands.viewLoaded
-} | {
-	command: ReportViewProtocolCommands.openAsJson
-}
+export type ReportViewProtocol_ChildToParent =
+	| {
+			command: ReportViewProtocolCommands.viewLoaded
+	  }
+	| {
+			command: ReportViewProtocolCommands.openAsJson
+	  }

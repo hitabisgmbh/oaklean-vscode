@@ -2,14 +2,10 @@ import vscode, { Disposable, TextEditor } from 'vscode'
 
 import { Container } from '../container'
 import {
-	ReportLoadedEvent,
 	TextEditorChangeEvent,
-	SelectedSensorValueRepresentationChangeEvent,
-	ToggleLineAnnotationsChangeEvent,
 	SourceFileInformationChangeEvent
 } from '../helper/EventHandler'
 import { CodeHighlightingProvider } from '../decorations/CodeHighlightingProvider'
-
 
 export default class TextEditorController implements Disposable {
 	private readonly _disposable: Disposable
@@ -40,17 +36,15 @@ export default class TextEditorController implements Disposable {
 		)
 	}
 
-	toggleLineAnnotationsChange(event: ToggleLineAnnotationsChangeEvent) {
+	toggleLineAnnotationsChange() {
 		this.refresh()
 	}
 
-	selectedSensorValueTypeChanged(
-		event: SelectedSensorValueRepresentationChangeEvent
-	) {
+	selectedSensorValueTypeChanged() {
 		this.refresh()
 	}
 
-	reportLoaded(event: ReportLoadedEvent) {
+	reportLoaded() {
 		this.refresh()
 	}
 

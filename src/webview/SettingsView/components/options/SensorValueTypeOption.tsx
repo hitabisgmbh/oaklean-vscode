@@ -35,7 +35,7 @@ export function SensorValueTypeOption(props: sensorValueTypeOptionProps) {
 	}, [props.sensorValueType])
 
 	return (
-		<div className='option-section'>
+		<div className="option-section">
 			<label>Measurement</label>
 			<p>Select the type of measurement this profile is related to.</p>
 			<Dropdown

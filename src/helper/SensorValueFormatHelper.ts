@@ -40,6 +40,8 @@ export class SensorValueFormatHelper {
 	static formatSensorValueType(
 		sensorValueRepresentation: SensorValueRepresentation
 	) {
-		return SensorValueTypeNames[sensorValueRepresentation.selectedSensorValueType]
+		return SensorValueTypeNames[
+			sensorValueRepresentation.selectedSensorValueType
+		]
 	}
 }

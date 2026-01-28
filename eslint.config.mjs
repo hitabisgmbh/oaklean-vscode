@@ -80,6 +80,7 @@ export default defineConfig(
 		'**/eslint.config.mjs',
 		'**/__mocks__/**/*.js',
 		'**/__mocks__/**/*.ts',
+		'**/webpack.config.js',
 		'**/dist/**/*'
 	])
 )
