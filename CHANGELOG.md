@@ -2,6 +2,16 @@
 
 All notable changes to the "Oaklean" extension will be documented in this file.
 
+# 0.1.4
+### Added
+- Support for Oaklean Profiler v0.1.6
+
+### Improved
+- Preserves existing comments when saving measurement profiles to `.vscode/settings.json`
+
+### Bug fixes
+- The settings page now automatically reloads upon extension restart
+
 # 0.1.3
 ### Added
 - Support for Oaklean Profiler v0.1.5
