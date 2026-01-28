@@ -68,7 +68,7 @@ export default defineConfig(
 			],
 
 			// Prettier rule
-      'prettier/prettier': 'error'
+			'prettier/prettier': 'error'
 		}
 	},
 	prettierConfig, // Must come AFTER other configs to properly disable conflicting rules

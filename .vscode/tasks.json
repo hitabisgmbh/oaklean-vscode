@@ -4,18 +4,18 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-      "label": "watch",
-      "type": "shell",
-      "command": "npm run watch",
-      "isBackground": true,
+			"label": "watch",
+			"type": "shell",
+			"command": "npm run watch",
+			"isBackground": true,
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-      "problemMatcher": [
-        {
-          "owner": "webpack",
-          "pattern": [
+			"problemMatcher": [
+				{
+					"owner": "webpack",
+					"pattern": [
 						{
 							"regexp": "\\[tsl\\] (ERROR|WARNING) in (.*)?\\((\\d+),(\\d+)\\)",
 							"severity": 1,
@@ -29,17 +29,17 @@
 							"message": 2
 						}
 					],
-          "background": {
-            "activeOnStart": true,
+					"background": {
+						"activeOnStart": true,
 						"beginsPattern": {
 							"regexp": "[Cc]ompiling.*?|[Cc]ompil(ation|er) .*?starting"
 						},
 						"endsPattern": {
 							"regexp": "[Cc]ompiled (.*?successfully|with .*?(error|warning))|[Cc]ompil(ation|er) .*?finished"
 						}
-          }
-        }
-      ]
-    }
+					}
+				}
+			]
+		}
 	]
 }
