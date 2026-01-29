@@ -1,15 +1,5 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-	"editor.codeActionsOnSave": [
-		"source.fixAll.eslint"
-	],
-	"eslint.validate": [
-		"javascript",
-		"javascriptreact",
-		"typescript",
-		"vue"
-	],
-	"editor.formatOnSaveMode": "file",
 	"files.eol": "\n",
 	"files.exclude": {
 		"dist": false // set this to true to hide the "dist" folder with the compiled JS files
@@ -17,6 +7,7 @@
 	"search.exclude": {
 		"dist": true // set this to false to include "dist" folder in search results
 	},
+	"typescript.tsdk": "node_modules/typescript/lib",
 	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
 	"typescript.tsc.autoDetect": "off",
 	"editor.tabSize": 2,
@@ -24,7 +15,23 @@
 	"editor.detectIndentation": false,
 	"javascript.preferences.quoteStyle": "single",
 	"typescript.preferences.quoteStyle": "single",
-	"editor.formatOnPaste": false,
 	"editor.formatOnSave": false,
-	"typescript.tsdk": "node_modules/typescript/lib",
+	"editor.formatOnPaste": false,
+	// Enable specifically for Javascript and TypeScript
+	"[javascript]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
+	"[javascriptreact]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
+	"[typescript]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
+	"[typescriptreact]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true
+	},
 }

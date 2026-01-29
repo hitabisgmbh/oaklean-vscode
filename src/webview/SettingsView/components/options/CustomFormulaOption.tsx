@@ -17,9 +17,16 @@ export function CustomFormulaOption(props: CustomFormulaOptionProps) {
 	}, [props.formula])
 
 	return (
-		<div className={'option-section' + props.className ? ` ${props.className}` : ''}>
+		<div
+			className={
+				'option-section' + props.className ? ` ${props.className}` : ''
+			}
+		>
 			<label>Enter a formula</label>
-			<p>A custom formula to relate different types of measurement data to each other as desired.</p>
+			<p>
+				A custom formula to relate different types of measurement data to each
+				other as desired.
+			</p>
 			<VSCodeTextField
 				value={formula || ''}
 				placeholder="e.g., aggregatedCPUTime/profilerHits"

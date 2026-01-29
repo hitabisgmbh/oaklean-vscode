@@ -1,6 +1,4 @@
-import {
-	SourceNodeIdentifier_string
-} from '@oaklean/profiler-core/dist/src/types'
+import { SourceNodeIdentifier_string } from '@oaklean/profiler-core/dist/src/types'
 
 export type OpenSourceLocationCommandArgs = {
 	relativeWorkspacePath: string

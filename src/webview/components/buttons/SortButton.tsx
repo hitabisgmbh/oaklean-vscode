@@ -6,10 +6,13 @@ import { SortDirection } from '../../../types/sortDirection'
 
 export type SortButtonProps = {
 	sortDirection: SortDirection
-	setSortDirection: React.Dispatch<React.SetStateAction<SortDirection>>;
+	setSortDirection: React.Dispatch<React.SetStateAction<SortDirection>>
 }
 
-export function SortButton({ sortDirection, setSortDirection }: SortButtonProps) {
+export function SortButton({
+	sortDirection,
+	setSortDirection
+}: SortButtonProps) {
 	function handleSortClick() {
 		switch (sortDirection) {
 			case SortDirection.default:
@@ -25,6 +28,9 @@ export function SortButton({ sortDirection, setSortDirection }: SortButtonProps)
 	}
 
 	return (
-		<ImageButton imagePath={`sort-vertical-${sortDirection}.png`} onClick={handleSortClick}/>
+		<ImageButton
+			imagePath={`sort-vertical-${sortDirection}.png`}
+			onClick={handleSortClick}
+		/>
 	)
 }

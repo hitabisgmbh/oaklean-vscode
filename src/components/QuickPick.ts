@@ -1,8 +1,11 @@
 import vscode from 'vscode'
 
-export type QuickPickOptions = Map<string, {
-	selectionCallback: () => void
-}>
+export type QuickPickOptions = Map<
+	string,
+	{
+		selectionCallback: () => void
+	}
+>
 
 export default class QuickPick {
 	vsCodeComponent: vscode.QuickPick<vscode.QuickPickItem>
@@ -20,7 +23,7 @@ export default class QuickPick {
 
 		quickPick.items = labels
 		quickPick.placeholder = placeholder
-		quickPick.onDidChangeSelection(selection => {
+		quickPick.onDidChangeSelection((selection) => {
 			if (selection[0] && this.optionsWithCallBacks.has(selection[0].label)) {
 				this.optionsWithCallBacks.get(selection[0].label)?.selectionCallback()
 			}
@@ -35,7 +38,9 @@ export default class QuickPick {
 	}
 
 	setCurrentItem(label: string) {
-		const currentItem = this.vsCodeComponent.items.find(item => item.label === label)
+		const currentItem = this.vsCodeComponent.items.find(
+			(item) => item.label === label
+		)
 		if (currentItem) {
 			this.vsCodeComponent.activeItems = [currentItem]
 		}

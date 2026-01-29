@@ -5,12 +5,20 @@ import { ISensorValues } from '@oaklean/profiler-core/dist/src/types'
 import { SensorValueTypeNames } from '../types/sensorValues'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let vscode: any
-if (typeof process !== 'undefined' && process !== undefined && process.env.RUNNING_IN_EXTENSION) {
+if (
+	typeof process !== 'undefined' &&
+	process !== undefined &&
+	process.env.RUNNING_IN_EXTENSION
+) {
 	vscode = import('vscode')
 }
 
-function deconstructFormula(sensorValues: ISensorValues, formula: string | undefined): string {
+function deconstructFormula(
+	sensorValues: ISensorValues,
+	formula: string | undefined
+): string {
 	const variablePattern = /[a-zA-Z]+/g
 	if (!formula) {
 		return ''
@@ -18,7 +26,7 @@ function deconstructFormula(sensorValues: ISensorValues, formula: string | undef
 	const valid = checkFormulaValidity(formula)
 	if (valid) {
 		const variables = formula.match(variablePattern)
-		const values: Record<string, any> = {}
+		const values: Record<string, number> = {}
 
 		if (variables !== null) {
 			for (const variable of variables as (keyof ISensorValues)[]) {
@@ -27,7 +35,10 @@ function deconstructFormula(sensorValues: ISensorValues, formula: string | undef
 			}
 		}
 		const replacedFormula = formula.replace(variablePattern, (match) => {
-			const variableValue = returnSensorValue(sensorValues, match as keyof ISensorValues)
+			const variableValue = returnSensorValue(
+				sensorValues,
+				match as keyof ISensorValues
+			)
 			return variableValue !== undefined ? variableValue.toString() : match
 		})
 
@@ -37,14 +48,17 @@ function deconstructFormula(sensorValues: ISensorValues, formula: string | undef
 	}
 }
 
-function returnSensorValue(sensorValues: ISensorValues, sensorValueName: keyof ISensorValues) {
+function returnSensorValue(
+	sensorValues: ISensorValues,
+	sensorValueName: keyof ISensorValues
+) {
 	const value = sensorValues[sensorValueName] || 0 // Default to 0 if the value is undefined
 	return value
 }
 
 export function calcOrReturnSensorValue(
 	sensorValues: ISensorValues,
-	sensorValueRepresentation: SensorValueRepresentation,
+	sensorValueRepresentation: SensorValueRepresentation
 ): number {
 	let result = 0
 	const { selectedSensorValueType, formula } = sensorValueRepresentation
@@ -56,7 +70,10 @@ export function calcOrReturnSensorValue(
 		}
 		result = math.evaluate(assembledFormula)
 	} else {
-		result = returnSensorValue(sensorValues, selectedSensorValueType as keyof ISensorValues)
+		result = returnSensorValue(
+			sensorValues,
+			selectedSensorValueType as keyof ISensorValues
+		)
 	}
 	return result
 }
@@ -70,7 +87,10 @@ export function checkFormulaValidity(formula: string | undefined): boolean {
 	const undefinedValues = []
 	if (variables !== null) {
 		for (const variable of variables) {
-			if (SensorValueTypeNames[variable as keyof typeof SensorValueTypeNames] === undefined) {
+			if (
+				SensorValueTypeNames[variable as keyof typeof SensorValueTypeNames] ===
+				undefined
+			) {
 				undefinedValues.push(variable)
 			}
 		}
@@ -80,7 +100,9 @@ export function checkFormulaValidity(formula: string | undefined): boolean {
 
 	if (undefinedValues.length > 0) {
 		if (vscode !== undefined) {
-			vscode.window.showErrorMessage(`There are no sensor values for the variables: ${undefinedValues.join(', ')}.`)
+			vscode.window.showErrorMessage(
+				`There are no sensor values for the variables: ${undefinedValues.join(', ')}.`
+			)
 		}
 
 		return false

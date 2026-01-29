@@ -10,7 +10,10 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 
 	private _view?: vscode.WebviewView
 	_container: Container
-	constructor(private readonly _extensionUri: vscode.Uri, container: Container) {
+	constructor(
+		private readonly _extensionUri: vscode.Uri,
+		container: Container
+	) {
 		this._container = container
 		this._disposables = []
 	}
@@ -19,11 +22,7 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 		this._disposables.forEach((d) => d.dispose())
 	}
 
-	public resolveWebviewView(
-		webviewView: vscode.WebviewView,
-		context: vscode.WebviewViewResolveContext,
-		_token: vscode.CancellationToken
-	) {
+	public resolveWebviewView(webviewView: vscode.WebviewView) {
 		this._view = webviewView
 
 		this._disposables.push(
@@ -39,21 +38,17 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 			]
 		}
 
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview,
-			this._extensionUri)
+		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview)
 	}
 
 	hardRefresh() {
 		if (this._view === undefined) {
 			return
 		}
-		this._view.webview.html = this._getHtmlForWebview(
-			this._view.webview,
-			this._extensionUri
-		)
+		this._view.webview.html = this._getHtmlForWebview(this._view.webview)
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview, extensionUri: vscode.Uri) {
+	private _getHtmlForWebview(webview: vscode.Webview) {
 		// Use a nonce to only allow specific scripts to be run
 		const nonce = getNonce()
 		// const webviewUri = getUri(webview, extensionUri, ['dist', 'webview', 'webview.js'])
@@ -76,4 +71,3 @@ export class GraphicalViewProvider implements vscode.WebviewViewProvider {
 		return htmlContent
 	}
 }
-

@@ -1,4 +1,9 @@
-import type { ExtensionContext, Disposable, SecretStorageChangeEvent, Event } from 'vscode'
+import type {
+	ExtensionContext,
+	Disposable,
+	SecretStorageChangeEvent,
+	Event
+} from 'vscode'
 import { EventEmitter } from 'vscode'
 import { UnifiedPath } from '@oaklean/profiler-core'
 
@@ -9,27 +14,27 @@ import { SensorValueRepresentation } from './types/sensorValueRepresentation'
 
 export type StorageChangeEvent =
 	| {
-		/**
-		 * The key of the stored value that has changed.
-		 */
-		readonly key: keyof GlobalStorage;
-		readonly workspace: false;
-	}
+			/**
+			 * The key of the stored value that has changed.
+			 */
+			readonly key: keyof GlobalStorage
+			readonly workspace: false
+	  }
 	| {
-		/**
-		 * The key of the stored value that has changed.
-		 */
-		readonly key: keyof WorkspaceStorage;
-		readonly workspace: true;
-	};
+			/**
+			 * The key of the stored value that has changed.
+			 */
+			readonly key: keyof WorkspaceStorage
+			readonly workspace: true
+	  }
 
 export type GlobalStorage = {
-	[key: string]: boolean;
+	[key: string]: boolean
 }
 
 export type WorkspaceStorage = {
-	reportPath: UnifiedPath,
-	includedFilterPath: string | undefined,
+	reportPath: UnifiedPath
+	includedFilterPath: string | undefined
 	excludedFilterPath: string | undefined
 	sensorValueRepresentation: SensorValueRepresentation
 	sortDirection: SortDirection
@@ -37,13 +42,14 @@ export type WorkspaceStorage = {
 	profile: Profile
 }
 
-
-export type SecretKeys = string;
+export type SecretKeys = string
 
 export class Storage implements Disposable {
 	private readonly _disposable: Disposable
 	constructor(private readonly context: ExtensionContext) {
-		this._disposable = this.context.secrets.onDidChange(e => this._onDidChangeSecrets.fire(e))
+		this._disposable = this.context.secrets.onDidChange((e) =>
+			this._onDidChangeSecrets.fire(e)
+		)
 	}
 
 	dispose(): void {
@@ -61,7 +67,10 @@ export class Storage implements Disposable {
 	}
 
 	get(key: keyof GlobalStorage, defaultValue?: unknown): unknown | undefined {
-		const value = this.context.globalState.get(`${APP_IDENTIFIER}:${key}`, defaultValue)
+		const value = this.context.globalState.get(
+			`${APP_IDENTIFIER}:${key}`,
+			defaultValue
+		)
 		return value
 	}
 
@@ -70,13 +79,16 @@ export class Storage implements Disposable {
 		this._onDidChange.fire({ key: key, workspace: false })
 	}
 
-	async store<T extends keyof GlobalStorage>(key: T, value: GlobalStorage[T] | undefined): Promise<void> {
+	async store<T extends keyof GlobalStorage>(
+		key: T,
+		value: GlobalStorage[T] | undefined
+	): Promise<void> {
 		await this.context.globalState.update(`${APP_IDENTIFIER}:${key}`, value)
 		this._onDidChange.fire({ key: key, workspace: false })
 	}
 
 	keys(): readonly string[] {
-		return this.context.globalState.keys().map(key => {
+		return this.context.globalState.keys().map((key) => {
 			if (key.startsWith(`${APP_IDENTIFIER}:`)) {
 				return key.substring(APP_IDENTIFIER.length + 1)
 			}
@@ -98,10 +110,13 @@ export class Storage implements Disposable {
 
 	getWorkspace(
 		key: keyof WorkspaceStorage,
-		defaultValue?: unknown,
+		defaultValue?: unknown
 	): unknown | undefined {
-		const value = this.context.workspaceState.get(`${APP_IDENTIFIER}:${key}`, defaultValue)
-		if ((key === 'reportPath') && typeof value === 'string') {
+		const value = this.context.workspaceState.get(
+			`${APP_IDENTIFIER}:${key}`,
+			defaultValue
+		)
+		if (key === 'reportPath' && typeof value === 'string') {
 			return new UnifiedPath(value)
 		}
 		if (key === 'profile') {
@@ -114,12 +129,17 @@ export class Storage implements Disposable {
 	}
 
 	async deleteWorkspace(key: keyof WorkspaceStorage): Promise<void> {
-		await this.context.workspaceState.update(`${APP_IDENTIFIER}:${key}`, undefined)
+		await this.context.workspaceState.update(
+			`${APP_IDENTIFIER}:${key}`,
+			undefined
+		)
 		this._onDidChange.fire({ key: key, workspace: true })
 	}
 
-	async storeWorkspace<K extends keyof WorkspaceStorage>
-		(key: K, value: WorkspaceStorage[K]): Promise<void> {
+	async storeWorkspace<K extends keyof WorkspaceStorage>(
+		key: K,
+		value: WorkspaceStorage[K]
+	): Promise<void> {
 		await this.context.workspaceState.update(`${APP_IDENTIFIER}:${key}`, value)
 		this._onDidChange.fire({ key: key, workspace: true })
 	}

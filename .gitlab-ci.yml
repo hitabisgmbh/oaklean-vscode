@@ -1,44 +1,63 @@
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: never  # Prevent pipeline run for push event
+      when: never # Prevent pipeline run for push event
     - when: always # Run pipeline for all other cases
 
-cache:
-  paths:
-    - node_modules/
-  
-default: 
-  image: node:20.11.1
-  before_script:
-    - echo -e "${PRIVATE_REGISTRY}${CI_JOB_TOKEN}">.npmrc
-    - npm ci
-
 stages:
+  - lint
   - build
   - test
   - deploy
 
+.node-image-matrix:
+  image:
+    name: $BUILD_IMAGE_URL:$NODE_VERSION
+  parallel:
+    matrix:
+      - NODE_VERSION: ['20.17.0', '22.13.0', '24.0.0']
+  cache:
+    key:
+      files:
+        - package-lock.json
+      prefix: 'node_modules-${NODE_VERSION}' # separate cache per Node version
+    paths:
+      - node_modules/
+      - ../.npm
+  before_script:
+    - echo -e "${PRIVATE_REGISTRY}${CI_JOB_TOKEN}">.npmrc
+    - |
+      echo "Using Node version: $(node -v)"
+      npm config set cache ../.npm
+      npm ci --prefer-offline --ignore-scripts
+
+lint:
+  stage: lint
+  extends: .node-image-matrix
+  script:
+    - npm run lint && [[ -z "$(git status -s)" ]]
+
 build:
   stage: build
+  extends: .node-image-matrix
   script:
     - npm run build
 
-lint:
-  stage: build
-  script:
-    - npm run lint
-
 test:
   stage: test
+  extends: .node-image-matrix
+  coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
   script:
     - npm run test
-  coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
 
 deploy:
   when: manual
   stage: deploy
-  only: 
+  extends: .node-image-matrix
+  parallel:
+    matrix:
+      - NODE_VERSION: ['24.0.0'] # Overwrites the base matrix
+  only:
     - /^release.*$/
   script:
     - NODE_ENV=production npm run package

@@ -77,8 +77,7 @@ export class ReportEditorProvider implements CustomEditorProvider {
 		webviewPanel.webview.html = this._getHtmlForWebview(
 			document.content,
 			webviewPanel.webview,
-			this._container.context.extensionUri,
-			document.reportPath.toPlatformString()
+			this._container.context.extensionUri
 		)
 	}
 
@@ -143,7 +142,9 @@ export class ReportEditorProvider implements CustomEditorProvider {
 	}
 
 	onDidChangeCustomDocument(
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		listener: (e: CustomDocumentContentChangeEvent) => any,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		thisArgs?: any,
 		disposables?: vscode.Disposable[]
 	): vscode.Disposable {
@@ -242,7 +243,7 @@ export class ReportEditorProvider implements CustomEditorProvider {
 					? {
 							type: sensorInterface.type,
 							sampleInterval: sensorInterface.options.sampleInterval
-					}
+						}
 					: undefined
 			}
 		})
@@ -264,8 +265,7 @@ export class ReportEditorProvider implements CustomEditorProvider {
 	_getHtmlForWebview(
 		data: ProjectReport,
 		webview: vscode.Webview,
-		extensionUri: vscode.Uri,
-		filePath: string
+		extensionUri: vscode.Uri
 	): string {
 		const nonce = getNonce()
 		const webviewUri = getUri(webview, extensionUri, [

@@ -3,7 +3,8 @@ import vscode from 'vscode'
 
 export class ProjectReportDocument
 	extends vscode.Disposable
-	implements vscode.CustomDocument {
+	implements vscode.CustomDocument
+{
 	private readonly _onDidChange = new vscode.EventEmitter<{
 		readonly content?: ProjectReport
 		readonly editable?: boolean

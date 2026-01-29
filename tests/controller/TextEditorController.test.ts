@@ -7,14 +7,12 @@ import TextEditorController from '../../src/controller/TextEditorController'
 import { stub_getWorkspaceDirStub } from '../shared/mocks/WorkspaceUtils.mock'
 import ContainerAndStorageMock from '../shared/mocks/ContainerAndStorage.mock'
 
-
 stub_getWorkspaceDirStub()
 
 describe('TextEditorController', () => {
 	let container: Container
 	let textEditorController: TextEditorController
 	let mockEditor: TextEditor
-	let mockEvent: any
 
 	beforeEach(() => {
 		const containerAndStorageMock = new ContainerAndStorageMock()
@@ -27,19 +25,11 @@ describe('TextEditorController', () => {
 			},
 			setDecorations: jest.fn()
 		} as unknown as TextEditor
-		mockEvent = {
-			enabled: true,
-			sensorValueRepresentation: { selectedSensorValueType: 'profilerHits', formula: 'profilerHits * 2' },
-			editor: mockEditor,
-			fileName: '/path/to/workspace/file.ts'
-		}
 	})
 
 	it('should refresh on reportLoaded event', () => {
 		const refreshSpy = jest.spyOn(textEditorController, 'refresh')
-		textEditorController.reportLoaded({
-			type: 'ProjectReport'
-		})
+		textEditorController.reportLoaded()
 		expect(refreshSpy).toHaveBeenCalled()
 	})
 
@@ -49,7 +39,6 @@ describe('TextEditorController', () => {
 		expect(textEditorController.editor).toBe(mockEditor)
 		expect(refreshSpy).toHaveBeenCalled()
 	})
-
 
 	it('should refresh if the sourceFileInformationChange event file matches the editor file', () => {
 		textEditorController.setEditor(mockEditor)

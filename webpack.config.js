@@ -73,12 +73,13 @@ const extensionConfig = {
 	externals:
 		mode === 'production'
 			? {
-				vscode: 'commonjs vscode', // VS Code API is provided at runtime, don't bundle it
-				'osx-temperature-sensor': 'commonjs osx-temperature-sensor', // Exclude osx-temperature-sensor in production
-			}
+					vscode: 'commonjs vscode', // VS Code API is provided at runtime, don't bundle it
+					'osx-temperature-sensor': 'commonjs osx-temperature-sensor', // Exclude osx-temperature-sensor in production
+					'macos-temperature-sensor': 'commonjs macos-temperature-sensor' // Exclude macos-temperature-sensor in production
+				}
 			: [
 					{
-						vscode: 'commonjs vscode',
+						vscode: 'commonjs vscode'
 					},
 					// Exclude node_modules from the bundle in development mode
 					nodeExternals({
@@ -87,7 +88,7 @@ const extensionConfig = {
 						],
 						additionalModuleDirs: ['node_modules']
 					})
-			]
+				]
 }
 
 const webviewConfig = {

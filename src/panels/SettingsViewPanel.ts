@@ -38,23 +38,25 @@ export class SettingsViewPanel {
 	) {
 		this._container = container
 		this.subscriptions.push(
-			(this._panel = panel ?? vscode.window.createWebviewPanel(
-				SettingsViewPanel.viewType,
-				'Oaklean Settings',
-				vscode.ViewColumn.Beside,
-				{
-					enableScripts: true,
-					// Restrict the webview to only load resources from the `dist` directory
-					localResourceRoots: [
-						vscode.Uri.joinPath(
-							this._container.context.extensionUri,
-							'dist',
-							'webview'
-						)
-					],
-					retainContextWhenHidden: true
-				}
-			)),
+			(this._panel =
+				panel ??
+				vscode.window.createWebviewPanel(
+					SettingsViewPanel.viewType,
+					'Oaklean Settings',
+					vscode.ViewColumn.Beside,
+					{
+						enableScripts: true,
+						// Restrict the webview to only load resources from the `dist` directory
+						localResourceRoots: [
+							vscode.Uri.joinPath(
+								this._container.context.extensionUri,
+								'dist',
+								'webview'
+							)
+						],
+						retainContextWhenHidden: true
+					}
+				)),
 			this._panel.onDidDispose(() => this.dispose()),
 			this._panel.webview.onDidReceiveMessage(
 				this.receiveMessageFromWebview.bind(this)
@@ -96,9 +98,7 @@ export class SettingsViewPanel {
 				this.addProfile(message.profile)
 				break
 			case SettingsViewProtocolCommands.deleteProfile:
-				this.deleteProfile(
-					message.profileName
-				)
+				this.deleteProfile(message.profileName)
 				break
 		}
 	}
@@ -108,10 +108,10 @@ export class SettingsViewPanel {
 			SettingsViewPanel.currentPanel._panel.reveal()
 		} else {
 			container.context.subscriptions.push(
-				SettingsViewPanel.currentPanel = new SettingsViewPanel(
+				(SettingsViewPanel.currentPanel = new SettingsViewPanel(
 					container.context.extensionUri,
 					container
-				)
+				))
 			)
 		}
 		return SettingsViewPanel.currentPanel
@@ -119,11 +119,11 @@ export class SettingsViewPanel {
 
 	public static revive(panel: vscode.WebviewPanel, container: Container) {
 		container.context.subscriptions.push(
-			SettingsViewPanel.currentPanel = new SettingsViewPanel(
+			(SettingsViewPanel.currentPanel = new SettingsViewPanel(
 				container.context.extensionUri,
 				container,
 				panel
-			)
+			))
 		)
 		return SettingsViewPanel.currentPanel
 	}
@@ -233,6 +233,7 @@ export class SettingsViewPanel {
 			vscode.window.showInformationMessage(INFO_PROFILE_SAVED)
 
 			this._container.storage.storeWorkspace('profile', profile)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (error: any) {
 			vscode.window.showErrorMessage(
 				ERROR_FAILED_TO_SAVE_PROFILE + error.message
@@ -257,6 +258,7 @@ export class SettingsViewPanel {
 					command: SettingsViewProtocolCommands.clearInput
 				})
 			}
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (error: any) {
 			vscode.window.showErrorMessage(
 				ERROR_FAILED_TO_ADD_PROFILE + error.message
@@ -279,11 +281,10 @@ export class SettingsViewPanel {
 			vscode.window.showInformationMessage(INFO_PROFILE_DELETED)
 
 			const firstProfile =
-				profiles && profiles.length > 0
-					? profiles[0]
-					: DEFAULT_PROFILE
+				profiles && profiles.length > 0 ? profiles[0] : DEFAULT_PROFILE
 
 			this._container.storage.storeWorkspace('profile', firstProfile)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (error: any) {
 			vscode.window.showErrorMessage(
 				ERROR_FAILED_TO_DELETE_PROFILE + error.message

@@ -17,7 +17,7 @@ export function ProfileNameOption(props: ProfileNameOptionProps) {
 	}, [props.name])
 
 	return (
-		<div className='option-section'>
+		<div className="option-section">
 			<label>Name</label>
 			<p>Name of the profile</p>
 			<VSCodeTextField

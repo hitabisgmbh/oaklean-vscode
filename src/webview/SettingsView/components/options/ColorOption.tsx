@@ -18,7 +18,7 @@ export function ColorOption(props: ColorOptionProps) {
 	}, [props.color])
 
 	return (
-		<div className='option-section'>
+		<div className="option-section">
 			<label>Color</label>
 			<p>
 				Select a color to associate with this profile. This color will help you
