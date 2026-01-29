@@ -12,23 +12,26 @@ export type DocumentationFile = {
 	path: string
 	name: string
 	content: string
+	version?: number
 }
 
 // Parent -> Child
 export type DocumentationView_ParentToChild =
 	| {
-		type: DocumentationViewCommands.init
-		files: DocumentationFile[]
-		initialFile: string
-		resourceBase?: string
-		docsBasePath?: string
-		imageWhitelist?: string[]
-	}
+			type: DocumentationViewCommands.init
+			files: DocumentationFile[]
+			initialFile: string
+			resourceBase?: string
+			docsBasePath?: string
+			imageWhitelist?: string[]
+			searchMaxResults?: number
+			searchPageSize?: number
+	  }
 	| {
-		type: DocumentationViewCommands.open
-		filePath: string
-		anchor?: string
-	}
+			type: DocumentationViewCommands.open
+			filePath: string
+			anchor?: string
+	  }
 
 // Child -> Parent
 export type DocumentationView_ChildToParent =

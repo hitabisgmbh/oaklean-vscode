@@ -1,32 +1,92 @@
-import vscode, { WebviewView, WebviewViewProvider, WebviewViewResolveContext, CancellationToken } from 'vscode'
 import * as path from 'path'
+
+import vscode, { WebviewView, WebviewViewProvider } from 'vscode'
 
 import { getUri } from '../utilities/getUri'
 import { getNonce } from '../utilities/getNonce'
 import { Container } from '../container'
 import {
+	DOCUMENTATION_CONFIG_SECTION,
+	DOCUMENTATION_IMAGE_WHITELIST_CONFIG_KEY,
+	DOCUMENTATION_VIEW_TYPE
+} from '../constants/documentationView'
+import {
+	SEARCH_MAX_RESULTS_CONFIG_KEY,
+	SEARCH_PAGE_SIZE_CONFIG_KEY,
+	SEARCH_RESULTS_MAX_DEFAULT,
+	SEARCH_RESULTS_MAX_MIN,
+	SEARCH_RESULTS_PAGE_SIZE_DEFAULT,
+	SEARCH_RESULTS_PAGE_SIZE_MIN
+} from '../constants/documentationSearch'
+import {
 	DocumentationViewCommands,
 	DocumentationView_ChildToParent
 } from '../protocols/DocumentationViewProtocol'
 
-export class DocumentationViewProvider implements WebviewViewProvider, vscode.Disposable {
-	public static readonly viewType = 'oaklean.documentationView'
+export class DocumentationViewProvider
+	implements WebviewViewProvider, vscode.Disposable
+{
+	public static readonly viewType = DOCUMENTATION_VIEW_TYPE
 
 	private getImageWhitelist() {
-		const config = vscode.workspace.getConfiguration('oaklean')
-		return config.get<string[]>('docs.imageWhitelist', [])
+		const config = vscode.workspace.getConfiguration(
+			DOCUMENTATION_CONFIG_SECTION
+		)
+		return config.get<string[]>(DOCUMENTATION_IMAGE_WHITELIST_CONFIG_KEY, [])
+	}
+
+	private getSearchMaxResults(): number {
+		const config = vscode.workspace.getConfiguration(
+			DOCUMENTATION_CONFIG_SECTION
+		)
+		const value = config.get<number>(SEARCH_MAX_RESULTS_CONFIG_KEY)
+		if (value === undefined || Number.isNaN(value)) {
+			return SEARCH_RESULTS_MAX_DEFAULT
+		}
+		const rounded = Math.floor(value)
+		if (rounded < SEARCH_RESULTS_MAX_MIN) {
+			return SEARCH_RESULTS_MAX_MIN
+		}
+		return rounded
+	}
+
+	private getSearchPageSize(): number {
+		const config = vscode.workspace.getConfiguration(
+			DOCUMENTATION_CONFIG_SECTION
+		)
+		const value = config.get<number>(SEARCH_PAGE_SIZE_CONFIG_KEY)
+		if (value === undefined || Number.isNaN(value)) {
+			return SEARCH_RESULTS_PAGE_SIZE_DEFAULT
+		}
+		const rounded = Math.floor(value)
+		if (rounded < SEARCH_RESULTS_PAGE_SIZE_MIN) {
+			return SEARCH_RESULTS_PAGE_SIZE_MIN
+		}
+		return rounded
+	}
+
+	private getSearchConfig(): { maxResults: number; pageSize: number } {
+		const maxResults = this.getSearchMaxResults()
+		let pageSize = this.getSearchPageSize()
+		// Keep page size within the max results range.
+		if (pageSize > maxResults) {
+			pageSize = maxResults
+		}
+		return { maxResults, pageSize }
 	}
 
 	private getImageCspSources(whitelist: string[]) {
 		const sources = new Set<string>()
 		for (const entry of whitelist) {
 			const trimmed = entry.trim()
-			if (!trimmed) continue
+			if (trimmed === '') {
+				continue
+			}
 			const lower = trimmed.toLowerCase()
 			if (lower.startsWith('http(s)://')) {
 				const rest = trimmed.slice('http(s)://'.length)
 				const host = rest.split('/')[0]
-				if (host) {
+				if (host !== '') {
 					sources.add(`http://${host}`)
 					sources.add(`https://${host}`)
 				}
@@ -37,7 +97,7 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 				if (wildcardIndex !== -1) {
 					const scheme = lower.startsWith('https://') ? 'https' : 'http'
 					const host = trimmed.replace(/^https?:\/\//i, '').split('/')[0]
-					if (host) {
+					if (host !== '') {
 						sources.add(`${scheme}://${host}`)
 					}
 					continue
@@ -51,7 +111,7 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 				continue
 			}
 			const wildcardHost = trimmed.replace(/^\*\./, '').replace(/^\*/, '')
-			if (wildcardHost) {
+			if (wildcardHost !== '') {
 				sources.add(`http://*.${wildcardHost}`)
 				sources.add(`https://*.${wildcardHost}`)
 				sources.add(`http://${wildcardHost}`)
@@ -96,7 +156,7 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 
 		const nonce = getNonce()
 
-		const imgSrc = imageCspSources ? ` ${imageCspSources}` : ''
+		const imgSrc = imageCspSources === '' ? '' : ` ${imageCspSources}`
 
 		return /* html */ `
 			<!DOCTYPE html>
@@ -122,15 +182,72 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 		`
 	}
 
-	resolveWebviewView(
-		webviewView: WebviewView,
-		_context: WebviewViewResolveContext<unknown>,
-		_token: CancellationToken
-	): void | Thenable<void> {
+	resolveWebviewView(webviewView: WebviewView): void | Thenable<void> {
+		this.setupWebview(webviewView.webview)
+	}
+
+	public resolveWebviewForPanel(webview: vscode.Webview): void {
+		this.setupWebview(webview)
+	}
+
+	private initializeWebview(webview: vscode.Webview) {
+		webview.onDidReceiveMessage(
+			async (message: DocumentationView_ChildToParent) => {
+				switch (message?.type) {
+					case DocumentationViewCommands.requestDocs:
+						await this.sendInit(webview)
+						break
+					case DocumentationViewCommands.openFile:
+						webview.postMessage({
+							type: DocumentationViewCommands.open,
+							filePath: message.path,
+							anchor: message.anchor
+						})
+						break
+					case DocumentationViewCommands.openMissingFile: {
+						const rawPath = (message.path ?? '').replace(/^\/*/, '')
+						if (rawPath === '') {
+							break
+						}
+						const docsRoot =
+							await this._container.documentationController.getDocsRoot()
+						const safeSegments = rawPath
+							.split('/')
+							.filter(
+								(segment) => segment && segment !== '.' && segment !== '..'
+							)
+						const targetUri = vscode.Uri.joinPath(docsRoot, ...safeSegments)
+						try {
+							await vscode.commands.executeCommand('vscode.open', targetUri)
+						} catch {
+							// ignore
+						}
+						break
+					}
+					case DocumentationViewCommands.search:
+						// Search is handled client-side in the webview for now.
+						break
+					case DocumentationViewCommands.openExternal:
+						if (message.href !== undefined && message.href !== '') {
+							try {
+								await vscode.env.openExternal(vscode.Uri.parse(message.href))
+							} catch {
+								// ignore
+							}
+						}
+						break
+				}
+			}
+		)
+
+		void this.sendInit(webview)
+	}
+
+	private setupWebview(webview: vscode.Webview): void {
 		const imageWhitelist = this.getImageWhitelist()
 		const imageCspSources = this.getImageCspSources(imageWhitelist)
 
-		webviewView.webview.options = {
+		webview.options = {
 			enableScripts: true,
 			localResourceRoots: [
 				vscode.Uri.joinPath(this._extensionUri, 'dist', 'webview', 'webpack'),
@@ -138,80 +255,39 @@ export class DocumentationViewProvider implements WebviewViewProvider, vscode.Di
 			]
 		}
 
-		webviewView.webview.html = this._getHtmlForWebview(
-			webviewView.webview,
+		webview.html = this._getHtmlForWebview(
+			webview,
 			this._extensionUri,
 			imageCspSources
 		)
 
-		this.initializeWebview(webviewView.webview)
-	}
-
-	private initializeWebview(webview: vscode.Webview) {
-		webview.onDidReceiveMessage(async (message: DocumentationView_ChildToParent) => {
-			switch (message?.type) {
-				case DocumentationViewCommands.requestDocs:
-					await this.sendInit(webview)
-					break
-				case DocumentationViewCommands.openFile:
-					webview.postMessage({
-						type: DocumentationViewCommands.open,
-						filePath: message.path,
-						anchor: message.anchor
-					})
-					break
-				case DocumentationViewCommands.openMissingFile: {
-					const rawPath = (message.path || '').replace(/^\/*/, '')
-					if (!rawPath) break
-					const docsRoot = await this._container.documentationController.getDocsRoot()
-					const safeSegments = rawPath
-						.split('/')
-						.filter((segment) => segment && segment !== '.' && segment !== '..')
-					const targetUri = vscode.Uri.joinPath(docsRoot, ...safeSegments)
-					try {
-						await vscode.commands.executeCommand('vscode.open', targetUri)
-					} catch {
-						// ignore
-					}
-					break
-				}
-				case DocumentationViewCommands.search:
-					// Search is handled client-side in the webview for now.
-					break
-				case DocumentationViewCommands.openExternal:
-					if (message.href) {
-						try {
-							await vscode.env.openExternal(vscode.Uri.parse(message.href))
-						} catch {
-							// ignore
-						}
-					}
-					break
-			}
-		})
-
-		void this.sendInit(webview)
+		this.initializeWebview(webview)
 	}
 
 	private async sendInit(webview: vscode.Webview) {
 		const docs = await this._container.documentationController.getAllDocs()
-		if (!docs || docs.length === 0) {
+		if (docs === undefined || docs.length === 0) {
 			return
 		}
 		const readme = docs.find((d) => d.name.toLowerCase() === 'readme.md')
 		const initialFile = readme?.path ?? docs[0].path
 		const docsRoot = await this._container.documentationController.getDocsRoot()
-		const docsRootParent = docsRoot.with({ path: path.posix.dirname(docsRoot.path) })
+		const docsRootParent = docsRoot.with({
+			path: path.posix.dirname(docsRoot.path)
+		})
 		const docsBasePath = path.posix.relative(docsRootParent.path, docsRoot.path)
 		const resourceBase = webview.asWebviewUri(docsRootParent).toString()
 		const imageWhitelist = this.getImageWhitelist()
+		const searchConfig = this.getSearchConfig()
 		webview.postMessage({
 			type: DocumentationViewCommands.init,
 			files: docs,
 			initialFile,
 			resourceBase,
 			docsBasePath,
-			imageWhitelist
+			imageWhitelist,
+			searchMaxResults: searchConfig.maxResults,
+			searchPageSize: searchConfig.pageSize
 		})
 	}
 }

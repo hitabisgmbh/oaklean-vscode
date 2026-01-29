@@ -1,33 +1,20 @@
-import { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
+import type { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
+import type { BreadcrumbItem, FolderNode } from '../../types/documentationView'
 
-export type FolderNode = {
-	name: string
-	path: string
-	folders: FolderNode[]
-	files: DocumentationFile[]
-	indexFile?: DocumentationFile
-}
-
-export type BreadcrumbItem = {
-	label: string
-	path: string
-	clickable: boolean
-}
-
-export function buildFolderTree(files: DocumentationFile[]) {
+export function buildFolderTree(files: DocumentationFile[]): FolderNode {
 	const root: FolderNode = { name: '', path: '', folders: [], files: [] }
 	const byPath = new Map<string, FolderNode>([['', root]])
 
 	for (const file of files) {
-		const parts = file.path.split('/').filter(Boolean)
+		const parts = file.path.split('/').filter((part) => part !== '')
 		const fileName = parts.pop()
 		let currentPath = ''
 		let node = root
 
 		for (const part of parts) {
-			currentPath = currentPath ? `${currentPath}/${part}` : part
+			currentPath = currentPath === '' ? part : `${currentPath}/${part}`
 			let child = byPath.get(currentPath)
-			if (!child) {
+			if (child === undefined) {
 				child = { name: part, path: currentPath, folders: [], files: [] }
 				byPath.set(currentPath, child)
 				node.folders.push(child)
@@ -35,10 +22,13 @@ export function buildFolderTree(files: DocumentationFile[]) {
 			node = child
 		}
 
-		if (fileName) {
+		if (fileName !== undefined) {
 			const rank = getIndexFileRank(fileName)
 			if (rank > 0) {
-				const currentRank = node.indexFile ? getIndexFileRank(node.indexFile.name) : 0
+				const currentRank =
+					node.indexFile !== undefined
+						? getIndexFileRank(node.indexFile.name)
+						: 0
 				if (rank > currentRank) {
 					node.indexFile = file
 				}
@@ -51,29 +41,36 @@ export function buildFolderTree(files: DocumentationFile[]) {
 	const sortNode = (node: FolderNode) => {
 		node.folders.sort((a, b) => a.name.localeCompare(b.name))
 		node.files.sort((a, b) => a.name.localeCompare(b.name))
-		node.folders.forEach(sortNode)
+		for (const folder of node.folders) {
+			sortNode(folder)
+		}
 	}
 	sortNode(root)
 
 	return root
 }
 
-export function getFolderFiles(node: FolderNode) {
-	if (node.indexFile && node.indexFile.name.toLowerCase() !== 'readme.md') {
+export function getFolderFiles(node: FolderNode): DocumentationFile[] {
+	if (
+		node.indexFile !== undefined &&
+		node.indexFile.name.toLowerCase() !== 'readme.md'
+	) {
 		return [node.indexFile, ...node.files]
 	}
 	return node.files
 }
 
-export function buildDefaultFileMap(node: FolderNode) {
+export function buildDefaultFileMap(node: FolderNode): Map<string, string> {
 	const map = new Map<string, string>()
 	const walk = (folder: FolderNode) => {
-		if (folder.indexFile) {
+		if (folder.indexFile !== undefined) {
 			map.set(folder.path, folder.indexFile.path)
 		} else if (folder.files.length > 0) {
 			map.set(folder.path, folder.files[0].path)
 		}
-		folder.folders.forEach(walk)
+		for (const child of folder.folders) {
+			walk(child)
+		}
 	}
 	walk(node)
 	return map
@@ -82,13 +79,14 @@ export function buildDefaultFileMap(node: FolderNode) {
 export function buildBreadcrumbs(
 	selectedDoc: DocumentationFile | undefined,
 	folderDefaultMap: Map<string, string>
-) {
-	if (!selectedDoc) return []
-	const parts = selectedDoc.path.split('/').filter(Boolean)
+): BreadcrumbItem[] {
+	if (selectedDoc === undefined) {
+		return []
+	}
+	const parts = selectedDoc.path.split('/').filter((part) => part !== '')
 	const lastPart = parts[parts.length - 1]?.toLowerCase()
 	const isIndex =
-		lastPart === 'index.md' ||
-		(lastPart === 'readme.md' && parts.length > 1)
+		lastPart === 'index.md' || (lastPart === 'readme.md' && parts.length > 1)
 	const crumbs: BreadcrumbItem[] = []
 	let current = ''
 	for (let i = 0; i < parts.length; i++) {
@@ -96,7 +94,7 @@ export function buildBreadcrumbs(
 		if (i === parts.length - 1 && isIndex) {
 			break
 		}
-		current = current ? `${current}/${part}` : part
+		current = current === '' ? part : `${current}/${part}`
 		const isFile = i === parts.length - 1 && !isIndex
 		const clickable = !isFile && folderDefaultMap.has(current)
 		crumbs.push({
@@ -111,13 +109,17 @@ export function buildBreadcrumbs(
 	return crumbs
 }
 
-export function stripExtension(name: string) {
+export function stripExtension(name: string): string {
 	return name.replace(/\.md$/i, '')
 }
 
-function getIndexFileRank(fileName: string) {
+function getIndexFileRank(fileName: string): number {
 	const lower = fileName.toLowerCase()
-	if (lower === 'readme.md') return 2
-	if (lower === 'index.md') return 1
+	if (lower === 'readme.md') {
+		return 2
+	}
+	if (lower === 'index.md') {
+		return 1
+	}
 	return 0
 }

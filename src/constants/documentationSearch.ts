@@ -1,0 +1,12 @@
+export const SEARCH_DEBOUNCE_IN_MS = 150
+export const SEARCH_RESULTS_MAX_DEFAULT = 10
+export const SEARCH_RESULTS_MAX_MIN = 1
+export const SEARCH_RESULTS_PAGE_SIZE_DEFAULT = 10
+export const SEARCH_RESULTS_PAGE_SIZE_MIN = 1
+export const SEARCH_INITIAL_OCCURRENCES_PER_DOC = 1
+export const SEARCH_SNIPPET_DEFAULT_WORDS = 20
+export const SEARCH_SNIPPET_WORDS_AFTER = 8
+export const SEARCH_SNIPPET_WORDS_BEFORE = 8
+export const SEARCH_TOKEN_SEPARATOR = ' '
+export const SEARCH_MAX_RESULTS_CONFIG_KEY = 'docs.searchMaxResults'
+export const SEARCH_PAGE_SIZE_CONFIG_KEY = 'docs.searchPageSize'

@@ -1,5 +1,6 @@
-import vscode from 'vscode'
 import { Buffer } from 'buffer'
+
+import vscode from 'vscode'
 
 import { Container } from '../container'
 
@@ -7,6 +8,7 @@ export interface DocumentationEntry {
 	path: string
 	name: string
 	content: string
+	version?: number
 }
 
 export default class DocumentationController implements vscode.Disposable {
@@ -18,7 +20,12 @@ export default class DocumentationController implements vscode.Disposable {
 		// Prefer workspace docs to match Markdown preview; fall back to build output.
 		this.docsRootCandidates = [
 			vscode.Uri.joinPath(container.context.extensionUri, 'docs'),
-			vscode.Uri.joinPath(container.context.extensionUri, 'dist', 'extension', 'docs')
+			vscode.Uri.joinPath(
+				container.context.extensionUri,
+				'dist',
+				'extension',
+				'docs'
+			)
 		]
 	}
 
@@ -26,7 +33,7 @@ export default class DocumentationController implements vscode.Disposable {
 		if (this.docs.length === 0) {
 			const root = await this.resolveDocsRoot()
 			this.docs = await this.loadDocsRecursive(root)
-			
+
 			// Debuging output
 			//console.debug(`Loaded ${this.docs.length} documentation files from ${this.docsRoot.toString()}`)
 		}
@@ -38,7 +45,7 @@ export default class DocumentationController implements vscode.Disposable {
 	}
 
 	dispose(): void {
-		// nothing 
+		// nothing
 	}
 
 	private async resolveDocsRoot(): Promise<vscode.Uri> {
@@ -62,7 +69,10 @@ export default class DocumentationController implements vscode.Disposable {
 		}
 	}
 
-	private async loadDocsRecursive(dir: vscode.Uri, relativeBase = ''): Promise<DocumentationEntry[]> {
+	private async loadDocsRecursive(
+		dir: vscode.Uri,
+		relativeBase = ''
+	): Promise<DocumentationEntry[]> {
 		let entries: [string, vscode.FileType][]
 		try {
 			entries = await vscode.workspace.fs.readDirectory(dir)
@@ -79,12 +89,14 @@ export default class DocumentationController implements vscode.Disposable {
 				const nested = await this.loadDocsRecursive(childUri, relativePath)
 				docs.push(...nested)
 			} else if (type === vscode.FileType.File && this.isMarkdown(name)) {
+				const stat = await vscode.workspace.fs.stat(childUri)
 				const contentBuffer = await vscode.workspace.fs.readFile(childUri)
 				const content = Buffer.from(contentBuffer).toString('utf8')
 				docs.push({
 					path: relativePath,
 					name,
-					content
+					content,
+					version: stat.mtime
 				})
 			}
 		}

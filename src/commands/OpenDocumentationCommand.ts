@@ -1,8 +1,6 @@
 import BaseCommand from './BaseCommand'
 
 import { Container } from '../container'
-import vscode from 'vscode'
-
 import { DocumentationViewPanel } from '../panels/DocumentationViewPanel'
 
 export const IDENTIFIER = 'showDocs'

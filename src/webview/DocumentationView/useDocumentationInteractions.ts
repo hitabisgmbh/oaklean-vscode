@@ -14,6 +14,68 @@ type InteractionOptions = {
 	onZoomImage: (image: { src: string; alt?: string } | null) => void
 }
 
+type LinkResolution =
+	| { type: 'anchor'; anchor: string }
+	| { type: 'external'; href: string }
+	| {
+			type: 'doc' | 'other'
+			targetPath: string
+			anchor?: string
+			missingPath?: string
+	  }
+
+export function resolveDocumentationLink(
+	href: string,
+	selectedPath: string,
+	files: DocumentationFile[]
+): LinkResolution {
+	if (href === '') {
+		return { type: 'other', targetPath: selectedPath }
+	}
+	if (href.startsWith('#')) {
+		return { type: 'anchor', anchor: href.substring(1) }
+	}
+	if (/^https?:\/\//i.test(href) || href.startsWith('mailto:')) {
+		return { type: 'external', href }
+	}
+
+	const [pathPart, hashPart] = href.split('#')
+	let targetPath = selectedPath
+	let missingPath: string | undefined
+	const isDocLink = pathPart !== '' && /\.md|\.markdown/i.test(pathPart)
+
+	if (pathPart !== '') {
+		const isAbsolute = pathPart.startsWith('/')
+		const normalized = pathPart.replace(/^\//, '').replace(/^\.\//, '')
+		const baseSegments = isAbsolute ? [] : selectedPath.split('/').slice(0, -1)
+		const targetSegments = normalized.split('/').filter(Boolean)
+		const resolvedSegments: string[] = []
+		for (const seg of targetSegments) {
+			if (seg === '..') {
+				baseSegments.pop()
+			} else if (seg !== '.') {
+				resolvedSegments.push(seg)
+			}
+		}
+		const candidate = [...baseSegments, ...resolvedSegments].join('/')
+		const relMatch = files.find(
+			(file) => file.path.toLowerCase() === candidate.toLowerCase()
+		)
+		if (relMatch !== undefined) {
+			targetPath = relMatch.path
+		} else {
+			missingPath = candidate === '' ? normalized : candidate
+		}
+	}
+
+	return {
+		type: isDocLink ? 'doc' : 'other',
+		targetPath,
+		anchor: hashPart === undefined || hashPart === '' ? undefined : hashPart,
+		missingPath
+	}
+}
+
 export function useDocumentationInteractions({
 	files,
 	selectedPath,
@@ -24,69 +86,41 @@ export function useDocumentationInteractions({
 	onOpenExternal,
 	onMissingFile,
 	onZoomImage
-}: InteractionOptions) {
+}: InteractionOptions): void {
 	useEffect(() => {
 		function handleLink(href: string) {
-			if (!href) return
-			if (href.startsWith('#')) {
-				onSetAnchor(href.substring(1))
+			const resolved = resolveDocumentationLink(href, selectedPath, files)
+			if (resolved.type === 'anchor') {
+				onSetAnchor(resolved.anchor)
 				return
 			}
-			if (/^https?:\/\//i.test(href) || href.startsWith('mailto:')) {
-				onOpenExternal(href)
+			if (resolved.type === 'external') {
+				onOpenExternal(resolved.href)
 				return
 			}
-
-			const [pathPart, hashPart] = href.split('#')
-			let targetPath = selectedPath
-			let missingPath: string | null = null
-			const isDocLink = Boolean(pathPart && /\.md|\.markdown/i.test(pathPart))
-
-			if (pathPart) {
-				const isAbsolute = pathPart.startsWith('/')
-				const normalized = pathPart.replace(/^\//, '').replace(/^\.\//, '')
-				const baseSegments = isAbsolute ? [] : selectedPath.split('/').slice(0, -1)
-				const targetSegments = normalized.split('/').filter(Boolean)
-				const resolvedSegments: string[] = []
-				for (const seg of targetSegments) {
-					if (seg === '..') {
-						baseSegments.pop()
-					} else if (seg !== '.') {
-						resolvedSegments.push(seg)
-					}
-				}
-				const candidate = [...baseSegments, ...resolvedSegments].join('/')
-				const relMatch = files.find(
-					(f) => f.path.toLowerCase() === candidate.toLowerCase()
-				)
-				if (relMatch) {
-					targetPath = relMatch.path
-				} else {
-					missingPath = candidate || normalized
-				}
-			}
-
-			if (missingPath && isDocLink) {
-				onMissingFile(missingPath)
+			if (resolved.type === 'doc' && resolved.missingPath) {
+				onMissingFile(resolved.missingPath)
 				return
 			}
-			onSelectPath(targetPath)
-			onSetAnchor(hashPart || undefined)
+			onSelectPath(resolved.targetPath)
+			onSetAnchor(resolved.anchor)
 		}
 
 		function onClick(event: MouseEvent) {
-			const target = event.target as HTMLElement
-			if (target?.tagName?.toLowerCase() === 'img') {
-				const img = target as HTMLImageElement
-				if (img.src) {
-					onZoomImage({ src: img.src, alt: img.alt })
+			const target = event.target
+			if (target instanceof HTMLImageElement) {
+				if (target.src !== '') {
+					onZoomImage({ src: target.src, alt: target.alt })
 				}
 				return
 			}
-			if (!target || target.tagName.toLowerCase() !== 'a') return
-			const anchorEl = target as HTMLAnchorElement
-			const href = anchorEl.getAttribute('href')
-			if (!href) return
+			if (target instanceof HTMLAnchorElement === false) {
+				return
+			}
+			const href = target.getAttribute('href')
+			if (href === null || href === '') {
+				return
+			}
 			event.preventDefault()
 			handleLink(href)
 		}
@@ -104,9 +138,11 @@ export function useDocumentationInteractions({
 	])
 
 	useEffect(() => {
-		if (!anchor) return
+		if (anchor === undefined) {
+			return
+		}
 		const element = document.getElementById(anchor)
-		if (element) {
+		if (element !== null) {
 			element.scrollIntoView({ behavior: 'smooth', block: 'start' })
 		}
 	}, [anchor, html])

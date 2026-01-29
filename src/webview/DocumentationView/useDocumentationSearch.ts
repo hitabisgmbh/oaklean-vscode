@@ -1,102 +1,89 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import FlexSearch from 'flexsearch'
+import type { Dispatch, SetStateAction } from 'react'
 
-import { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
-import { buildSnippetAt, normalizeSearchContent } from './markdownUtils'
+import { createSearchIndex, searchDocs } from './searchUtils'
+
+import { SEARCH_DEBOUNCE_IN_MS } from '../../constants/documentationSearch'
+import type { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
+import type { SearchResult } from '../../types/documentationView'
+
+type DocumentationSearchState = {
+	query: string
+	setQuery: Dispatch<SetStateAction<string>>
+	debouncedQuery: string
+	results: SearchResult[]
+}
 
 export function useDocumentationSearch(
 	files: DocumentationFile[],
+	maxResults: number,
 	onDebounce?: () => void
-) {
+): DocumentationSearchState {
 	const [query, setQuery] = useState('')
 	const [debouncedQuery, setDebouncedQuery] = useState('')
-	const searchIndexRef = useRef<any>(null)
+	const onDebounceRef = useRef(onDebounce)
+	const searchStateRef = useRef<{
+		index: ReturnType<typeof createSearchIndex>
+		filesSnapshot: DocumentationFile[]
+	} | null>(null)
 
 	useEffect(() => {
-		if (!files.length) {
-			searchIndexRef.current = null
-			return
+		onDebounceRef.current = onDebounce
+	}, [onDebounce])
+
+	const searchState = useMemo(() => {
+		if (files === undefined || files.length === 0) {
+			searchStateRef.current = null
+			return null
 		}
-		const index = new (FlexSearch as any).Document({
-			document: {
-				id: 'path',
-				index: ['name', 'content']
-			}
-		})
-		files.forEach((doc) => {
-			index.add({
-				...doc,
-				content: normalizeSearchContent(doc.content)
-			})
-		})
-		searchIndexRef.current = index
+		const previous = searchStateRef.current
+		if (
+			previous !== null &&
+			areFilesEquivalent(previous.filesSnapshot, files) === true
+		) {
+			return previous
+		}
+		// Build the index alongside a stable snapshot of the files used.
+		const nextState = {
+			index: createSearchIndex(files),
+			filesSnapshot: files
+		}
+		searchStateRef.current = nextState
+		return nextState
 	}, [files])
 
 	useEffect(() => {
+		if (query.trim() === '') {
+			setDebouncedQuery('')
+			return
+		}
+		// Debounce typing to avoid rebuilding results on every keystroke.
 		const handle = setTimeout(() => {
 			setDebouncedQuery(query)
-			onDebounce?.()
-		}, 150)
+			onDebounceRef.current?.()
+		}, SEARCH_DEBOUNCE_IN_MS)
 		return () => clearTimeout(handle)
-	}, [query, onDebounce])
+	}, [query])
 
 	const results = useMemo(() => {
 		const q = debouncedQuery.trim()
-		if (!q) return []
-		const index = searchIndexRef.current
-		if (!index) return []
-
-		const fileById = new Map(files.map((doc) => [doc.path, doc]))
-		const matches = index.search(q, { limit: 10 }) || []
-		const ids = new Set(matches.flatMap((match: any) => match.result || []))
-		const maxResults = 10
-		const qLower = q.toLowerCase()
-		const results: { path: string; name: string; snippet: string; occurrence: number }[] = []
-		const processed = new Set<string>()
-		const appendMatches = (doc: DocumentationFile) => {
-			if (processed.has(doc.path)) return
-			processed.add(doc.path)
-			const plain = normalizeSearchContent(doc.content)
-			if (!plain) return
-			const lower = plain.toLowerCase()
-			let fromIndex = 0
-			let occurrence = 0
-			while (results.length < maxResults) {
-				const idx = lower.indexOf(qLower, fromIndex)
-				if (idx === -1) break
-				results.push({
-					path: doc.path,
-					name: doc.name,
-					snippet: buildSnippetAt(doc.content, q, idx),
-					occurrence
-				})
-				occurrence += 1
-				fromIndex = idx + q.length
-			}
+		if (q === '') {
+			return []
 		}
-
-		if (ids.size === 0) {
-			for (const doc of files) {
-				appendMatches(doc)
-				if (results.length >= maxResults) break
-			}
-			return results
+		if (searchState === null) {
+			return []
 		}
-
-		for (const id of ids) {
-			const doc = fileById.get(id as string)
-			if (!doc) continue
-			appendMatches(doc)
-			if (results.length >= maxResults) break
+		if (searchState.index === null) {
+			return []
 		}
-		if (results.length < maxResults) {
-			for (const doc of files) {
-				appendMatches(doc)
-				if (results.length >= maxResults) break
-			}
-		}
-		return results
-	}, [files, debouncedQuery])
+		// Search the snapshot used to build the index for consistent results.
+		return searchDocs(
+			searchState.filesSnapshot,
+			searchState.index,
+			q,
+			maxResults
+		)
+	}, [debouncedQuery, maxResults, searchState])
 
 	return {
 		query,
@@ -104,4 +91,32 @@ export function useDocumentationSearch(
 		debouncedQuery,
 		results
 	}
+}
+
+function areFilesEquivalent(
+	previous: DocumentationFile[],
+	next: DocumentationFile[]
+): boolean {
+	if (previous.length !== next.length) {
+		return false
+	}
+	for (let i = 0; i < previous.length; i++) {
+		const prevFile = previous[i]
+		const nextFile = next[i]
+		if (prevFile.path !== nextFile.path) {
+			return false
+		}
+		if (prevFile.name !== nextFile.name) {
+			return false
+		}
+		const prevVersion = prevFile.version
+		const nextVersion = nextFile.version
+		if (prevVersion === undefined || nextVersion === undefined) {
+			return false
+		}
+		if (prevVersion !== nextVersion) {
+			return false
+		}
+	}
+	return true
 }

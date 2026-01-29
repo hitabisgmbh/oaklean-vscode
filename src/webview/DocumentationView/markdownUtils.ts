@@ -3,11 +3,18 @@ import type Token from 'markdown-it/lib/token'
 import type Renderer from 'markdown-it/lib/renderer'
 import type { Options as MarkdownOptions } from 'markdown-it'
 
-const slugify = (str: string) =>
-	str
+import {
+	SEARCH_SNIPPET_DEFAULT_WORDS,
+	SEARCH_SNIPPET_WORDS_AFTER,
+	SEARCH_SNIPPET_WORDS_BEFORE
+} from '../../constants/documentationSearch'
+
+function slugify(str: string): string {
+	return str
 		.toLowerCase()
 		.replace(/[^\w]+/g, '-')
 		.replace(/^-+|-+$/g, '')
+}
 
 export const markdown = createMarkdownRenderer()
 
@@ -28,7 +35,10 @@ function createMarkdownRenderer() {
 	) => {
 		const titleToken = tokens[idx + 1]
 		const title =
-			titleToken?.children?.reduce((acc: string, t: Token) => acc + (t.content || ''), '') || ''
+			titleToken?.children?.reduce(
+				(acc: string, t: Token) => acc + (t.content ?? ''),
+				''
+			) ?? ''
 		const slug = slugify(title)
 		tokens[idx].attrSet('id', slug)
 		return originalHeadingOpen
@@ -39,22 +49,28 @@ function createMarkdownRenderer() {
 	return md
 }
 
-export function buildSnippet(content: string, query: string) {
+export function buildSnippet(content: string, query: string): string {
 	const plain = normalizeSearchContent(content)
-	const words = plain.split(' ').filter(Boolean)
+	const words = plain.split(' ').filter((word) => word !== '')
 	const q = query.toLowerCase()
 	const matchIndex = words.findIndex((word) => word.toLowerCase().includes(q))
 	if (matchIndex === -1) {
-		return words.slice(0, 20).join(' ')
+		return words.slice(0, SEARCH_SNIPPET_DEFAULT_WORDS).join(' ')
 	}
 
 	return buildSnippetAt(content, query, findWordStartIndex(words, matchIndex))
 }
 
-export function buildSnippetAt(content: string, query: string, matchIndex: number) {
+export function buildSnippetAt(
+	content: string,
+	query: string,
+	matchIndex: number
+): string {
 	const plain = normalizeSearchContent(content)
-	if (!plain) return ''
-	const words = plain.split(' ').filter(Boolean)
+	if (plain === '') {
+		return ''
+	}
+	const words = plain.split(' ').filter((word) => word !== '')
 	let wordIndex = 0
 	let cursor = 0
 	for (let i = 0; i < words.length; i++) {
@@ -67,44 +83,54 @@ export function buildSnippetAt(content: string, query: string, matchIndex: numbe
 		cursor = end + 1
 	}
 
-	const beforeCount = 8
-	const afterCount = 8
-	const start = Math.max(0, wordIndex - beforeCount)
-	const end = Math.min(words.length, wordIndex + afterCount + 1)
+	const start = Math.max(0, wordIndex - SEARCH_SNIPPET_WORDS_BEFORE)
+	const end = Math.min(words.length, wordIndex + SEARCH_SNIPPET_WORDS_AFTER + 1)
 	const snippetWords = words.slice(start, end)
 	const snippet = snippetWords.join(' ')
 	const pattern = new RegExp(escapeRegExp(query), 'i')
-	return snippet.replace(pattern, (match) => `<strong>${match}</strong>`)
+	return snippet.replace(
+		pattern,
+		(match) => `<mark class="doc-search-match">${match}</mark>`
+	)
 }
 
 export function rewriteHtmlImages(
 	html: string,
-	options: { currentPath: string; resourceBase: string; imageWhitelist: string[] }
-) {
+	options: {
+		currentPath: string
+		resourceBase: string
+		imageWhitelist: string[]
+	}
+): string {
 	const parser = new DOMParser()
 	const doc = parser.parseFromString(html, 'text/html')
 	const images = Array.from(doc.querySelectorAll('img'))
 
 	for (const img of images) {
-		const src = img.getAttribute('src') || ''
-		if (!src) {
+		const src = img.getAttribute('src') ?? ''
+		if (src === '') {
 			img.remove()
 			continue
 		}
 		if (src.startsWith('data:')) {
 			continue
 		}
-		if (/^vscode-webview-resource:|^vscode-resource:|^vscode-webview:/i.test(src)) {
+		if (
+			/^vscode-webview-resource:|^vscode-resource:|^vscode-webview:/i.test(src)
+		) {
 			continue
 		}
 		if (isExternalHttpUrl(src)) {
-			if (!isWhitelistedUrl(src, options.imageWhitelist)) {
+			if (isWhitelistedUrl(src, options.imageWhitelist) === false) {
 				img.remove()
 			}
 			continue
 		}
-		if (options.resourceBase && options.currentPath) {
-			img.setAttribute('src', resolveResource(options.resourceBase, options.currentPath, src))
+		if (options.resourceBase !== '' && options.currentPath !== '') {
+			img.setAttribute(
+				'src',
+				resolveResource(options.resourceBase, options.currentPath, src)
+			)
 		}
 	}
 
@@ -114,27 +140,37 @@ export function rewriteHtmlImages(
 export function rewriteHtmlLinks(
 	html: string,
 	options: { currentPath: string; docPaths: Set<string> }
-) {
+): string {
 	const parser = new DOMParser()
 	const doc = parser.parseFromString(html, 'text/html')
 	const anchors = Array.from(doc.querySelectorAll('a'))
 
 	for (const anchor of anchors) {
-		const href = anchor.getAttribute('href') || ''
-		if (!href) continue
-		if (href.startsWith('#')) continue
-		if (isExternalHttpUrl(href) || href.startsWith('mailto:')) continue
-		if (/^vscode-webview-resource:|^vscode-resource:|^vscode-webview:/i.test(href)) {
+		const href = anchor.getAttribute('href') ?? ''
+		if (href === '') {
+			continue
+		}
+		if (href.startsWith('#')) {
+			continue
+		}
+		if (isExternalHttpUrl(href) || href.startsWith('mailto:')) {
+			continue
+		}
+		if (
+			/^vscode-webview-resource:|^vscode-resource:|^vscode-webview:/i.test(href)
+		) {
 			continue
 		}
 		const [pathPart] = href.split('#')
-		if (!pathPart) continue
+		if (pathPart === '') {
+			continue
+		}
 		const lowerPath = pathPart.toLowerCase()
 		if (!lowerPath.endsWith('.md') && !lowerPath.endsWith('.markdown')) {
 			continue
 		}
 		const resolved = resolveDocPath(options.currentPath, pathPart)
-		if (!options.docPaths.has(resolved)) {
+		if (options.docPaths.has(resolved) === false) {
 			anchor.removeAttribute('href')
 			anchor.classList.add('doc-link-disabled')
 		}
@@ -143,41 +179,22 @@ export function rewriteHtmlLinks(
 	return doc.body.innerHTML
 }
 
-export function resolveResource(base: string, docPath: string, relativeSrc: string) {
-	const cleaned = relativeSrc.replace(/^\.\//, '')
-	const docSegments = docPath.split('/').slice(0, -1)
-	const srcSegments = cleaned.split('/').filter(Boolean)
-	const stack = [...docSegments]
-	for (const seg of srcSegments) {
-		if (seg === '..') {
-			stack.pop()
-		} else if (seg !== '.') {
-			stack.push(seg)
-		}
-	}
-	const finalPath = stack.join('/')
-	return `${base}/${finalPath}`
+export function resolveResource(
+	base: string,
+	docPath: string,
+	relativeSrc: string
+): string {
+	return resolvePath(base, docPath, relativeSrc)
 }
 
-export function resolveDocPath(docPath: string, relativePath: string) {
-	const cleaned = relativePath.replace(/^\.\//, '')
-	const docSegments = docPath.split('/').slice(0, -1)
-	const srcSegments = cleaned.split('/').filter(Boolean)
-	const stack = [...docSegments]
-	for (const seg of srcSegments) {
-		if (seg === '..') {
-			stack.pop()
-		} else if (seg !== '.') {
-			stack.push(seg)
-		}
-	}
-	return stack.join('/')
+export function resolveDocPath(docPath: string, relativePath: string): string {
+	return resolvePath('', docPath, relativePath)
 }
 
-export function stripMarkdown(text: string) {
+export function stripMarkdown(text: string): string {
 	return text
 		.replace(/<[^>]*>/g, '')
-		.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+		.replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
 		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
 		.replace(/`([^`]+)`/g, '$1')
 		.replace(/[*_~]+/g, '')
@@ -186,18 +203,18 @@ export function stripMarkdown(text: string) {
 		.replace(/^[\s>*+-]\s+/gm, '')
 }
 
-export function normalizeSearchContent(text: string) {
+export function normalizeSearchContent(text: string): string {
 	let cleaned = stripMarkdown(text)
 	cleaned = cleaned.replace(/^\s*\|?[\s:-]+(\|[\s:-]+)+\|?\s*$/gm, ' ')
 	cleaned = cleaned.replace(/\|/g, ' ')
 	return cleaned.replace(/\s+/g, ' ').trim()
 }
 
-function escapeRegExp(value: string) {
+function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function findWordStartIndex(words: string[], wordIndex: number) {
+function findWordStartIndex(words: string[], wordIndex: number): number {
 	let index = 0
 	for (let i = 0; i < wordIndex; i++) {
 		index += words[i].length + 1
@@ -205,22 +222,31 @@ function findWordStartIndex(words: string[], wordIndex: number) {
 	return index
 }
 
-function isExternalHttpUrl(src: string) {
+function isExternalHttpUrl(src: string): boolean {
 	return /^https?:\/\//i.test(src)
 }
 
-function isWhitelistedUrl(src: string, whitelist: string[]) {
+function isWhitelistedUrl(src: string, whitelist: string[]): boolean {
 	for (const entry of whitelist) {
 		const trimmed = entry.trim()
-		if (!trimmed) continue
+		if (trimmed === '') {
+			continue
+		}
 		const lower = trimmed.toLowerCase()
 		if (lower.startsWith('http(s)://')) {
 			const rest = trimmed.slice('http(s)://'.length)
-			if (src.startsWith(`http://${rest}`) || src.startsWith(`https://${rest}`)) {
+			if (
+				src.startsWith(`http://${rest}`) ||
+				src.startsWith(`https://${rest}`)
+			) {
 				return true
 			}
 		}
-		if (/^https?:\/\//i.test(trimmed) && !trimmed.includes('*') && trimmed.includes('/')) {
+		if (
+			/^https?:\/\//i.test(trimmed) &&
+			!trimmed.includes('*') &&
+			trimmed.includes('/')
+		) {
 			if (src.startsWith(trimmed)) {
 				return true
 			}
@@ -238,13 +264,17 @@ function isWhitelistedUrl(src: string, whitelist: string[]) {
 				: lower.startsWith('http://')
 					? ['http:']
 					: ['http:', 'https:']
-		if (!schemes.includes(url.protocol)) continue
+		if (schemes.includes(url.protocol) === false) {
+			continue
+		}
 		let hostPattern = trimmed
 			.replace(/^http\(s\):\/\//i, '')
 			.replace(/^https?:\/\//i, '')
 			.split('/')[0]
 		hostPattern = hostPattern.replace(/^\*\./, '').replace(/^\*/, '')
-		if (!hostPattern) continue
+		if (hostPattern === '') {
+			continue
+		}
 		const host = url.hostname.toLowerCase()
 		const pattern = hostPattern.toLowerCase()
 		if (host === pattern || host.endsWith(`.${pattern}`)) {
@@ -252,4 +282,24 @@ function isWhitelistedUrl(src: string, whitelist: string[]) {
 		}
 	}
 	return false
+}
+
+function resolvePath(
+	base: string,
+	docPath: string,
+	relativePath: string
+): string {
+	const cleaned = relativePath.replace(/^\.\//, '')
+	const docSegments = docPath.split('/').slice(0, -1)
+	const srcSegments = cleaned.split('/').filter((segment) => segment !== '')
+	const stack = [...docSegments]
+	for (const seg of srcSegments) {
+		if (seg === '..') {
+			stack.pop()
+		} else if (seg !== '.') {
+			stack.push(seg)
+		}
+	}
+	const finalPath = stack.join('/')
+	return base === '' ? finalPath : `${base}/${finalPath}`
 }

@@ -1,4 +1,7 @@
-import { BreadcrumbItem } from '../../DocumentationView/treeUtils'
+import type { ReactElement } from 'react'
+
+import { DOCUMENTATION_ROOT_LABEL } from '../../../constants/documentationUi'
+import type { BreadcrumbItem } from '../../../types/documentationView'
 
 type DocsBreadcrumbsProps = {
 	breadcrumbs: BreadcrumbItem[]
@@ -12,21 +15,25 @@ export function DocsBreadcrumbs({
 	rootTarget,
 	onSelectRoot,
 	onSelectCrumb
-}: DocsBreadcrumbsProps) {
-	if (breadcrumbs.length === 0) return null
+}: DocsBreadcrumbsProps): ReactElement | null {
+	if (breadcrumbs.length === 0) {
+		return null
+	}
 
 	return (
 		<div className="doc-breadcrumbs">
-			{rootTarget ? (
+			{rootTarget !== undefined ? (
 				<button
 					type="button"
 					className="doc-breadcrumb doc-breadcrumb-link doc-breadcrumb-root"
 					onClick={onSelectRoot}
 				>
-					Docs
+					{DOCUMENTATION_ROOT_LABEL}
 				</button>
 			) : (
-				<span className="doc-breadcrumb doc-breadcrumb-root">Docs</span>
+				<span className="doc-breadcrumb doc-breadcrumb-root">
+					{DOCUMENTATION_ROOT_LABEL}
+				</span>
 			)}
 			{breadcrumbs.map((crumb) => (
 				<div key={crumb.path} className="doc-breadcrumb-group">

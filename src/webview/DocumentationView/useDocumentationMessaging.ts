@@ -18,9 +18,11 @@ export function useDocumentationMessaging(
 	vscodeApi: { postMessage: (message: unknown) => void },
 	onInit: (message: InitMessage) => void,
 	onOpen: (message: OpenMessage) => void
-) {
+): void {
 	useEffect(() => {
-		function handleMessages(event: MessageEvent<DocumentationView_ParentToChild>) {
+		function handleMessages(
+			event: MessageEvent<DocumentationView_ParentToChild>
+		) {
 			const message = event.data
 			switch (message?.type) {
 				case DocumentationViewCommands.init:

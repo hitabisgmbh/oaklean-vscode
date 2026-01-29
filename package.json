@@ -93,6 +93,18 @@
 						"http(s)://*.oaklean.io"
 					],
 					"description": "Allowed URL prefixes for external images in documentation."
+				},
+				"oaklean.docs.searchMaxResults": {
+					"type": "number",
+					"default": 50,
+					"minimum": 1,
+					"description": "Maximum number of documentation search results to return."
+				},
+				"oaklean.docs.searchPageSize": {
+					"type": "number",
+					"default": 10,
+					"minimum": 1,
+					"description": "Number of documentation search results to reveal when using Show more."
 				}
 			}
 		},
@@ -120,16 +132,18 @@
 					"icon": "media/logo.svg",
 					"contextualTitle": "Measurements"
 				},
-				{
-					"type": "webview",
-					"id": "methodView",
-					"name": "Methods"
-				},
-				{
-					"type": "webview",
-					"id": "filterView",
-					"name": "Filter"
-				}
+					{
+						"type": "webview",
+						"id": "methodView",
+						"name": "Methods",
+						"icon": "$(symbol-method)"
+					},
+					{
+						"type": "webview",
+						"id": "filterView",
+						"name": "Filter",
+						"icon": "$(filter)"
+					}
 			],
 			"measurementsPanel": [
 				{

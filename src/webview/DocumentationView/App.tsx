@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactElement } from 'react'
+
 import './main.css'
-import {
-	DocumentationFile,
-	DocumentationViewCommands,
-	DocumentationView_ParentToChild
-} from '../../protocols/DocumentationViewProtocol'
 import { markdown, rewriteHtmlImages } from './markdownUtils'
 import {
 	buildBreadcrumbs,
@@ -15,24 +12,58 @@ import { useDocumentationSearch } from './useDocumentationSearch'
 import { useSearchHighlight } from './useSearchHighlight'
 import { useDocumentationInteractions } from './useDocumentationInteractions'
 import { useDocumentationMessaging } from './useDocumentationMessaging'
+
+import { DOCUMENTATION_OVERVIEW_LABEL } from '../../constants/documentationView'
+import {
+	DOCUMENTATION_MISSING_FILE_MESSAGE,
+	DOCUMENTATION_NO_CONTENT_MESSAGE,
+	DOCUMENTATION_SELECT_FILE_MESSAGE
+} from '../../constants/documentationUi'
+import {
+	SEARCH_RESULTS_MAX_DEFAULT,
+	SEARCH_RESULTS_PAGE_SIZE_DEFAULT
+} from '../../constants/documentationSearch'
+import {
+	DocumentationFile,
+	DocumentationViewCommands,
+	DocumentationView_ParentToChild
+} from '../../protocols/DocumentationViewProtocol'
 import { DocsBreadcrumbs } from '../components/documentation/DocsBreadcrumbs'
 import { DocsImageOverlay } from '../components/documentation/DocsImageOverlay'
 import { DocsSidebar } from '../components/documentation/DocsSidebar'
 
-declare const acquireVsCodeApi: any
+type VsCodeApi = {
+	postMessage: (message: unknown) => void
+}
+
+declare const acquireVsCodeApi: () => VsCodeApi
 const vscode = acquireVsCodeApi()
-export function App() {
+export function App(): ReactElement {
 	const [files, setFiles] = useState<DocumentationFile[]>([])
 	const [selectedPath, setSelectedPath] = useState<string>('')
 	const [anchor, setAnchor] = useState<string | undefined>()
 	const [highlightTerm, setHighlightTerm] = useState('')
-	const [highlightOccurrence, setHighlightOccurrence] = useState<number | null>(null)
+	const [highlightOccurrence, setHighlightOccurrence] = useState<number | null>(
+		null
+	)
 	const [highlightBump, setHighlightBump] = useState(0)
 	const [resourceBase, setResourceBase] = useState<string>('')
 	const [docsBasePath, setDocsBasePath] = useState<string>('')
 	const [imageWhitelist, setImageWhitelist] = useState<string[]>([])
 	const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
-	const [zoomedImage, setZoomedImage] = useState<{ src: string; alt?: string } | null>(null)
+	const [searchMaxResults, setSearchMaxResults] = useState<number>(
+		SEARCH_RESULTS_MAX_DEFAULT
+	)
+	const [searchPageSize, setSearchPageSize] = useState<number>(
+		SEARCH_RESULTS_PAGE_SIZE_DEFAULT
+	)
+	const [visibleResultsCount, setVisibleResultsCount] = useState<number>(
+		SEARCH_RESULTS_PAGE_SIZE_DEFAULT
+	)
+	const [zoomedImage, setZoomedImage] = useState<{
+		src: string
+		alt?: string
+	} | null>(null)
 	const [missingLink, setMissingLink] = useState<string | null>(null)
 	const suppressExpandRef = useRef(false)
 	const clearHighlight = useCallback(() => {
@@ -42,6 +73,7 @@ export function App() {
 	}, [])
 	const { query, setQuery, debouncedQuery, results } = useDocumentationSearch(
 		files,
+		searchMaxResults,
 		clearHighlight
 	)
 
@@ -51,21 +83,26 @@ export function App() {
 	)
 
 	const folderTree = useMemo(() => buildFolderTree(files), [files])
-	const folderDefaultMap = useMemo(() => buildDefaultFileMap(folderTree), [folderTree])
+	const folderDefaultMap = useMemo(
+		() => buildDefaultFileMap(folderTree),
+		[folderTree]
+	)
 	const overviewPath = useMemo(
 		() =>
 			files.find(
 				(doc) =>
-					doc.name.toLowerCase() === 'readme.md' &&
-					!doc.path.includes('/')
+					doc.name.toLowerCase() === 'readme.md' && !doc.path.includes('/')
 			)?.path,
 		[files]
 	)
 
 	const html = useMemo(() => {
-		if (!selectedDoc) return '<p>No documentation available.</p>'
+		if (selectedDoc === undefined) {
+			return `<p>${DOCUMENTATION_NO_CONTENT_MESSAGE}</p>`
+		}
 		const base = docsBasePath.trim().replace(/\/+$/, '')
-		const currentPath = base ? `${base}/${selectedDoc.path}` : selectedDoc.path
+		const currentPath =
+			base !== '' ? `${base}/${selectedDoc.path}` : selectedDoc.path
 		const rendered = markdown.render(selectedDoc.content, {
 			currentPath,
 			resourceBase,
@@ -78,36 +115,50 @@ export function App() {
 		})
 	}, [selectedDoc, docsBasePath, resourceBase, imageWhitelist])
 
-	const breadcrumbs = useMemo(
-		() => {
-			const crumbs = buildBreadcrumbs(selectedDoc, folderDefaultMap)
-			if (overviewPath && selectedDoc?.path === overviewPath && crumbs.length > 0) {
-				crumbs[crumbs.length - 1] = {
-					...crumbs[crumbs.length - 1],
-					label: 'Overview',
-					clickable: false
-				}
+	const breadcrumbs = useMemo(() => {
+		const crumbs = buildBreadcrumbs(selectedDoc, folderDefaultMap)
+		if (
+			overviewPath !== undefined &&
+			selectedDoc !== undefined &&
+			selectedDoc.path === overviewPath &&
+			crumbs.length > 0
+		) {
+			crumbs[crumbs.length - 1] = {
+				...crumbs[crumbs.length - 1],
+				label: DOCUMENTATION_OVERVIEW_LABEL,
+				clickable: false
 			}
-			return crumbs
-		},
-		[selectedDoc, folderDefaultMap, overviewPath]
-	)
+		}
+		return crumbs
+	}, [selectedDoc, folderDefaultMap, overviewPath])
 
 	const handleInit = useCallback((message: DocumentationView_ParentToChild) => {
-		if (message.type !== DocumentationViewCommands.init) return
-		setFiles(message.files || [])
-		setSelectedPath(message.initialFile || message.files[0]?.path || '')
+		if (message.type !== DocumentationViewCommands.init) {
+			return
+		}
+		const maxResults = message.searchMaxResults ?? SEARCH_RESULTS_MAX_DEFAULT
+		const pageSizeFromMessage =
+			message.searchPageSize ?? SEARCH_RESULTS_PAGE_SIZE_DEFAULT
+		const pageSize =
+			pageSizeFromMessage > maxResults ? maxResults : pageSizeFromMessage
+		setFiles(message.files ?? [])
+		setSelectedPath(message.initialFile ?? message.files[0]?.path ?? '')
 		setAnchor(undefined)
-		setResourceBase(message.resourceBase || '')
-		setDocsBasePath(message.docsBasePath || '')
-		setImageWhitelist(message.imageWhitelist || [])
+		setResourceBase(message.resourceBase ?? '')
+		setDocsBasePath(message.docsBasePath ?? '')
+		setImageWhitelist(message.imageWhitelist ?? [])
+		setSearchMaxResults(maxResults)
+		setSearchPageSize(pageSize)
+		setVisibleResultsCount(pageSize)
 		setHighlightTerm('')
 		setHighlightOccurrence(null)
 		setHighlightBump((prev) => prev + 1)
 	}, [])
 
 	const handleOpen = useCallback((message: DocumentationView_ParentToChild) => {
-		if (message.type !== DocumentationViewCommands.open) return
+		if (message.type !== DocumentationViewCommands.open) {
+			return
+		}
 		setSelectedPath(message.filePath)
 		setAnchor(message.anchor)
 		setHighlightTerm('')
@@ -117,19 +168,28 @@ export function App() {
 
 	useDocumentationMessaging(vscode, handleInit, handleOpen)
 
+	// Reset the dropdown to the first page when the query or page size changes.
 	useEffect(() => {
-		if (!selectedPath) return
+		setVisibleResultsCount(searchPageSize)
+	}, [debouncedQuery, searchPageSize])
+
+	useEffect(() => {
+		if (selectedPath === '') {
+			return
+		}
 		if (suppressExpandRef.current) {
 			suppressExpandRef.current = false
 			return
 		}
 		const segments = selectedPath.split('/').slice(0, -1)
-		if (segments.length === 0) return
+		if (segments.length === 0) {
+			return
+		}
 		setExpandedFolders((prev) => {
 			const next = new Set(prev)
 			let current = ''
 			for (const seg of segments) {
-				current = current ? `${current}/${seg}` : seg
+				current = current === '' ? seg : `${current}/${seg}`
 				next.add(current)
 			}
 			return next
@@ -147,7 +207,7 @@ export function App() {
 				setMissingLink(null)
 			}
 		}
-		
+
 		document.addEventListener('keydown', onKeyDown)
 		return () => document.removeEventListener('keydown', onKeyDown)
 	}, [])
@@ -168,7 +228,7 @@ export function App() {
 
 	function handleFolderSelect(path: string) {
 		const targetPath = folderDefaultMap.get(path)
-		if (targetPath) {
+		if (targetPath !== undefined) {
 			suppressExpandRef.current = true
 			setSelectedPath(targetPath)
 			setAnchor(undefined)
@@ -184,6 +244,14 @@ export function App() {
 		setHighlightTerm('')
 		setHighlightOccurrence(null)
 		setHighlightBump((prev) => prev + 1)
+	}
+
+	// Reveal one more page of results in the dropdown.
+	function handleShowMoreResults() {
+		setVisibleResultsCount((prev) => {
+			const next = prev + searchPageSize
+			return next > results.length ? results.length : next
+		})
 	}
 
 	useDocumentationInteractions({
@@ -215,6 +283,7 @@ export function App() {
 			<DocsSidebar
 				query={query}
 				results={results}
+				visibleResultsCount={visibleResultsCount}
 				folderTree={folderTree}
 				selectedPath={selectedPath}
 				expandedFolders={expandedFolders}
@@ -233,6 +302,7 @@ export function App() {
 				onSelectFile={handleSelectFile}
 				onToggleFolder={handleFolderToggle}
 				onSelectFolder={handleFolderSelect}
+				onShowMoreResults={handleShowMoreResults}
 			/>
 			<main className="doc-main">
 				<DocsBreadcrumbs
@@ -240,7 +310,7 @@ export function App() {
 					rootTarget={folderDefaultMap.get('')}
 					onSelectRoot={() => {
 						const rootPath = folderDefaultMap.get('')
-						if (rootPath) {
+						if (rootPath !== undefined) {
 							setSelectedPath(rootPath)
 							setAnchor(undefined)
 							setHighlightTerm('')
@@ -248,7 +318,7 @@ export function App() {
 					}}
 					onSelectCrumb={(path) => {
 						const targetPath = folderDefaultMap.get(path)
-						if (targetPath) {
+						if (targetPath !== undefined) {
 							setSelectedPath(targetPath)
 							setAnchor(undefined)
 							setHighlightTerm('')
@@ -259,7 +329,7 @@ export function App() {
 					image={zoomedImage}
 					onClose={() => setZoomedImage(null)}
 				/>
-				{missingLink && (
+				{missingLink !== null && (
 					<div
 						className="doc-missing-overlay"
 						role="alertdialog"
@@ -274,18 +344,16 @@ export function App() {
 								X
 							</div>
 							<div className="doc-missing-text">
-								The editor could not be opened because the file was not found.
+								{DOCUMENTATION_MISSING_FILE_MESSAGE}
 							</div>
 						</div>
 					</div>
 				)}
 				<div className="doc-content" ref={contentRef}>
-					{selectedDoc ? (
-						<div
-							dangerouslySetInnerHTML={{ __html: html }}
-						/>
+					{selectedDoc !== undefined ? (
+						<div dangerouslySetInnerHTML={{ __html: html }} />
 					) : (
-						<div className="doc-empty">Select a file to view its content.</div>
+						<div className="doc-empty">{DOCUMENTATION_SELECT_FILE_MESSAGE}</div>
 					)}
 				</div>
 			</main>
