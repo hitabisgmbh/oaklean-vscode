@@ -5,6 +5,7 @@ import {
 import { normalizeSearchContent } from '../../../src/webview/DocumentationView/markdownUtils'
 import { SEARCH_RESULTS_MAX_DEFAULT } from '../../../src/constants/documentationSearch'
 
+// Assert helper to guard against null search index creation.
 function assertSearchIndex(
 	value: ReturnType<typeof createSearchIndex>
 ): asserts value is NonNullable<ReturnType<typeof createSearchIndex>> {
@@ -14,6 +15,7 @@ function assertSearchIndex(
 }
 
 describe('DocumentationView search utils', () => {
+	// Ensures each occurrence in a doc produces a separate result.
 	test('returns one result per occurrence within a document', () => {
 		const files = [
 			{
@@ -22,6 +24,7 @@ describe('DocumentationView search utils', () => {
 				content: 'profilerHits profilerHits profilerHits\\nother profilerHits'
 			}
 		]
+		// Build index and search with a default result cap.
 		const searchIndex = createSearchIndex(files)
 		assertSearchIndex(searchIndex)
 		const results = searchDocs(
@@ -36,7 +39,8 @@ describe('DocumentationView search utils', () => {
 		)
 	})
 
-test('finds substring matches via the index', () => {
+	// Ensures substring matches are found via the index.
+	test('finds substring matches via the index', () => {
 		const files = [
 			{
 				path: 'A.md',
@@ -49,6 +53,7 @@ test('finds substring matches via the index', () => {
 				content: 'units unit tests'
 			}
 		]
+		// Search for a substring that appears within larger tokens.
 		const searchIndex = createSearchIndex(files)
 		assertSearchIndex(searchIndex)
 		const results = searchDocs(
@@ -60,6 +65,7 @@ test('finds substring matches via the index', () => {
 		expect(results.length).toBeGreaterThan(0)
 	})
 
+	// Ensures markdown content is normalized for indexing.
 	test('normalizeSearchContent removes HTML and table layout', () => {
 		const raw =
 			'<img src="../images/a.png" width="300"/>\\n| A | B |\\n|---|---|\\nText'

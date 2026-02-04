@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
-import { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
+import type { DocumentationEntry } from '../../types/documentation'
 
 type InteractionOptions = {
-	files: DocumentationFile[]
+	files: DocumentationEntry[]
 	selectedPath: string
 	anchor?: string
 	html: string
@@ -24,10 +24,11 @@ type LinkResolution =
 			missingPath?: string
 	  }
 
+// Resolves a clicked href into a doc path, anchor, or external target.
 export function resolveDocumentationLink(
 	href: string,
 	selectedPath: string,
-	files: DocumentationFile[]
+	filePathMap: Map<string, string>
 ): LinkResolution {
 	if (href === '') {
 		return { type: 'other', targetPath: selectedPath }
@@ -42,14 +43,19 @@ export function resolveDocumentationLink(
 	const [pathPart, hashPart] = href.split('#')
 	let targetPath = selectedPath
 	let missingPath: string | undefined
-	const isDocLink = pathPart !== '' && /\.md|\.markdown/i.test(pathPart)
+	const pathWithoutQuery = pathPart.split('?')[0]
+	const isDocLink =
+		pathWithoutQuery !== '' && /\.(md|markdown)$/i.test(pathWithoutQuery)
 
-	if (pathPart !== '') {
-		const isAbsolute = pathPart.startsWith('/')
-		const normalized = pathPart.replace(/^\//, '').replace(/^\.\//, '')
+	if (pathWithoutQuery !== '') {
+		const isAbsolute = pathWithoutQuery.startsWith('/')
+		const normalized = pathWithoutQuery.replace(/^\//, '').replace(/^\.\//, '')
 		const baseSegments = isAbsolute ? [] : selectedPath.split('/').slice(0, -1)
-		const targetSegments = normalized.split('/').filter(Boolean)
+		const targetSegments = normalized
+			.split('/')
+			.filter((segment) => segment !== '')
 		const resolvedSegments: string[] = []
+		// Resolve "." and ".." segments against the selected path.
 		for (const seg of targetSegments) {
 			if (seg === '..') {
 				baseSegments.pop()
@@ -58,11 +64,10 @@ export function resolveDocumentationLink(
 			}
 		}
 		const candidate = [...baseSegments, ...resolvedSegments].join('/')
-		const relMatch = files.find(
-			(file) => file.path.toLowerCase() === candidate.toLowerCase()
-		)
-		if (relMatch !== undefined) {
-			targetPath = relMatch.path
+		const candidateLower = candidate.toLowerCase()
+		const resolvedPath = filePathMap.get(candidateLower)
+		if (resolvedPath !== undefined) {
+			targetPath = resolvedPath
 		} else {
 			missingPath = candidate === '' ? normalized : candidate
 		}
@@ -76,6 +81,7 @@ export function resolveDocumentationLink(
 	}
 }
 
+// Binds click handling and anchor scrolling for rendered documentation.
 export function useDocumentationInteractions({
 	files,
 	selectedPath,
@@ -87,9 +93,18 @@ export function useDocumentationInteractions({
 	onMissingFile,
 	onZoomImage
 }: InteractionOptions): void {
+	const filePathMap = useMemo(() => {
+		const map = new Map<string, string>()
+		for (const file of files) {
+			map.set(file.path.toLowerCase(), file.path)
+		}
+		return map
+	}, [files])
+
 	useEffect(() => {
+		// Handle link/image clicks inside the rendered HTML content.
 		function handleLink(href: string) {
-			const resolved = resolveDocumentationLink(href, selectedPath, files)
+			const resolved = resolveDocumentationLink(href, selectedPath, filePathMap)
 			if (resolved.type === 'anchor') {
 				onSetAnchor(resolved.anchor)
 				return
@@ -108,32 +123,33 @@ export function useDocumentationInteractions({
 
 		function onClick(event: MouseEvent) {
 			const target = event.target
+			const anchorElement =
+				target instanceof Element ? target.closest('a') : null
+			if (anchorElement !== null) {
+				const href = anchorElement.getAttribute('href')
+				if (href === null || href === '') {
+					return
+				}
+				event.preventDefault()
+				handleLink(href)
+				return
+			}
 			if (target instanceof HTMLImageElement) {
 				if (target.src !== '') {
 					onZoomImage({ src: target.src, alt: target.alt })
 				}
-				return
 			}
-			if (target instanceof HTMLAnchorElement === false) {
-				return
-			}
-			const href = target.getAttribute('href')
-			if (href === null || href === '') {
-				return
-			}
-			event.preventDefault()
-			handleLink(href)
 		}
 
 		document.addEventListener('click', onClick)
 		return () => document.removeEventListener('click', onClick)
 	}, [
-		files,
 		onMissingFile,
 		onOpenExternal,
 		onSelectPath,
 		onSetAnchor,
 		onZoomImage,
+		filePathMap,
 		selectedPath
 	])
 
@@ -142,6 +158,7 @@ export function useDocumentationInteractions({
 			return
 		}
 		const element = document.getElementById(anchor)
+		// Scroll to the anchor after content renders.
 		if (element !== null) {
 			element.scrollIntoView({ behavior: 'smooth', block: 'start' })
 		}

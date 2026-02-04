@@ -1,6 +1,0 @@
-export const DOCUMENTATION_VIEW_PANEL_TYPE = 'oaklean.documentationViewPanel'
-export const DOCUMENTATION_VIEW_TYPE = 'oaklean.documentationView'
-export const DOCUMENTATION_VIEW_TITLE = 'Oaklean Documentation'
-export const DOCUMENTATION_OVERVIEW_LABEL = 'Overview'
-export const DOCUMENTATION_CONFIG_SECTION = 'oaklean'
-export const DOCUMENTATION_IMAGE_WHITELIST_CONFIG_KEY = 'docs.imageWhitelist'

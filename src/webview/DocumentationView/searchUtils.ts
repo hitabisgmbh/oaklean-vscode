@@ -3,6 +3,7 @@ import { Document } from 'flexsearch'
 import { buildSnippetAt, normalizeSearchContent } from './markdownUtils'
 
 import {
+	SEARCH_EMPTY_TEXT,
 	SEARCH_INITIAL_OCCURRENCES_PER_DOC,
 	SEARCH_RESULTS_MAX_DEFAULT,
 	SEARCH_TOKEN_SEPARATOR
@@ -21,6 +22,7 @@ export function createSearchIndex(
 	if (files.length === 0) {
 		return null
 	}
+	// Build a FlexSearch index for doc name + content fields.
 	const index = new Document<DocumentationSearchDocument>({
 		tokenize: 'full',
 		encode: encodeSearchValue,
@@ -45,11 +47,13 @@ export function searchDocs(
 	query: string,
 	limit = SEARCH_RESULTS_MAX_DEFAULT
 ): SearchResult[] {
+	// Normalize and short-circuit empty queries.
 	const q = query.trim()
-	if (q === '') {
+	if (q === SEARCH_EMPTY_TEXT) {
 		return []
 	}
 
+	// Map file paths for quick lookup from search results.
 	const fileById = new Map<string, DocumentationFile>()
 	for (const doc of files) {
 		fileById.set(doc.path, doc)
@@ -79,6 +83,7 @@ export function searchDocs(
 		added: number
 	}
 
+	// Append search occurrences for a single document with optional cap.
 	const appendMatches = (
 		doc: DocumentationFile,
 		startIndex: number,
@@ -86,7 +91,7 @@ export function searchDocs(
 		maxOccurrences?: number
 	): AppendResult => {
 		const plain = normalizeSearchContent(doc.content)
-		if (plain === '') {
+		if (plain === SEARCH_EMPTY_TEXT) {
 			return {
 				nextIndex: startIndex,
 				nextOccurrence: startOccurrence,
@@ -126,6 +131,7 @@ export function searchDocs(
 		return results
 	}
 
+	// Preserve search order from the index and resolve to docs.
 	const docsFromIds: DocumentationFile[] = []
 	for (const id of ids) {
 		const doc = fileById.get(id)
@@ -138,6 +144,7 @@ export function searchDocs(
 		string,
 		{ nextIndex: number; nextOccurrence: number }
 	>()
+	// First pass: limit occurrences per doc to spread results.
 	for (const doc of docsFromIds) {
 		const result = appendMatches(doc, 0, 0, SEARCH_INITIAL_OCCURRENCES_PER_DOC)
 		if (result.added > 0) {
@@ -151,6 +158,7 @@ export function searchDocs(
 		}
 	}
 
+	// Second pass: fill remaining slots by continuing occurrences.
 	for (const doc of docsFromIds) {
 		const state = matchState.get(doc.path)
 		if (state === undefined) {
@@ -187,15 +195,16 @@ function hasSearchResult(value: unknown): value is { result: unknown } {
 }
 
 function encodeSearchValue(value: string): string[] {
+	// Normalize and split into tokens for FlexSearch.
 	const normalized = normalizeSearchContent(value).toLowerCase()
-	if (normalized === '') {
+	if (normalized === SEARCH_EMPTY_TEXT) {
 		return []
 	}
 	const tokens = normalized.split(SEARCH_TOKEN_SEPARATOR)
 	if (tokens.length === 0) {
 		return []
 	}
-	if (tokens.length === 1 && tokens[0] === '') {
+	if (tokens.length === 1 && tokens[0] === SEARCH_EMPTY_TEXT) {
 		return []
 	}
 	return tokens

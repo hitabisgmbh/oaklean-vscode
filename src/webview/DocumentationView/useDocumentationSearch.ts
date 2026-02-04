@@ -3,7 +3,10 @@ import type { Dispatch, SetStateAction } from 'react'
 
 import { createSearchIndex, searchDocs } from './searchUtils'
 
-import { SEARCH_DEBOUNCE_IN_MS } from '../../constants/documentationSearch'
+import {
+	SEARCH_DEBOUNCE_IN_MS,
+	SEARCH_EMPTY_TEXT
+} from '../../constants/documentationSearch'
 import type { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
 import type { SearchResult } from '../../types/documentationView'
 
@@ -14,47 +17,46 @@ type DocumentationSearchState = {
 	results: SearchResult[]
 }
 
+// Input: docs array + max results + optional debounce callback. Output: search state.
 export function useDocumentationSearch(
-	files: DocumentationFile[],
+	files: DocumentationFile[] | undefined,
 	maxResults: number,
 	onDebounce?: () => void
 ): DocumentationSearchState {
-	const [query, setQuery] = useState('')
-	const [debouncedQuery, setDebouncedQuery] = useState('')
+	const [query, setQuery] = useState(SEARCH_EMPTY_TEXT)
+	const [debouncedQuery, setDebouncedQuery] = useState(SEARCH_EMPTY_TEXT)
+	const [staticFiles, setStaticFiles] = useState<DocumentationFile[] | null>(
+		null
+	)
 	const onDebounceRef = useRef(onDebounce)
-	const searchStateRef = useRef<{
-		index: ReturnType<typeof createSearchIndex>
-		filesSnapshot: DocumentationFile[]
-	} | null>(null)
 
 	useEffect(() => {
 		onDebounceRef.current = onDebounce
 	}, [onDebounce])
 
-	const searchState = useMemo(() => {
+	// Capture docs once. The docs list is static during the webview lifetime.
+	useEffect(() => {
+		if (staticFiles !== null) {
+			return
+		}
 		if (files === undefined || files.length === 0) {
-			searchStateRef.current = null
+			return
+		}
+		setStaticFiles(files)
+	}, [files, staticFiles])
+
+	// Build the search index once from the captured docs.
+	const searchIndex = useMemo(() => {
+		if (staticFiles === null) {
 			return null
 		}
-		const previous = searchStateRef.current
-		if (
-			previous !== null &&
-			areFilesEquivalent(previous.filesSnapshot, files) === true
-		) {
-			return previous
-		}
-		// Build the index alongside a stable snapshot of the files used.
-		const nextState = {
-			index: createSearchIndex(files),
-			filesSnapshot: files
-		}
-		searchStateRef.current = nextState
-		return nextState
-	}, [files])
+		return createSearchIndex(staticFiles)
+	}, [staticFiles])
 
+	// Debounce user input before searching.
 	useEffect(() => {
-		if (query.trim() === '') {
-			setDebouncedQuery('')
+		if (query.trim() === SEARCH_EMPTY_TEXT) {
+			setDebouncedQuery(SEARCH_EMPTY_TEXT)
 			return
 		}
 		// Debounce typing to avoid rebuilding results on every keystroke.
@@ -65,25 +67,20 @@ export function useDocumentationSearch(
 		return () => clearTimeout(handle)
 	}, [query])
 
+	// Compute search results from the cached index snapshot.
 	const results = useMemo(() => {
 		const q = debouncedQuery.trim()
-		if (q === '') {
+		if (q === SEARCH_EMPTY_TEXT) {
 			return []
 		}
-		if (searchState === null) {
+		if (staticFiles === null) {
 			return []
 		}
-		if (searchState.index === null) {
+		if (searchIndex === null) {
 			return []
 		}
-		// Search the snapshot used to build the index for consistent results.
-		return searchDocs(
-			searchState.filesSnapshot,
-			searchState.index,
-			q,
-			maxResults
-		)
-	}, [debouncedQuery, maxResults, searchState])
+		return searchDocs(staticFiles, searchIndex, q, maxResults)
+	}, [debouncedQuery, maxResults, searchIndex, staticFiles])
 
 	return {
 		query,
@@ -91,32 +88,4 @@ export function useDocumentationSearch(
 		debouncedQuery,
 		results
 	}
-}
-
-function areFilesEquivalent(
-	previous: DocumentationFile[],
-	next: DocumentationFile[]
-): boolean {
-	if (previous.length !== next.length) {
-		return false
-	}
-	for (let i = 0; i < previous.length; i++) {
-		const prevFile = previous[i]
-		const nextFile = next[i]
-		if (prevFile.path !== nextFile.path) {
-			return false
-		}
-		if (prevFile.name !== nextFile.name) {
-			return false
-		}
-		const prevVersion = prevFile.version
-		const nextVersion = nextFile.version
-		if (prevVersion === undefined || nextVersion === undefined) {
-			return false
-		}
-		if (prevVersion !== nextVersion) {
-			return false
-		}
-	}
-	return true
 }

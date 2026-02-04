@@ -9,6 +9,7 @@ import {
 	SEARCH_SNIPPET_WORDS_BEFORE
 } from '../../constants/documentationSearch'
 
+// Input: heading text. Output: URL-safe slug.
 function slugify(str: string): string {
 	return str
 		.toLowerCase()
@@ -16,8 +17,10 @@ function slugify(str: string): string {
 		.replace(/^-+|-+$/g, '')
 }
 
+// Shared Markdown renderer with heading IDs.
 export const markdown = createMarkdownRenderer()
 
+// Input: none. Output: configured MarkdownIt instance.
 function createMarkdownRenderer() {
 	const md = new MarkdownIt({
 		html: true,
@@ -49,6 +52,7 @@ function createMarkdownRenderer() {
 	return md
 }
 
+// Input: markdown content + query. Output: short snippet with highlighted term.
 export function buildSnippet(content: string, query: string): string {
 	const plain = normalizeSearchContent(content)
 	const words = plain.split(' ').filter((word) => word !== '')
@@ -61,6 +65,7 @@ export function buildSnippet(content: string, query: string): string {
 	return buildSnippetAt(content, query, findWordStartIndex(words, matchIndex))
 }
 
+// Input: content + query + match index. Output: snippet with highlighted term.
 export function buildSnippetAt(
 	content: string,
 	query: string,
@@ -94,6 +99,7 @@ export function buildSnippetAt(
 	)
 }
 
+// Input: HTML + options. Output: HTML with image sources rewritten/filtered.
 export function rewriteHtmlImages(
 	html: string,
 	options: {
@@ -137,6 +143,7 @@ export function rewriteHtmlImages(
 	return doc.body.innerHTML
 }
 
+// Input: HTML + options. Output: HTML with doc links disabled when missing.
 export function rewriteHtmlLinks(
 	html: string,
 	options: { currentPath: string; docPaths: Set<string> }
@@ -179,6 +186,7 @@ export function rewriteHtmlLinks(
 	return doc.body.innerHTML
 }
 
+// Input: webview base + doc path + relative src. Output: absolute resource path.
 export function resolveResource(
 	base: string,
 	docPath: string,
@@ -187,10 +195,12 @@ export function resolveResource(
 	return resolvePath(base, docPath, relativeSrc)
 }
 
+// Input: doc path + relative path. Output: resolved doc path.
 export function resolveDocPath(docPath: string, relativePath: string): string {
 	return resolvePath('', docPath, relativePath)
 }
 
+// Input: markdown text. Output: plain text without markup.
 export function stripMarkdown(text: string): string {
 	return text
 		.replace(/<[^>]*>/g, '')
@@ -203,6 +213,7 @@ export function stripMarkdown(text: string): string {
 		.replace(/^[\s>*+-]\s+/gm, '')
 }
 
+// Input: markdown text. Output: normalized searchable content.
 export function normalizeSearchContent(text: string): string {
 	let cleaned = stripMarkdown(text)
 	cleaned = cleaned.replace(/^\s*\|?[\s:-]+(\|[\s:-]+)+\|?\s*$/gm, ' ')
@@ -210,10 +221,12 @@ export function normalizeSearchContent(text: string): string {
 	return cleaned.replace(/\s+/g, ' ').trim()
 }
 
+// Input: raw string. Output: escaped string for RegExp.
 function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// Input: words array + index. Output: character offset for that word.
 function findWordStartIndex(words: string[], wordIndex: number): number {
 	let index = 0
 	for (let i = 0; i < wordIndex; i++) {
@@ -222,10 +235,12 @@ function findWordStartIndex(words: string[], wordIndex: number): number {
 	return index
 }
 
+// Input: URL string. Output: true if http/https.
 function isExternalHttpUrl(src: string): boolean {
 	return /^https?:\/\//i.test(src)
 }
 
+// Input: URL string + whitelist. Output: true if allowed.
 function isWhitelistedUrl(src: string, whitelist: string[]): boolean {
 	for (const entry of whitelist) {
 		const trimmed = entry.trim()
@@ -284,6 +299,7 @@ function isWhitelistedUrl(src: string, whitelist: string[]): boolean {
 	return false
 }
 
+// Input: base + doc path + relative path. Output: resolved path.
 function resolvePath(
 	base: string,
 	docPath: string,

@@ -1,20 +1,17 @@
 import vscode from 'vscode'
 
 import { Container } from '../container'
-import {
-	DOCUMENTATION_VIEW_PANEL_TYPE,
-	DOCUMENTATION_VIEW_TITLE
-} from '../constants/documentationView'
 import { DocumentationViewProvider } from '../WebViewProviders/DocumentationViewProvider'
 import { DocumentationViewCommands } from '../protocols/DocumentationViewProtocol'
 
 export class DocumentationViewPanel {
-	public static readonly viewType = DOCUMENTATION_VIEW_PANEL_TYPE
+	public static readonly viewType = 'oaklean.documentationViewPanel'
 	public static currentPanel: DocumentationViewPanel | undefined
 	private readonly _panel: vscode.WebviewPanel
 	private subscriptions: vscode.Disposable[] = []
 	private webViewProvider: DocumentationViewProvider
 
+	// Input: extension URI + container + optional existing panel. Output: initialized panel.
 	private constructor(
 		private readonly _extensionUri: vscode.Uri,
 		private readonly _container: Container,
@@ -24,7 +21,7 @@ export class DocumentationViewPanel {
 			panel ??
 			vscode.window.createWebviewPanel(
 				DocumentationViewPanel.viewType,
-				DOCUMENTATION_VIEW_TITLE,
+				'Oaklean Documentation',
 				vscode.ViewColumn.Beside,
 				{
 					enableScripts: true,
@@ -52,6 +49,7 @@ export class DocumentationViewPanel {
 		})
 	}
 
+	// Input: container. Output: singleton panel instance.
 	public static render(container: Container): DocumentationViewPanel {
 		if (DocumentationViewPanel.currentPanel !== undefined) {
 			DocumentationViewPanel.currentPanel._panel.reveal()
@@ -64,6 +62,7 @@ export class DocumentationViewPanel {
 		return DocumentationViewPanel.currentPanel
 	}
 
+	// Input: existing panel + container. Output: revived singleton panel.
 	public static revive(
 		panel: vscode.WebviewPanel,
 		container: Container
@@ -76,6 +75,7 @@ export class DocumentationViewPanel {
 		return DocumentationViewPanel.currentPanel
 	}
 
+	// Input: none. Output: disposes resources and clears singleton.
 	public dispose(): void {
 		DocumentationViewPanel.currentPanel = undefined
 		for (const subscription of this.subscriptions) {

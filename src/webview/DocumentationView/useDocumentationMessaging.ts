@@ -14,12 +14,14 @@ type OpenMessage = Extract<
 	{ type: DocumentationViewCommands.open }
 >
 
+// Wire VS Code webview messaging for init/open events.
 export function useDocumentationMessaging(
 	vscodeApi: { postMessage: (message: unknown) => void },
 	onInit: (message: InitMessage) => void,
 	onOpen: (message: OpenMessage) => void
 ): void {
 	useEffect(() => {
+		// Handle messages from the extension host.
 		function handleMessages(
 			event: MessageEvent<DocumentationView_ParentToChild>
 		) {
@@ -35,6 +37,7 @@ export function useDocumentationMessaging(
 		}
 
 		window.addEventListener('message', handleMessages)
+		// Request the docs payload on mount.
 		vscodeApi.postMessage({ type: DocumentationViewCommands.requestDocs })
 
 		return () => window.removeEventListener('message', handleMessages)

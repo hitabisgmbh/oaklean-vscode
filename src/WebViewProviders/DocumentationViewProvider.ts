@@ -6,11 +6,6 @@ import { getUri } from '../utilities/getUri'
 import { getNonce } from '../utilities/getNonce'
 import { Container } from '../container'
 import {
-	DOCUMENTATION_CONFIG_SECTION,
-	DOCUMENTATION_IMAGE_WHITELIST_CONFIG_KEY,
-	DOCUMENTATION_VIEW_TYPE
-} from '../constants/documentationView'
-import {
 	SEARCH_MAX_RESULTS_CONFIG_KEY,
 	SEARCH_PAGE_SIZE_CONFIG_KEY,
 	SEARCH_RESULTS_MAX_DEFAULT,
@@ -18,6 +13,7 @@ import {
 	SEARCH_RESULTS_PAGE_SIZE_DEFAULT,
 	SEARCH_RESULTS_PAGE_SIZE_MIN
 } from '../constants/documentationSearch'
+import { DOCUMENTATION_README_FILE_NAME } from '../constants/documentationTree'
 import {
 	DocumentationViewCommands,
 	DocumentationView_ChildToParent
@@ -26,19 +22,17 @@ import {
 export class DocumentationViewProvider
 	implements WebviewViewProvider, vscode.Disposable
 {
-	public static readonly viewType = DOCUMENTATION_VIEW_TYPE
+	public static readonly viewType = 'oaklean.documentationView'
 
+	// Input: none. Output: image whitelist from settings (string[]).
 	private getImageWhitelist() {
-		const config = vscode.workspace.getConfiguration(
-			DOCUMENTATION_CONFIG_SECTION
-		)
-		return config.get<string[]>(DOCUMENTATION_IMAGE_WHITELIST_CONFIG_KEY, [])
+		const config = vscode.workspace.getConfiguration('oaklean')
+		return config.get<string[]>('docs.imageWhitelist', [])
 	}
 
+	// Input: none. Output: validated max results value.
 	private getSearchMaxResults(): number {
-		const config = vscode.workspace.getConfiguration(
-			DOCUMENTATION_CONFIG_SECTION
-		)
+		const config = vscode.workspace.getConfiguration('oaklean')
 		const value = config.get<number>(SEARCH_MAX_RESULTS_CONFIG_KEY)
 		if (value === undefined || Number.isNaN(value)) {
 			return SEARCH_RESULTS_MAX_DEFAULT
@@ -50,10 +44,9 @@ export class DocumentationViewProvider
 		return rounded
 	}
 
+	// Input: none. Output: validated page size value.
 	private getSearchPageSize(): number {
-		const config = vscode.workspace.getConfiguration(
-			DOCUMENTATION_CONFIG_SECTION
-		)
+		const config = vscode.workspace.getConfiguration('oaklean')
 		const value = config.get<number>(SEARCH_PAGE_SIZE_CONFIG_KEY)
 		if (value === undefined || Number.isNaN(value)) {
 			return SEARCH_RESULTS_PAGE_SIZE_DEFAULT
@@ -65,6 +58,7 @@ export class DocumentationViewProvider
 		return rounded
 	}
 
+	// Input: none. Output: normalized search config (page size capped by max).
 	private getSearchConfig(): { maxResults: number; pageSize: number } {
 		const maxResults = this.getSearchMaxResults()
 		let pageSize = this.getSearchPageSize()
@@ -75,6 +69,7 @@ export class DocumentationViewProvider
 		return { maxResults, pageSize }
 	}
 
+	// Input: whitelist strings. Output: CSP img-src tokens.
 	private getImageCspSources(whitelist: string[]) {
 		const sources = new Set<string>()
 		for (const entry of whitelist) {
@@ -121,15 +116,18 @@ export class DocumentationViewProvider
 		return Array.from(sources).join(' ')
 	}
 
+	// Input: extension URI + container. Output: initialized provider.
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
 		private readonly _container: Container
 	) {}
 
+	// Input: none. Output: void (Disposable contract).
 	dispose(): void {
 		// Nothing to dispose yet
 	}
 
+	// Input: webview + extension URI + CSP sources. Output: HTML string.
 	private _getHtmlForWebview(
 		webview: vscode.Webview,
 		extensionUri: vscode.Uri,
@@ -182,14 +180,17 @@ export class DocumentationViewProvider
 		`
 	}
 
+	// Input: webview view. Output: sets up webview content + handlers.
 	resolveWebviewView(webviewView: WebviewView): void | Thenable<void> {
 		this.setupWebview(webviewView.webview)
 	}
 
+	// Input: webview panel. Output: sets up webview content + handlers.
 	public resolveWebviewForPanel(webview: vscode.Webview): void {
 		this.setupWebview(webview)
 	}
 
+	// Input: webview. Output: registers message handler and sends init.
 	private initializeWebview(webview: vscode.Webview) {
 		webview.onDidReceiveMessage(
 			async (message: DocumentationView_ChildToParent) => {
@@ -214,7 +215,8 @@ export class DocumentationViewProvider
 						const safeSegments = rawPath
 							.split('/')
 							.filter(
-								(segment) => segment && segment !== '.' && segment !== '..'
+								(segment) =>
+									segment !== '' && segment !== '.' && segment !== '..'
 							)
 						const targetUri = vscode.Uri.joinPath(docsRoot, ...safeSegments)
 						try {
@@ -243,6 +245,7 @@ export class DocumentationViewProvider
 		void this.sendInit(webview)
 	}
 
+	// Input: webview. Output: assigns HTML, CSP, and local roots.
 	private setupWebview(webview: vscode.Webview): void {
 		const imageWhitelist = this.getImageWhitelist()
 		const imageCspSources = this.getImageCspSources(imageWhitelist)
@@ -264,13 +267,19 @@ export class DocumentationViewProvider
 		this.initializeWebview(webview)
 	}
 
+	// Input: webview. Output: posts init payload to the webview.
 	private async sendInit(webview: vscode.Webview) {
 		const docs = await this._container.documentationController.getAllDocs()
 		if (docs === undefined || docs.length === 0) {
 			return
 		}
-		const readme = docs.find((d) => d.name.toLowerCase() === 'readme.md')
-		const initialFile = readme?.path ?? docs[0].path
+		const rootReadme = docs.find((doc) => {
+			const isReadme = doc.name.toLowerCase() === DOCUMENTATION_README_FILE_NAME
+			const isRootDoc = doc.path.includes(path.posix.sep) === false
+			return isReadme && isRootDoc
+		})
+		const initialFile =
+			rootReadme === undefined ? docs[0].path : rootReadme.path
 		const docsRoot = await this._container.documentationController.getDocsRoot()
 		const docsRootParent = docsRoot.with({
 			path: path.posix.dirname(docsRoot.path)
