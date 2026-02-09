@@ -275,7 +275,7 @@
 	"scripts": {
 		"link": "npm link @oaklean/profiler-core",
 		"format": "npx prettier --write \"**/*.{js,ts,tsx}\" --ignore-path .prettierignore",
-		"profiler-core:update": "npm update @oaklean/profiler-core",
+		"oaklean-lib:update": "npm cache clean --force && npm install @oaklean/profiler-core@latest",
 		"vscode:prepublish": "npm run build",
 		"build": "npx cross-env NODE_ENV=production npx webpack --config webpack.config.js",
 		"watch": "npx cross-env NODE_ENV=development npx webpack --config webpack.config.js",
