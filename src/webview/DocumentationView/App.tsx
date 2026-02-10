@@ -56,7 +56,6 @@ export function App(): ReactElement {
 	// Base paths for resolving images in the webview.
 	const [resourceBase, setResourceBase] = useState<string>('')
 	const [docsBasePath, setDocsBasePath] = useState<string>('')
-	const [imageWhitelist, setImageWhitelist] = useState<string[]>([])
 	// Sidebar tree expansion state.
 	const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
 	// Search config and pagination.
@@ -123,15 +122,13 @@ export function App(): ReactElement {
 				: selectedDoc.path
 		const rendered = markdown.render(selectedDoc.content, {
 			currentPath,
-			resourceBase,
-			imageWhitelist
+			resourceBase
 		})
 		return rewriteHtmlImages(rendered, {
 			currentPath,
-			resourceBase,
-			imageWhitelist
+			resourceBase
 		})
-	}, [selectedDoc, docsBasePath, resourceBase, imageWhitelist])
+	}, [selectedDoc, docsBasePath, resourceBase])
 
 	// Build breadcrumbs and override label for the overview entry.
 	const breadcrumbs = useMemo(() => {
@@ -166,7 +163,6 @@ export function App(): ReactElement {
 		setAnchor(undefined)
 		setResourceBase(message.resourceBase ?? '')
 		setDocsBasePath(message.docsBasePath ?? '')
-		setImageWhitelist(message.imageWhitelist ?? [])
 		setSearchMaxResults(maxResults)
 		setSearchPageSize(pageSize)
 		setVisibleResultsCount(pageSize)

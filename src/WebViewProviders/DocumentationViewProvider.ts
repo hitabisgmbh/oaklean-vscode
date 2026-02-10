@@ -11,8 +11,10 @@ import {
 	SEARCH_RESULTS_MAX_DEFAULT,
 	SEARCH_RESULTS_MAX_MIN,
 	SEARCH_RESULTS_PAGE_SIZE_DEFAULT,
-	SEARCH_RESULTS_PAGE_SIZE_MIN
+	SEARCH_RESULTS_PAGE_SIZE_MIN,
+	SEARCH_TOKEN_SEPARATOR
 } from '../constants/documentationSearch'
+import { DOCUMENTATION_ALLOWED_IMAGE_CSP_SOURCES } from '../constants/documentationSecurity'
 import { DOCUMENTATION_README_FILE_NAME } from '../constants/documentationTree'
 import {
 	DocumentationViewCommands,
@@ -23,12 +25,6 @@ export class DocumentationViewProvider
 	implements WebviewViewProvider, vscode.Disposable
 {
 	public static readonly viewType = 'oaklean.documentationView'
-
-	// Input: none. Output: image whitelist from settings (string[]).
-	private getImageWhitelist() {
-		const config = vscode.workspace.getConfiguration('oaklean')
-		return config.get<string[]>('docs.imageWhitelist', [])
-	}
 
 	// Input: none. Output: validated max results value.
 	private getSearchMaxResults(): number {
@@ -67,53 +63,6 @@ export class DocumentationViewProvider
 			pageSize = maxResults
 		}
 		return { maxResults, pageSize }
-	}
-
-	// Input: whitelist strings. Output: CSP img-src tokens.
-	private getImageCspSources(whitelist: string[]) {
-		const sources = new Set<string>()
-		for (const entry of whitelist) {
-			const trimmed = entry.trim()
-			if (trimmed === '') {
-				continue
-			}
-			const lower = trimmed.toLowerCase()
-			if (lower.startsWith('http(s)://')) {
-				const rest = trimmed.slice('http(s)://'.length)
-				const host = rest.split('/')[0]
-				if (host !== '') {
-					sources.add(`http://${host}`)
-					sources.add(`https://${host}`)
-				}
-				continue
-			}
-			if (lower.startsWith('http://') || lower.startsWith('https://')) {
-				const wildcardIndex = trimmed.indexOf('*')
-				if (wildcardIndex !== -1) {
-					const scheme = lower.startsWith('https://') ? 'https' : 'http'
-					const host = trimmed.replace(/^https?:\/\//i, '').split('/')[0]
-					if (host !== '') {
-						sources.add(`${scheme}://${host}`)
-					}
-					continue
-				}
-				try {
-					const url = new URL(trimmed)
-					sources.add(`${url.protocol}//${url.host}`)
-				} catch {
-					// ignore invalid entries
-				}
-				continue
-			}
-			const wildcardHost = trimmed.replace(/^\*\./, '').replace(/^\*/, '')
-			if (wildcardHost !== '') {
-				sources.add(`http://*.${wildcardHost}`)
-				sources.add(`https://*.${wildcardHost}`)
-				sources.add(`http://${wildcardHost}`)
-				sources.add(`https://${wildcardHost}`)
-			}
-		}
-		return Array.from(sources).join(' ')
 	}
 
 	// Input: extension URI + container. Output: initialized provider.
@@ -247,8 +196,9 @@ export class DocumentationViewProvider
 
 	// Input: webview. Output: assigns HTML, CSP, and local roots.
 	private setupWebview(webview: vscode.Webview): void {
-		const imageWhitelist = this.getImageWhitelist()
-		const imageCspSources = this.getImageCspSources(imageWhitelist)
+		const imageCspSources = DOCUMENTATION_ALLOWED_IMAGE_CSP_SOURCES.join(
+			SEARCH_TOKEN_SEPARATOR
+		)
 
 		webview.options = {
 			enableScripts: true,
@@ -286,7 +236,6 @@ export class DocumentationViewProvider
 		})
 		const docsBasePath = path.posix.relative(docsRootParent.path, docsRoot.path)
 		const resourceBase = webview.asWebviewUri(docsRootParent).toString()
-		const imageWhitelist = this.getImageWhitelist()
 		const searchConfig = this.getSearchConfig()
 		webview.postMessage({
 			type: DocumentationViewCommands.init,
@@ -294,7 +243,6 @@ export class DocumentationViewProvider
 			initialFile,
 			resourceBase,
 			docsBasePath,
-			imageWhitelist,
 			searchMaxResults: searchConfig.maxResults,
 			searchPageSize: searchConfig.pageSize
 		})

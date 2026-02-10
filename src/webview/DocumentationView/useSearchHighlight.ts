@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 
 const SEARCH_HIT_SELECTOR = '.search-hit'
@@ -8,6 +8,15 @@ const SEARCH_HIT_OCCURRENCE_ATTRIBUTE = 'data-occurrence'
 const DOC_MAIN_SELECTOR = '.doc-main'
 const IMAGE_SELECTOR = 'img'
 const SCROLL_BEHAVIOR_SMOOTH = 'smooth'
+const HIGHLIGHT_DEFAULT_OCCURRENCE = 0
+const NO_MATCH_INDEX = -1
+const NO_MATCHES_FOUND = 0
+
+type SearchHighlightCache = {
+	html: string
+	term: string
+	matchOffsets: number[]
+}
 
 // Input: content container + search params. Output: highlights and scrolls to match.
 export function useSearchHighlight(
@@ -17,6 +26,8 @@ export function useSearchHighlight(
 	highlightOccurrence: number | null,
 	highlightBump: number
 ): void {
+	const matchCacheRef = useRef<SearchHighlightCache | null>(null)
+
 	useEffect(() => {
 		const root = contentRef.current
 		if (root === null) {
@@ -25,7 +36,7 @@ export function useSearchHighlight(
 
 		// Skip work if there is no term to highlight.
 		const term = highlightTerm.trim()
-		const targetOccurrence = highlightOccurrence ?? 0
+		const targetOccurrence = highlightOccurrence ?? HIGHLIGHT_DEFAULT_OCCURRENCE
 		if (term === '') {
 			clearHighlightSpans(root)
 			return
@@ -38,54 +49,25 @@ export function useSearchHighlight(
 		// Clear any previous highlight spans before creating the new one.
 		clearHighlightSpans(root)
 
-		// Walk text nodes to find the target occurrence.
-		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-		let node: Node | null = walker.nextNode()
 		const lowerTerm = term.toLowerCase()
-		let wrapped = false
-		let occurrenceIndex = 0
+		const matchOffsets = getOrCreateMatchOffsets(
+			matchCacheRef,
+			root,
+			html,
+			lowerTerm,
+			term.length
+		)
+		if (targetOccurrence < HIGHLIGHT_DEFAULT_OCCURRENCE) {
+			return
+		}
+		if (targetOccurrence >= matchOffsets.length) {
+			return
+		}
+		const targetOffset = matchOffsets[targetOccurrence]
 
-		while (node && !wrapped) {
-			const text = node.textContent ?? ''
-			const lowerText = text.toLowerCase()
-			let searchFrom = 0
-			let idx = lowerText.indexOf(lowerTerm, searchFrom)
-			while (idx !== -1 && !wrapped) {
-				if (occurrenceIndex === targetOccurrence && node.parentNode !== null) {
-					const before = text.slice(0, idx)
-					const match = text.slice(idx, idx + term.length)
-					const after = text.slice(idx + term.length)
-
-					const span = document.createElement('span')
-					span.className = SEARCH_HIT_CLASS_NAME
-					span.textContent = match
-					span.setAttribute(SEARCH_HIT_TERM_ATTRIBUTE, term)
-					span.setAttribute(
-						SEARCH_HIT_OCCURRENCE_ATTRIBUTE,
-						String(targetOccurrence)
-					)
-
-					const frag = document.createDocumentFragment()
-					if (before !== '') {
-						frag.appendChild(document.createTextNode(before))
-					}
-					frag.appendChild(span)
-					if (after !== '') {
-						frag.appendChild(document.createTextNode(after))
-					}
-
-					node.parentNode.replaceChild(frag, node)
-					wrapped = true
-					break
-				}
-				occurrenceIndex += 1
-				searchFrom = idx + term.length
-				idx = lowerText.indexOf(lowerTerm, searchFrom)
-			}
-
-			if (wrapped === false) {
-				node = walker.nextNode()
-			}
+		const wrapped = wrapTargetMatch(root, targetOffset, term, targetOccurrence)
+		if (wrapped === false) {
+			return
 		}
 
 		return setupHitScroll(root)
@@ -128,6 +110,101 @@ function hasTargetHighlight(
 	return occurrence === targetOccurrence
 }
 
+function getOrCreateMatchOffsets(
+	cacheRef: RefObject<SearchHighlightCache | null>,
+	root: HTMLDivElement,
+	html: string,
+	term: string,
+	termLength: number
+): number[] {
+	const cache = cacheRef.current
+	if (cache !== null && cache.html === html && cache.term === term) {
+		return cache.matchOffsets
+	}
+	const matchOffsets = collectMatchOffsets(root, term, termLength)
+	cacheRef.current = { html, term, matchOffsets }
+	return matchOffsets
+}
+
+function collectMatchOffsets(
+	root: HTMLDivElement,
+	term: string,
+	termLength: number
+): number[] {
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+	const matchOffsets: number[] = []
+	let globalOffset = 0
+	let node: Node | null = walker.nextNode()
+
+	while (node !== null) {
+		const text = node.textContent ?? ''
+		const lowerText = text.toLowerCase()
+		let searchFrom = HIGHLIGHT_DEFAULT_OCCURRENCE
+		let idx = lowerText.indexOf(term, searchFrom)
+		while (idx !== NO_MATCH_INDEX) {
+			matchOffsets.push(globalOffset + idx)
+			searchFrom = idx + termLength
+			idx = lowerText.indexOf(term, searchFrom)
+		}
+		globalOffset += text.length
+		node = walker.nextNode()
+	}
+
+	return matchOffsets
+}
+
+function wrapTargetMatch(
+	root: HTMLDivElement,
+	targetOffset: number,
+	term: string,
+	targetOccurrence: number
+): boolean {
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+	let globalOffset = 0
+	let node: Node | null = walker.nextNode()
+
+	while (node !== null) {
+		const text = node.textContent ?? ''
+		const nodeStart = globalOffset
+		const nodeEnd = nodeStart + text.length
+		if (targetOffset >= nodeStart && targetOffset < nodeEnd) {
+			if (node.parentNode === null) {
+				return false
+			}
+			const localStart = targetOffset - nodeStart
+			const localEnd = localStart + term.length
+			const before = text.slice(HIGHLIGHT_DEFAULT_OCCURRENCE, localStart)
+			const match = text.slice(localStart, localEnd)
+			const after = text.slice(localEnd)
+
+			const span = document.createElement('span')
+			span.className = SEARCH_HIT_CLASS_NAME
+			span.textContent = match
+			span.setAttribute(SEARCH_HIT_TERM_ATTRIBUTE, term)
+			span.setAttribute(
+				SEARCH_HIT_OCCURRENCE_ATTRIBUTE,
+				String(targetOccurrence)
+			)
+
+			const frag = document.createDocumentFragment()
+			if (before !== '') {
+				frag.appendChild(document.createTextNode(before))
+			}
+			frag.appendChild(span)
+			if (after !== '') {
+				frag.appendChild(document.createTextNode(after))
+			}
+
+			node.parentNode.replaceChild(frag, node)
+			return true
+		}
+		globalOffset = nodeEnd
+		node = walker.nextNode()
+	}
+
+	return false
+}
+
 function setupHitScroll(root: HTMLDivElement): () => void {
 	function scrollToHit() {
 		const firstHit = root.querySelector(SEARCH_HIT_SELECTOR)
@@ -156,6 +233,9 @@ function setupHitScroll(root: HTMLDivElement): () => void {
 	const animationFrameId = requestAnimationFrame(scrollToHit)
 	// Re-run scroll after images load to avoid layout shifts.
 	const images = Array.from(root.querySelectorAll(IMAGE_SELECTOR))
+	if (images.length === NO_MATCHES_FOUND) {
+		return () => cancelAnimationFrame(animationFrameId)
+	}
 	function onImageLoad() {
 		scrollToHit()
 	}

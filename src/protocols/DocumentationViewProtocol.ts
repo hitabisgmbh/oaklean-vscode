@@ -23,7 +23,6 @@ export type DocumentationView_ParentToChild =
 			initialFile: string
 			resourceBase?: string
 			docsBasePath?: string
-			imageWhitelist?: string[]
 			searchMaxResults?: number
 			searchPageSize?: number
 	  }

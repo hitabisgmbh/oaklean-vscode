@@ -8,6 +8,13 @@ import {
 	SEARCH_SNIPPET_WORDS_AFTER,
 	SEARCH_SNIPPET_WORDS_BEFORE
 } from '../../constants/documentationSearch'
+import { DOCUMENTATION_PATH_SEPARATOR } from '../../constants/documentationTree'
+import {
+	DOCUMENTATION_ALLOWED_IMAGE_GITHUB_PATH_PREFIX,
+	DOCUMENTATION_ALLOWED_IMAGE_HOST_GITHUB,
+	DOCUMENTATION_ALLOWED_IMAGE_HOST_OAKLEAN,
+	DOCUMENTATION_ALLOWED_IMAGE_PROTOCOLS
+} from '../../constants/documentationSecurity'
 
 // Input: heading text. Output: URL-safe slug.
 function slugify(str: string): string {
@@ -105,7 +112,6 @@ export function rewriteHtmlImages(
 	options: {
 		currentPath: string
 		resourceBase: string
-		imageWhitelist: string[]
 	}
 ): string {
 	const parser = new DOMParser()
@@ -127,7 +133,7 @@ export function rewriteHtmlImages(
 			continue
 		}
 		if (isExternalHttpUrl(src)) {
-			if (isWhitelistedUrl(src, options.imageWhitelist) === false) {
+			if (isWhitelistedUrl(src) === false) {
 				img.remove()
 			}
 			continue
@@ -240,59 +246,37 @@ function isExternalHttpUrl(src: string): boolean {
 	return /^https?:\/\//i.test(src)
 }
 
-// Input: URL string + whitelist. Output: true if allowed.
-function isWhitelistedUrl(src: string, whitelist: string[]): boolean {
-	for (const entry of whitelist) {
-		const trimmed = entry.trim()
-		if (trimmed === '') {
-			continue
-		}
-		const lower = trimmed.toLowerCase()
-		if (lower.startsWith('http(s)://')) {
-			const rest = trimmed.slice('http(s)://'.length)
-			if (
-				src.startsWith(`http://${rest}`) ||
-				src.startsWith(`https://${rest}`)
-			) {
-				return true
-			}
-		}
-		if (
-			/^https?:\/\//i.test(trimmed) &&
-			!trimmed.includes('*') &&
-			trimmed.includes('/')
-		) {
-			if (src.startsWith(trimmed)) {
-				return true
-			}
-		}
-		let url: URL
-		try {
-			url = new URL(src)
-		} catch {
-			continue
-		}
-		const schemes = lower.startsWith('http(s)://')
-			? ['http:', 'https:']
-			: lower.startsWith('https://')
-				? ['https:']
-				: lower.startsWith('http://')
-					? ['http:']
-					: ['http:', 'https:']
-		if (schemes.includes(url.protocol) === false) {
-			continue
-		}
-		let hostPattern = trimmed
-			.replace(/^http\(s\):\/\//i, '')
-			.replace(/^https?:\/\//i, '')
-			.split('/')[0]
-		hostPattern = hostPattern.replace(/^\*\./, '').replace(/^\*/, '')
-		if (hostPattern === '') {
-			continue
-		}
-		const host = url.hostname.toLowerCase()
-		const pattern = hostPattern.toLowerCase()
-		if (host === pattern || host.endsWith(`.${pattern}`)) {
+// Input: URL string. Output: true if allowed.
+function isWhitelistedUrl(src: string): boolean {
+	let url: URL
+	try {
+		url = new URL(src)
+	} catch {
+		return false
+	}
+
+	if (isAllowedImageProtocol(url.protocol) === false) {
+		return false
+	}
+
+	const hostname = url.hostname.toLowerCase()
+	if (hostname === DOCUMENTATION_ALLOWED_IMAGE_HOST_OAKLEAN) {
+		return true
+	}
+	if (hostname !== DOCUMENTATION_ALLOWED_IMAGE_HOST_GITHUB) {
+		return false
+	}
+	if (url.pathname === DOCUMENTATION_ALLOWED_IMAGE_GITHUB_PATH_PREFIX) {
+		return true
+	}
+	return url.pathname.startsWith(
+		`${DOCUMENTATION_ALLOWED_IMAGE_GITHUB_PATH_PREFIX}${DOCUMENTATION_PATH_SEPARATOR}`
+	)
+}
+
+function isAllowedImageProtocol(protocol: string): boolean {
+	for (const allowedProtocol of DOCUMENTATION_ALLOWED_IMAGE_PROTOCOLS) {
+		if (protocol === allowedProtocol) {
 			return true
 		}
 	}

@@ -27,6 +27,16 @@ const LINK_TO_EXISTING = './README.md'
 const LINK_TO_MISSING = './Missing.md'
 const IMAGE_PATH_EXISTING = '../images/docs/file-tree.png'
 const IMAGE_PATH_MISSING = '../images/docs/file-list-missing.png'
+const EXTERNAL_IMAGE_URL_DENIED = 'https://evil.test/img.png'
+const EXTERNAL_IMAGE_URL_OAKLEAN_HTTPS =
+	'https://www.oaklean.io/assets/logo.png'
+const EXTERNAL_IMAGE_URL_OAKLEAN_HTTP = 'http://www.oaklean.io/assets/logo.png'
+const EXTERNAL_IMAGE_URL_GITHUB_HTTPS =
+	'https://github.com/hitabisgmbh/oaklean/raw/main/images/logo.png'
+const EXTERNAL_IMAGE_URL_GITHUB_HTTP =
+	'http://github.com/hitabisgmbh/oaklean/raw/main/images/logo.png'
+const EXTERNAL_IMAGE_URL_GITHUB_DENIED =
+	'https://github.com/hitabisgmbh/other/raw/main/logo.png'
 const IMAGE_PATH_EXISTING_ABSOLUTE = path.resolve(
 	REPO_ROOT,
 	'images/docs/file-tree.png'
@@ -194,18 +204,67 @@ describe('DocumentationView markdown utils', () => {
 			'<img src="../images/docs/a.png" alt="A">',
 			{
 				currentPath: 'docs/SensorValues.md',
-				resourceBase: 'vscode-webview://root',
-				imageWhitelist: []
+				resourceBase: 'vscode-webview://root'
 			}
 		)
 		expect(rewritten).toContain('vscode-webview://root/images/docs/a.png')
 
-		const removed = rewriteHtmlImages('<img src="https://evil.test/img.png">', {
-			currentPath: 'docs/SensorValues.md',
-			resourceBase: 'vscode-webview://root',
-			imageWhitelist: []
-		})
+		const removed = rewriteHtmlImages(
+			`<img src="${EXTERNAL_IMAGE_URL_DENIED}">`,
+			{
+				currentPath: 'docs/SensorValues.md',
+				resourceBase: 'vscode-webview://root'
+			}
+		)
 		expect(removed.trim()).toBe('')
+	})
+
+	// Ensures only the allowed oaklean/github image URLs pass the whitelist.
+	test('rewriteHtmlImages allows only oaklean and oaklean repo urls', () => {
+		const oakleanHttps = rewriteHtmlImages(
+			`<img src="${EXTERNAL_IMAGE_URL_OAKLEAN_HTTPS}">`,
+			{
+				currentPath: DOC_PATH_IMAGE,
+				resourceBase: RESOURCE_BASE
+			}
+		)
+		expect(oakleanHttps).toContain(EXTERNAL_IMAGE_URL_OAKLEAN_HTTPS)
+
+		const oakleanHttp = rewriteHtmlImages(
+			`<img src="${EXTERNAL_IMAGE_URL_OAKLEAN_HTTP}">`,
+			{
+				currentPath: DOC_PATH_IMAGE,
+				resourceBase: RESOURCE_BASE
+			}
+		)
+		expect(oakleanHttp).toContain(EXTERNAL_IMAGE_URL_OAKLEAN_HTTP)
+
+		const githubHttps = rewriteHtmlImages(
+			`<img src="${EXTERNAL_IMAGE_URL_GITHUB_HTTPS}">`,
+			{
+				currentPath: DOC_PATH_IMAGE,
+				resourceBase: RESOURCE_BASE
+			}
+		)
+		expect(githubHttps).toContain(EXTERNAL_IMAGE_URL_GITHUB_HTTPS)
+
+		const githubHttp = rewriteHtmlImages(
+			`<img src="${EXTERNAL_IMAGE_URL_GITHUB_HTTP}">`,
+			{
+				currentPath: DOC_PATH_IMAGE,
+				resourceBase: RESOURCE_BASE
+			}
+		)
+		expect(githubHttp).toContain(EXTERNAL_IMAGE_URL_GITHUB_HTTP)
+
+		const githubDenied = rewriteHtmlImages(
+			`<img src="${EXTERNAL_IMAGE_URL_GITHUB_DENIED}">`,
+			{
+				currentPath: DOC_PATH_IMAGE,
+				resourceBase: RESOURCE_BASE
+			}
+		)
+		expect(githubDenied.trim()).toBe('')
 	})
 
 	// Ensures existing local images remain rendered in HTML.
@@ -214,8 +273,7 @@ describe('DocumentationView markdown utils', () => {
 		const html = `<img src="${IMAGE_PATH_EXISTING}" alt="${IMAGE_ALT_EXISTING}">`
 		const rewritten = rewriteHtmlImages(html, {
 			currentPath: DOC_PATH_IMAGE,
-			resourceBase: RESOURCE_BASE,
-			imageWhitelist: []
+			resourceBase: RESOURCE_BASE
 		})
 		const expectedSrc = resolveResource(
 			RESOURCE_BASE,
@@ -233,8 +291,7 @@ describe('DocumentationView markdown utils', () => {
 		const html = `<img src="${IMAGE_PATH_MISSING}" alt="${IMAGE_ALT_MISSING}">`
 		const rewritten = rewriteHtmlImages(html, {
 			currentPath: DOC_PATH_IMAGE,
-			resourceBase: RESOURCE_BASE,
-			imageWhitelist: []
+			resourceBase: RESOURCE_BASE
 		})
 		const expectedSrc = resolveResource(
 			RESOURCE_BASE,
