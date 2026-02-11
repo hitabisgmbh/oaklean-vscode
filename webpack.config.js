@@ -145,12 +145,17 @@ const webviewConfig = {
 			]
 		})
 	],
-	optimization: {
-		splitChunks: {
-			chunks: 'all',
-			name: 'vendors' // creates a vendors.js
-		}
-	}
+	optimization:
+		mode === 'production'
+			? {
+					splitChunks: {
+						chunks: 'all',
+						name: 'vendors' // creates a vendors.js
+					}
+				}
+			: {
+					splitChunks: false // disable vendor chunking in development for easier debugging
+				}
 }
 
 module.exports = [extensionConfig, webviewConfig]
