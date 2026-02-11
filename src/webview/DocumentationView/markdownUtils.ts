@@ -59,19 +59,6 @@ function createMarkdownRenderer() {
 	return md
 }
 
-// Input: markdown content + query. Output: short snippet with highlighted term.
-export function buildSnippet(content: string, query: string): string {
-	const plain = normalizeSearchContent(content)
-	const words = plain.split(' ').filter((word) => word !== '')
-	const q = query.toLowerCase()
-	const matchIndex = words.findIndex((word) => word.toLowerCase().includes(q))
-	if (matchIndex === -1) {
-		return words.slice(0, SEARCH_SNIPPET_DEFAULT_WORDS).join(' ')
-	}
-
-	return buildSnippetAt(content, query, findWordStartIndex(words, matchIndex))
-}
-
 // Input: content + query + match index. Output: snippet with highlighted term.
 export function buildSnippetAt(
 	content: string,
