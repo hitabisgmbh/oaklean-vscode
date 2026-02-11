@@ -76,7 +76,7 @@ export function useDocumentationSearch(
 		if (searchIndex === null) {
 			return []
 		}
-		return searchDocs(staticFiles, searchIndex, q, maxResults)
+		return searchDocs(searchIndex, q, maxResults)
 	}, [debouncedQuery, maxResults, searchIndex, staticFiles])
 
 	return {

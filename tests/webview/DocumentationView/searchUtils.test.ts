@@ -28,7 +28,6 @@ describe('DocumentationView search utils', () => {
 		const searchIndex = createSearchIndex(files)
 		assertSearchIndex(searchIndex)
 		const results = searchDocs(
-			files,
 			searchIndex,
 			'profilerHits',
 			SEARCH_RESULTS_MAX_DEFAULT
@@ -57,7 +56,6 @@ describe('DocumentationView search utils', () => {
 		const searchIndex = createSearchIndex(files)
 		assertSearchIndex(searchIndex)
 		const results = searchDocs(
-			files,
 			searchIndex,
 			'CPUTime',
 			SEARCH_RESULTS_MAX_DEFAULT

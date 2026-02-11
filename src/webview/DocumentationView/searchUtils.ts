@@ -26,7 +26,8 @@ export function createSearchIndex(
 		encode: encodeSearchValue,
 		document: {
 			id: 'path',
-			index: ['name', 'content']
+			index: ['name', 'content'],
+			store: true
 		}
 	})
 	for (const doc of files) {
@@ -40,7 +41,6 @@ export function createSearchIndex(
 }
 
 export function searchDocs(
-	files: DocumentationFile[],
 	index: DocumentationSearchIndex,
 	query: string,
 	limit = SEARCH_RESULTS_MAX_DEFAULT
@@ -51,11 +51,6 @@ export function searchDocs(
 		return []
 	}
 
-	// Map file paths for quick lookup from search results.
-	const fileById = new Map<string, DocumentationFile>()
-	for (const doc of files) {
-		fileById.set(doc.path, doc)
-	}
 	const matches = index.search(q, { limit })
 	const ids = new Set<string>()
 	for (const match of matches) {
@@ -124,8 +119,8 @@ export function searchDocs(
 	// Preserve search order from the index and resolve to docs.
 	const docsFromIds: DocumentationFile[] = []
 	for (const id of ids) {
-		const doc = fileById.get(id)
-		if (doc !== undefined) {
+		const doc = index.get(id)
+		if (doc !== null) {
 			docsFromIds.push(doc)
 		}
 	}
