@@ -23,7 +23,7 @@ const watchOptions = {
 
 const baseConfig = {
 	plugins: [new webpack.ProgressPlugin()],
-	devtool: 'source-map',
+	devtool: 'inline-source-map',
 	infrastructureLogging: {
 		level: 'info'
 	},
@@ -145,17 +145,12 @@ const webviewConfig = {
 			]
 		})
 	],
-	optimization:
-		mode === 'production'
-			? {
-					splitChunks: {
-						chunks: 'all',
-						name: 'vendors' // creates a vendors.js
-					}
-				}
-			: {
-					splitChunks: false // disable vendor chunking in development for easier debugging
-				}
+	optimization: {
+		splitChunks: {
+			chunks: 'all',
+			name: 'vendors' // creates a vendors.js
+		}
+	}
 }
 
 module.exports = [extensionConfig, webviewConfig]
