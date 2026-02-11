@@ -61,15 +61,11 @@ function createMarkdownRenderer() {
 
 // Input: content + query + match index. Output: snippet with highlighted term.
 export function buildSnippetAt(
-	content: string,
+	normalizedContent: string,
 	query: string,
 	matchIndex: number
 ): string {
-	const plain = normalizeSearchContent(content)
-	if (plain === '') {
-		return ''
-	}
-	const words = plain.split(' ').filter((word) => word !== '')
+	const words = normalizedContent.split(' ').filter((word) => word !== '')
 	let wordIndex = 0
 	let cursor = 0
 	for (let i = 0; i < words.length; i++) {

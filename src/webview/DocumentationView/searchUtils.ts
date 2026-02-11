@@ -79,15 +79,7 @@ export function searchDocs(
 		startOccurrence: number,
 		maxOccurrences?: number
 	): AppendResult => {
-		const plain = normalizeSearchContent(doc.content)
-		if (plain === '') {
-			return {
-				nextIndex: startIndex,
-				nextOccurrence: startOccurrence,
-				added: 0
-			}
-		}
-		const lower = plain.toLowerCase()
+		const normalizedLowerContent = doc.content.toLowerCase()
 		let fromIndex = startIndex
 		let occurrence = startOccurrence
 		let added = 0
@@ -95,7 +87,7 @@ export function searchDocs(
 			results.length < limit &&
 			(maxOccurrences === undefined || added < maxOccurrences)
 		) {
-			const idx = lower.indexOf(qLower, fromIndex)
+			const idx = normalizedLowerContent.indexOf(qLower, fromIndex)
 			if (idx === -1) {
 				break
 			}
