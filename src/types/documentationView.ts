@@ -1,3 +1,5 @@
+import type { Document } from 'flexsearch'
+
 import type { DocumentationFile } from '../protocols/DocumentationViewProtocol'
 
 export type FolderNode = {
@@ -27,11 +29,4 @@ export type DocumentationSearchDocument = {
 	content: string
 }
 
-export type DocumentationSearchMatch = {
-	result: Array<string | number>
-}
-
-export type DocumentationSearchIndex = {
-	add: (doc: DocumentationSearchDocument) => void
-	search: (query: string, options: { limit: number }) => unknown
-}
+export type DocumentationSearchIndex = Document<DocumentationSearchDocument>

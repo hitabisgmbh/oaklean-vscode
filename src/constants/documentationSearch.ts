@@ -1,5 +1,4 @@
 export const SEARCH_DEBOUNCE_IN_MS = 150
-export const SEARCH_EMPTY_TEXT = ''
 export const SEARCH_RESULTS_MAX_DEFAULT = 10
 export const SEARCH_RESULTS_MAX_MIN = 1
 export const SEARCH_RESULTS_PAGE_SIZE_DEFAULT = 10

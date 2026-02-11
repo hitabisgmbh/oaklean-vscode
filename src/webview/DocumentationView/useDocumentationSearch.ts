@@ -3,10 +3,7 @@ import type { Dispatch, SetStateAction } from 'react'
 
 import { createSearchIndex, searchDocs } from './searchUtils'
 
-import {
-	SEARCH_DEBOUNCE_IN_MS,
-	SEARCH_EMPTY_TEXT
-} from '../../constants/documentationSearch'
+import { SEARCH_DEBOUNCE_IN_MS } from '../../constants/documentationSearch'
 import type { DocumentationFile } from '../../protocols/DocumentationViewProtocol'
 import type { SearchResult } from '../../types/documentationView'
 
@@ -23,8 +20,8 @@ export function useDocumentationSearch(
 	maxResults: number,
 	onDebounce?: () => void
 ): DocumentationSearchState {
-	const [query, setQuery] = useState(SEARCH_EMPTY_TEXT)
-	const [debouncedQuery, setDebouncedQuery] = useState(SEARCH_EMPTY_TEXT)
+	const [query, setQuery] = useState('')
+	const [debouncedQuery, setDebouncedQuery] = useState('')
 	const [staticFiles, setStaticFiles] = useState<DocumentationFile[] | null>(
 		null
 	)
@@ -55,8 +52,8 @@ export function useDocumentationSearch(
 
 	// Debounce user input before searching.
 	useEffect(() => {
-		if (query.trim() === SEARCH_EMPTY_TEXT) {
-			setDebouncedQuery(SEARCH_EMPTY_TEXT)
+		if (query.trim() === '') {
+			setDebouncedQuery('')
 			return
 		}
 		// Debounce typing to avoid rebuilding results on every keystroke.
@@ -70,7 +67,7 @@ export function useDocumentationSearch(
 	// Compute search results from the cached index snapshot.
 	const results = useMemo(() => {
 		const q = debouncedQuery.trim()
-		if (q === SEARCH_EMPTY_TEXT) {
+		if (q === '') {
 			return []
 		}
 		if (staticFiles === null) {

@@ -3,7 +3,6 @@ import { Document } from 'flexsearch'
 import { buildSnippetAt, normalizeSearchContent } from './markdownUtils'
 
 import {
-	SEARCH_EMPTY_TEXT,
 	SEARCH_INITIAL_OCCURRENCES_PER_DOC,
 	SEARCH_RESULTS_MAX_DEFAULT,
 	SEARCH_TOKEN_SEPARATOR
@@ -12,7 +11,6 @@ import type { DocumentationFile } from '../../protocols/DocumentationViewProtoco
 import type {
 	DocumentationSearchDocument,
 	DocumentationSearchIndex,
-	DocumentationSearchMatch,
 	SearchResult
 } from '../../types/documentationView'
 
@@ -49,7 +47,7 @@ export function searchDocs(
 ): SearchResult[] {
 	// Normalize and short-circuit empty queries.
 	const q = query.trim()
-	if (q === SEARCH_EMPTY_TEXT) {
+	if (q === '') {
 		return []
 	}
 
@@ -60,22 +58,18 @@ export function searchDocs(
 	}
 	const matches = index.search(q, { limit })
 	const ids = new Set<string>()
-	if (Array.isArray(matches)) {
-		for (const match of matches) {
-			if (isDocumentationSearchMatch(match) === false) {
-				continue
-			}
-			for (const id of match.result) {
-				if (typeof id === 'string') {
-					ids.add(id)
-				} else {
-					ids.add(String(id))
-				}
-			}
+	for (const match of matches) {
+		for (const id of match.result) {
+			ids.add(id.toString())
 		}
 	}
+
 	const qLower = q.toLowerCase()
 	const results: SearchResult[] = []
+
+	if (ids.size === 0) {
+		return results
+	}
 
 	type AppendResult = {
 		nextIndex: number
@@ -91,7 +85,7 @@ export function searchDocs(
 		maxOccurrences?: number
 	): AppendResult => {
 		const plain = normalizeSearchContent(doc.content)
-		if (plain === SEARCH_EMPTY_TEXT) {
+		if (plain === '') {
 			return {
 				nextIndex: startIndex,
 				nextOccurrence: startOccurrence,
@@ -125,10 +119,6 @@ export function searchDocs(
 			nextOccurrence: occurrence,
 			added
 		}
-	}
-
-	if (ids.size === 0) {
-		return results
 	}
 
 	// Preserve search order from the index and resolve to docs.
@@ -173,38 +163,17 @@ export function searchDocs(
 	return results
 }
 
-function isDocumentationSearchMatch(
-	value: unknown
-): value is DocumentationSearchMatch {
-	if (hasSearchResult(value) === false) {
-		return false
-	}
-	if (Array.isArray(value.result) === false) {
-		return false
-	}
-	for (const entry of value.result) {
-		if (typeof entry !== 'string' && typeof entry !== 'number') {
-			return false
-		}
-	}
-	return true
-}
-
-function hasSearchResult(value: unknown): value is { result: unknown } {
-	return typeof value === 'object' && value !== null && 'result' in value
-}
-
 function encodeSearchValue(value: string): string[] {
 	// Normalize and split into tokens for FlexSearch.
 	const normalized = normalizeSearchContent(value).toLowerCase()
-	if (normalized === SEARCH_EMPTY_TEXT) {
+	if (normalized === '') {
 		return []
 	}
 	const tokens = normalized.split(SEARCH_TOKEN_SEPARATOR)
 	if (tokens.length === 0) {
 		return []
 	}
-	if (tokens.length === 1 && tokens[0] === SEARCH_EMPTY_TEXT) {
+	if (tokens.length === 1 && tokens[0] === '') {
 		return []
 	}
 	return tokens
