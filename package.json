@@ -132,18 +132,18 @@
 					"icon": "media/logo.svg",
 					"contextualTitle": "Measurements"
 				},
-					{
-						"type": "webview",
-						"id": "methodView",
-						"name": "Methods",
-						"icon": "$(symbol-method)"
-					},
-					{
-						"type": "webview",
-						"id": "filterView",
-						"name": "Filter",
-						"icon": "$(filter)"
-					}
+				{
+					"type": "webview",
+					"id": "methodView",
+					"name": "Methods",
+					"icon": "$(symbol-method)"
+				},
+				{
+					"type": "webview",
+					"id": "filterView",
+					"name": "Filter",
+					"icon": "$(filter)"
+				}
 			],
 			"measurementsPanel": [
 				{
@@ -366,6 +366,7 @@
 		"glob-to-regexp": "^0.4.1",
 		"jsonc-parser": "^3.3.1",
 		"markdown-it": "^14.1.0",
+		"markdown-to-txt": "^2.0.1",
 		"mathjs": "^15.1.0",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4"

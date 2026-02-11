@@ -66,8 +66,8 @@ describe('DocumentationView search utils', () => {
 	// Ensures markdown content is normalized for indexing.
 	test('normalizeMarkdownContent removes HTML and table layout', () => {
 		const raw =
-			'<img src="../images/a.png" width="300"/>\\n| A | B |\\n|---|---|\\nText'
+			'<img src="../images/a.png" width="300"/>\n\n| A | B |\n|---|---|\nText'
 		const normalized = normalizeMarkdownContent(raw)
-		expect(normalized).toBe('\\n A B \\n \\nText')
+		expect(normalized).toBe('A B Text')
 	})
 })

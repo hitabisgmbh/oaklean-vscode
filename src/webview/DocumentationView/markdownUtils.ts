@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it'
+import markdownToTxt from 'markdown-to-txt'
 import type Token from 'markdown-it/lib/token'
 import type Renderer from 'markdown-it/lib/renderer'
 import type { Options as MarkdownOptions } from 'markdown-it'
@@ -188,23 +189,6 @@ export function resolveDocPath(docPath: string, relativePath: string): string {
 	return resolvePath('', docPath, relativePath)
 }
 
-// Input: markdown text. Output: plain text without markup.
-function stripMarkdown(text: string): string {
-	return (
-		text
-			.replace(/<[^>]*>/g, '')
-			.replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
-			.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-			.replace(/`([^`]+)`/g, '$1')
-			.replace(/[*_~]+/g, '')
-			.replace(/^#{1,6}\s+/gm, '')
-			.replace(/^>\s+/gm, '')
-			.replace(/^[\s>*+-]\s+/gm, '')
-			// removes table syntax but keeps content for better search indexing
-			.replace(/^\s*\||\|\s*$|(?<=\|)-+(?=\|)|\|/gm, ' ')
-	)
-}
-
 /**
  * Normalize markdown content for search indexing by
  * stripping markdown content and collapsing whitespaces
@@ -213,7 +197,7 @@ function stripMarkdown(text: string): string {
  * @returns normalized text for search indexing
  */
 export function normalizeMarkdownContent(text: string): string {
-	return stripMarkdown(text).replace(/\s+/g, ' ').trim()
+	return markdownToTxt(text).replace(/\s+/g, ' ').trim()
 }
 
 // Input: raw string. Output: escaped string for RegExp.
