@@ -4,7 +4,6 @@ import type Renderer from 'markdown-it/lib/renderer'
 import type { Options as MarkdownOptions } from 'markdown-it'
 
 import {
-	SEARCH_SNIPPET_DEFAULT_WORDS,
 	SEARCH_SNIPPET_WORDS_AFTER,
 	SEARCH_SNIPPET_WORDS_BEFORE
 } from '../../constants/documentationSearch'
@@ -213,15 +212,6 @@ export function normalizeSearchContent(text: string): string {
 // Input: raw string. Output: escaped string for RegExp.
 function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-// Input: words array + index. Output: character offset for that word.
-function findWordStartIndex(words: string[], wordIndex: number): number {
-	let index = 0
-	for (let i = 0; i < wordIndex; i++) {
-		index += words[i].length + 1
-	}
-	return index
 }
 
 // Input: URL string. Output: true if http/https.
