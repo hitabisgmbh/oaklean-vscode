@@ -2,7 +2,7 @@ import {
 	createSearchIndex,
 	searchDocs
 } from '../../../src/webview/DocumentationView/searchUtils'
-import { normalizeSearchContent } from '../../../src/webview/DocumentationView/markdownUtils'
+import { normalizeMarkdownContent } from '../../../src/webview/DocumentationView/markdownUtils'
 import { SEARCH_RESULTS_MAX_DEFAULT } from '../../../src/constants/documentationSearch'
 
 // Assert helper to guard against null search index creation.
@@ -64,13 +64,10 @@ describe('DocumentationView search utils', () => {
 	})
 
 	// Ensures markdown content is normalized for indexing.
-	test('normalizeSearchContent removes HTML and table layout', () => {
+	test('normalizeMarkdownContent removes HTML and table layout', () => {
 		const raw =
 			'<img src="../images/a.png" width="300"/>\\n| A | B |\\n|---|---|\\nText'
-		const normalized = normalizeSearchContent(raw)
-		expect(normalized).toContain('Text')
-		expect(normalized).not.toContain('<img')
-		expect(normalized).not.toContain('|')
-		expect(normalized).not.toContain('width')
+		const normalized = normalizeMarkdownContent(raw)
+		expect(normalized).toBe('\\n A B \\n \\nText')
 	})
 })

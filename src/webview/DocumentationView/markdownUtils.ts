@@ -60,11 +60,11 @@ function createMarkdownRenderer() {
 
 // Input: content + query + match index. Output: snippet with highlighted term.
 export function buildSnippetAt(
-	normalizedContent: string,
+	text: string,
 	query: string,
 	matchIndex: number
 ): string {
-	const words = normalizedContent.split(' ').filter((word) => word !== '')
+	const words = text.split(' ').filter((word) => word !== '')
 	let wordIndex = 0
 	let cursor = 0
 	for (let i = 0; i < words.length; i++) {
@@ -189,24 +189,31 @@ export function resolveDocPath(docPath: string, relativePath: string): string {
 }
 
 // Input: markdown text. Output: plain text without markup.
-export function stripMarkdown(text: string): string {
-	return text
-		.replace(/<[^>]*>/g, '')
-		.replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
-		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-		.replace(/`([^`]+)`/g, '$1')
-		.replace(/[*_~]+/g, '')
-		.replace(/^#{1,6}\s+/gm, '')
-		.replace(/^>\s+/gm, '')
-		.replace(/^[\s>*+-]\s+/gm, '')
+function stripMarkdown(text: string): string {
+	return (
+		text
+			.replace(/<[^>]*>/g, '')
+			.replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
+			.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+			.replace(/`([^`]+)`/g, '$1')
+			.replace(/[*_~]+/g, '')
+			.replace(/^#{1,6}\s+/gm, '')
+			.replace(/^>\s+/gm, '')
+			.replace(/^[\s>*+-]\s+/gm, '')
+			// removes table syntax but keeps content for better search indexing
+			.replace(/^\s*\||\|\s*$|(?<=\|)-+(?=\|)|\|/gm, ' ')
+	)
 }
 
-// Input: markdown text. Output: normalized searchable content.
-export function normalizeSearchContent(text: string): string {
-	let cleaned = stripMarkdown(text)
-	cleaned = cleaned.replace(/^\s*\|?[\s:-]+(\|[\s:-]+)+\|?\s*$/gm, ' ')
-	cleaned = cleaned.replace(/\|/g, ' ')
-	return cleaned.replace(/\s+/g, ' ').trim()
+/**
+ * Normalize markdown content for search indexing by
+ * stripping markdown content and collapsing whitespaces
+ *
+ * @param text markdown text
+ * @returns normalized text for search indexing
+ */
+export function normalizeMarkdownContent(text: string): string {
+	return stripMarkdown(text).replace(/\s+/g, ' ').trim()
 }
 
 // Input: raw string. Output: escaped string for RegExp.

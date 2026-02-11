@@ -1,6 +1,6 @@
 import { Document } from 'flexsearch'
 
-import { buildSnippetAt, normalizeSearchContent } from './markdownUtils'
+import { buildSnippetAt, normalizeMarkdownContent } from './markdownUtils'
 
 import {
 	SEARCH_INITIAL_OCCURRENCES_PER_DOC,
@@ -34,7 +34,7 @@ export function createSearchIndex(
 		index.add({
 			path: doc.path,
 			name: doc.name,
-			content: normalizeSearchContent(doc.content)
+			content: normalizeMarkdownContent(doc.content)
 		})
 	}
 	return index
@@ -152,7 +152,7 @@ export function searchDocs(
 
 function encodeSearchValue(value: string): string[] {
 	// Normalize and split into tokens for FlexSearch.
-	const normalized = normalizeSearchContent(value).toLowerCase()
+	const normalized = normalizeMarkdownContent(value).toLowerCase()
 	if (normalized === '') {
 		return []
 	}
