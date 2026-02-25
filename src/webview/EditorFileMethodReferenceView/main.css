@@ -55,6 +55,21 @@
 	margin-top: 6px;
 }
 
+.reference-first-function__section-toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+}
+
+.reference-first-function__section-icon {
+	font-size: 12px;
+}
+
 .reference-first-function__name {
 	font-weight: 600;
 	color: var(--vscode-foreground);
@@ -86,8 +101,23 @@
 	white-space: nowrap;
 }
 
+.reference-first-function__cell--clickable {
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.reference-first-function__cell--clickable:hover {
+	color: var(--vscode-textLink-foreground);
+}
+
 .reference-toolbar__right {
 	display: flex;
 	align-items: center;
 	gap: 6px;
+}
+
+.reference-toolbar__sort-label {
+	font-size: 12px;
+	color: var(--vscode-descriptionForeground);
 }

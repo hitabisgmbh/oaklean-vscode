@@ -2,3 +2,6 @@ dist
 node_modules
 coverage
 .npmrc
+AGENT.md
+PLAN.md
+NOTES.md

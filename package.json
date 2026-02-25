@@ -334,6 +334,7 @@
 		"object-hash": "^3.0.0",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
-		"source-map": "^0.7.4"
+		"source-map": "^0.7.4",
+		"@oaklean/profiler-core": "0.1.5"
 	}
 }
