@@ -72,6 +72,20 @@ export type WebpackRecompileEvent = {
 	data?: undefined
 }
 
+// this event will be fired when the user changes the scope with cursor or the keyboard in the
+// code view. It will contain the new scope information, so that the annotations can be updated
+// accordingly.
+export type ScopeChangeEvent = {
+	readonly scopeInformation: {
+		functionName: string
+		className?: string
+		namespace?: string
+	}
+	relativeWorkspacePath: UnifiedPath
+	selectedIdentifier?: string
+	selectedIdentifierFirstParentWithMeasurements?: string
+}
+
 export default class EventHandler implements Disposable {
 	private readonly _disposable: Disposable
 	container: Container
@@ -92,8 +106,8 @@ export default class EventHandler implements Disposable {
 	private _filterPathChange = new EventEmitter<FilterPathChangeEvent>()
 	private _sortDirectionChange = new EventEmitter<SortDirectionChangeEvent>()
 	private _profileChange = new EventEmitter<ProfileChangeEvent>()
-
 	private _webpackRecompile = new EventEmitter<WebpackRecompileEvent>()
+	private _scopeChange = new EventEmitter<ScopeChangeEvent>()
 
 	constructor(container: Container) {
 		this.container = container
@@ -104,7 +118,7 @@ export default class EventHandler implements Disposable {
 			vscode.workspace.onDidSaveTextDocument(this.fireTextDocumentDidSave.bind(this)),
 			vscode.workspace.onDidChangeTextDocument(this.fireTextDocumentChange.bind(this)),
 			vscode.window.onDidChangeVisibleTextEditors(this.fireTextEditorsChangeVisibility.bind(this)),
-			window.onDidChangeActiveTextEditor(this.fireTextEditorChange.bind(this)),
+			vscode.window.onDidChangeActiveTextEditor(this.fireTextEditorChange.bind(this)),
 			this.onWebpackRecompileWatcher()
 		)
 	}
@@ -391,6 +405,10 @@ export default class EventHandler implements Disposable {
 	get onTextDocumentDidSave(): Event<vscode.TextDocument> {
 		return this._textDocumentDidSave.event
 }
+// 
+	get onScopeChange(): Event<ScopeChangeEvent> {
+		return this._scopeChange.event
+	}
 
 	fireTextDocumentDidSave(document: vscode.TextDocument) {
 			console.debug('EventFire: EventHandler.fireTextDocumentDidSave', {
@@ -398,4 +416,13 @@ export default class EventHandler implements Disposable {
 			})
 			this._textDocumentDidSave.fire(document)
 	}
+	// Fires when the user changes scope in the code view.
+	fireScopeChange(scopeChangeEvent: ScopeChangeEvent) {
+		console.debug('EventFire: EventHandler.fireScopeChange', {
+			timestamp: TimeHelper.getCurrentHighResolutionTime(),
+			scopeChangeEvent
+		})
+		this._scopeChange.fire(scopeChangeEvent)
+	}
+
 }

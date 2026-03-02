@@ -5,6 +5,7 @@ import SelectReportFromContextMenu from './commands/SelectReportFromContextMenu'
 import EventHandler from './helper/EventHandler'
 import { Storage } from './storage'
 import TextEditorController from './controller/TextEditorController'
+import ScopeChangeController from './controller/ScopeChangeController'
 import TextDocumentController from './controller/TextDocumentController'
 import { SourceFileMetaDataTreeProvider } from './treeviews/SourceFileMetaDataTreeProvider'
 import SelectValueRepresentationCommand from './commands/SelectValueRepresentationCommand'
@@ -185,6 +186,7 @@ export class Container {
 
 		// Controllers
 		this.context.subscriptions.push((this._textEditorController = new TextEditorController(this)))
+		this.context.subscriptions.push(new ScopeChangeController(this))
 		this.context.subscriptions.push((this._textDocumentController = new TextDocumentController(this)))
 		this.context.subscriptions.push((this._profileHelper = new ProfileHelper(this)))
 		this.context.subscriptions.push((this._reportBackendStorageController =
