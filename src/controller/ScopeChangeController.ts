@@ -52,11 +52,23 @@ type ProgramStructureTreeLike = {
 }
 
 type SensorValuesLike = {
+	profilerHits?: number
 	aggregatedCPUTime?: number
 	selfCPUTime?: number
+	internCPUTime?: number
+	externCPUTime?: number
+	langInternalCPUTime?: number
 	aggregatedCPUEnergyConsumption?: number
 	selfCPUEnergyConsumption?: number
+	internCPUEnergyConsumption?: number
+	externCPUEnergyConsumption?: number
+	langInternalCPUEnergyConsumption?: number
 	aggregatedRAMEnergyConsumption?: number
+	selfRAMEnergyConsumption?: number
+	internRAMEnergyConsumption?: number
+	externRAMEnergyConsumption?: number
+	langInternalRAMEnergyConsumption?: number
+	customFormula?: number
 }
 
 type SourceNodeMetaDataLike = {
@@ -104,13 +116,12 @@ function hasMeasurements(sensorValues: SensorValuesLike | undefined): boolean {
 	if (sensorValues === undefined) {
 		return false
 	}
-	return (
-		sensorValues.aggregatedCPUTime !== undefined ||
-		sensorValues.selfCPUTime !== undefined ||
-		sensorValues.aggregatedCPUEnergyConsumption !== undefined ||
-		sensorValues.selfCPUEnergyConsumption !== undefined ||
-		sensorValues.aggregatedRAMEnergyConsumption !== undefined
-	)
+	for (const value of Object.values(sensorValues)) {
+		if (typeof value === 'number' && Number.isFinite(value)) {
+			return true
+		}
+	}
+	return false
 }
 
 function isValidSourceNodeIdentifier(identifier: string): boolean {
@@ -208,6 +219,8 @@ export default class ScopeChangeController implements Disposable {
 		if (
 			this._lastScopeCache.file === relativeWorkspacePath.toString() &&
 			this._lastScopeCache.selectedIdentifier === selectedIdentifier &&
+			this._lastScopeCache.selectedIdentifierFirstParentWithMeasurements ===
+				selectedIdentifierFirstParentWithMeasurements &&
 			this._lastScopeCache.functionName === scopeInformation.functionName &&
 			this._lastScopeCache.className === scopeInformation.className &&
 			this._lastScopeCache.namespace === scopeInformation.namespace
@@ -252,9 +265,22 @@ export default class ScopeChangeController implements Disposable {
 		}
 		const result = pstCandidate.identifierNodeBySourceLocation(sourceLocation)
 		if (result === undefined) {
+			console.debug('ScopeChangeController: no PST node at cursor', {
+				file: relativeWorkspacePath.toString(),
+				line: sourceLocation.line,
+				column: sourceLocation.column
+			})
 			return undefined
 		}
+		console.debug('ScopeChangeController: PST identifier', {
+			file: relativeWorkspacePath.toString(),
+			identifier: result.identifier
+		})
 		if (!isValidSourceNodeIdentifier(result.identifier)) {
+			console.debug('ScopeChangeController: invalid identifier format', {
+				file: relativeWorkspacePath.toString(),
+				identifier: result.identifier
+			})
 			return undefined
 		}
 		return result.identifier
@@ -294,14 +320,24 @@ export default class ScopeChangeController implements Disposable {
 			measuredIdentifiers.add(identifier)
 		}
 
-		let currentParts = selectedIdentifier.split('.').slice(0, -1)
+		// Include the current scope itself first, then walk up to parents.
+		// This is required when the selected scope already has measurements.
+		let currentParts = selectedIdentifier.split('.')
 		while (currentParts.length > 0) {
 			const currentIdentifier = currentParts.join('.')
 			if (measuredIdentifiers.has(currentIdentifier)) {
+				console.debug('ScopeChangeController: matched parent with measurements', {
+					file: relativeWorkspacePath.toString(),
+					identifier: currentIdentifier
+				})
 				return currentIdentifier
 			}
 			currentParts = currentParts.slice(0, currentParts.length - 1)
 		}
+		console.debug('ScopeChangeController: no parent with measurements', {
+			file: relativeWorkspacePath.toString(),
+			identifier: selectedIdentifier
+		})
 		return undefined
 	}
 

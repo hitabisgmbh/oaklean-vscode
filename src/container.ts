@@ -321,7 +321,9 @@ export class Container {
 			))
 
 		this.context.subscriptions.push(
-			this._editorFileMethodReferenceViewProvider = new EditorFileMethodReferenceViewProvider(context.extensionUri, this)
+			this._editorFileMethodReferenceViewProvider = new EditorFileMethodReferenceViewProvider(
+				context.extensionUri, this
+			)
 		)
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(

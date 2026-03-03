@@ -140,7 +140,7 @@ export default class EventHandler implements Disposable {
 		const watcher = fs.watch(
 			`${this.container.context.extensionUri.fsPath}/${WEBPACK_WEBVIEW_PATH}`,
 			{ recursive: true },
-			async (eventType, filename) => {
+			async () => {
 				// only refresh when there are no changes for 1 second
 				if (debounceTimer) {
 					clearTimeout(debounceTimer)

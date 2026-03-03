@@ -18,7 +18,8 @@ import {
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 import {
 	TextEditorChangeEvent,
-	TextEditorsChangeVisibilityEvent
+	TextEditorsChangeVisibilityEvent,
+	ScopeChangeEvent
 } from '../helper/EventHandler'
 import { FirstFunctionEntry } from '../protocols/EditorFileMethodReferenceViewProtocol'
 import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
@@ -63,7 +64,7 @@ type ReferenceMetaLike = {
 
 // Runtime API shape for the function collection in SourceFileMetaData.
 type SourceFileFunctionsLike = {
-	values: () => Iterator<ReferenceMetaLike>
+	values: () => IterableIterator<ReferenceMetaLike>
 	entries: () => Iterator<[unknown, ReferenceMetaLike]>
 	get: (id: SourceNodeID_number) => ReferenceMetaLike | undefined
 }
@@ -108,6 +109,7 @@ export class EditorFileMethodReferenceViewProvider
 	private _view?: vscode.WebviewView
 	_container: Container
 	editor: vscode.TextEditor | undefined
+	private _currentScopeIdentifier: string | undefined
 
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
@@ -124,6 +126,9 @@ export class EditorFileMethodReferenceViewProvider
 			),
 			this._container.eventHandler.onTextEditorsChangeVisibility(
 				this.onTextEditorsChangeVisibility.bind(this)
+			),
+			this._container.eventHandler.onScopeChange(
+				this.onScopeChange.bind(this)
 			)
 		]
 	}
@@ -267,6 +272,29 @@ export class EditorFileMethodReferenceViewProvider
 		this.sendFirstFunctionName()
 	}
 
+	private onScopeChange(event: ScopeChangeEvent) {
+		if (this.editor === undefined) {
+			return
+		}
+		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
+			this.editor.document.fileName
+		)
+		if (relativeWorkspacePath === undefined) {
+			return
+		}
+		if (event.relativeWorkspacePath.toString() !== relativeWorkspacePath.toString()) {
+			return
+		}
+		console.debug('EditorFileMethodReferenceViewProvider: scope change', {
+			file: relativeWorkspacePath.toString(),
+			selectedIdentifier: event.selectedIdentifier,
+			selectedIdentifierFirstParentWithMeasurements:
+				event.selectedIdentifierFirstParentWithMeasurements
+		})
+		this._currentScopeIdentifier = event.selectedIdentifierFirstParentWithMeasurements
+		this.sendFirstFunctionName()
+	}
+
 	// Sends current editor file name to the webview toolbar.
 	private sendFileName() {
 		// If the webview isn't ready, there's nowhere to send the update.
@@ -304,7 +332,12 @@ export class EditorFileMethodReferenceViewProvider
 		const extern: FirstFunctionEntry[] = []
 
 		if (sourceFileMetaData !== null) {
-			const firstFn = this.getFirstFunctionMeta(sourceFileMetaData)
+			const firstFn = this._currentScopeIdentifier === undefined
+				? this.getFirstFunctionMeta(sourceFileMetaData)
+				: this.getFunctionMetaByIdentifier(
+						sourceFileMetaData,
+						this._currentScopeIdentifier
+					) ?? this.getFirstFunctionMeta(sourceFileMetaData)
 
 			if (firstFn !== undefined) {
 				const firstIdentifier = firstFn.sourceNodeIndex?.identifier
@@ -355,6 +388,21 @@ export class EditorFileMethodReferenceViewProvider
 			extern
 		}
 		this._view.webview.postMessage(message)
+	}
+
+	private getFunctionMetaByIdentifier(
+		sourceFileMetaData: SourceFileMetaDataLike,
+		identifier: string
+	): ReferenceMetaLike | undefined {
+		for (const meta of sourceFileMetaData.functions.values()) {
+			if (!isReferenceMetaLike(meta)) {
+				continue
+			}
+			if (meta.sourceNodeIndex?.identifier === identifier) {
+				return meta
+			}
+		}
+		return undefined
 	}
 
 	// Normalizes one metadata entry into the webview's FirstFunctionEntry payload.
