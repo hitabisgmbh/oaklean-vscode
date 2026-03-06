@@ -46,4 +46,5 @@ export type EditorFileMethodReferenceViewProtocol_ChildToParent =
 			langInternal?: FirstFunctionEntry[]
 			intern?: FirstFunctionEntry[]
 			extern?: FirstFunctionEntry[]
+			foreignReferences?: FirstFunctionEntry[]
 		}

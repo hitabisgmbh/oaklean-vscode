@@ -14,7 +14,11 @@ import { SensorValueFormatHelper } from '../../helper/SensorValueFormatHelper'
 import { SortButton } from '../components/buttons/SortButton'
 import { SortDirection } from '../../types/sortDirection'
 
-declare const acquireVsCodeApi: any
+type VSCodeApi = {
+	postMessage: (message: unknown) => void
+}
+
+declare function acquireVsCodeApi(): VSCodeApi
 
 export const vscode = acquireVsCodeApi()
 

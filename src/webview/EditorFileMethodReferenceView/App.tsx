@@ -12,11 +12,21 @@ import { CodiconButton } from '../components/buttons/CodiconButton'
 
 import './main.css'
 
-declare const acquireVsCodeApi: any
+type VSCodeApi = {
+	postMessage: (message: unknown) => void
+}
+
+declare function acquireVsCodeApi(): VSCodeApi
 
 export const vscode = acquireVsCodeApi()
 
-type SortMetric = 'cpuTime' | 'cpuEnergy' | 'ramEnergy'
+const SORT_METRICS = {
+	cpuTime: 'cpuTime',
+	cpuEnergy: 'cpuEnergy',
+	ramEnergy: 'ramEnergy'
+} as const
+
+type SortMetric = typeof SORT_METRICS[keyof typeof SORT_METRICS]
 
 function postToProvider(message: EditorFileMethodReferenceViewProtocol_ChildToParent) {
 	vscode.postMessage(message)
@@ -28,29 +38,35 @@ export function App() {
 	const [isLangInternalOpen, setIsLangInternalOpen] = useState(true)
 	const [isInternOpen, setIsInternOpen] = useState(true)
 	const [isExternOpen, setIsExternOpen] = useState(true)
-	const [sortMetric, setSortMetric] = useState<SortMetric>('cpuTime')
+	const [isForeignReferencesOpen, setIsForeignReferencesOpen] = useState(true)
+	const [sortMetric, setSortMetric] = useState<SortMetric>(SORT_METRICS.cpuTime)
 	const [showNotPresentInOriginalSourceCode, setShowNotPresentInOriginalSourceCode] = useState(true)
 	const [firstFunctionData, setFirstFunctionData] = useState<{
 		main?: FirstFunctionEntry
 		langInternal?: FirstFunctionEntry[]
 		intern?: FirstFunctionEntry[]
 		extern?: FirstFunctionEntry[]
+		foreignReferences?: FirstFunctionEntry[]
 	}>({})
 
+	// Keep local state in sync with provider messages and request initial payload on mount.
 	useEffect(() => {
-		function handleMessage(event: { data: EditorFileMethodReferenceViewProtocol_ParentToChild }) {
-			if (event.data?.command === EditorFileMethodReferenceViewProtocolCommands.updateFileName) {
-				setFileName(event.data.fileName || '')
-			} else if (event.data?.command === EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction) {
-				setFirstFunctionName(event.data.functionName || '')
+			function handleMessage(event: { data: EditorFileMethodReferenceViewProtocol_ParentToChild }) {
+				if (event.data?.command === EditorFileMethodReferenceViewProtocolCommands.updateFileName) {
+					setFileName(event.data.fileName ?? '')
+				} else if (event.data?.command === EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction) {
+					setFirstFunctionName(event.data.functionName ?? '')
+				// New function context should reopen all sections by default.
 				setIsLangInternalOpen(true)
 				setIsInternOpen(true)
 				setIsExternOpen(true)
+				setIsForeignReferencesOpen(true)
 				setFirstFunctionData({
 					main: event.data.main,
 					langInternal: event.data.langInternal,
 					intern: event.data.intern,
-					extern: event.data.extern
+					extern: event.data.extern,
+					foreignReferences: event.data.foreignReferences
 				})
 			}
 		}
@@ -67,6 +83,7 @@ export function App() {
 	}, [])
 
 	function openReference(entry: FirstFunctionEntry) {
+		// Only navigable rows with complete location data can trigger file navigation.
 		if (entry.isNavigable !== true) {
 			return
 		}
@@ -86,23 +103,35 @@ export function App() {
 
 	function sortEntries(entries: FirstFunctionEntry[] | undefined): FirstFunctionEntry[] {
 		const valueByMetric: Record<SortMetric, keyof FirstFunctionEntry> = {
-			cpuTime: 'cpuTime',
-			cpuEnergy: 'cpuEnergy',
-			ramEnergy: 'ramEnergy'
+			[SORT_METRICS.cpuTime]: SORT_METRICS.cpuTime,
+			[SORT_METRICS.cpuEnergy]: SORT_METRICS.cpuEnergy,
+			[SORT_METRICS.ramEnergy]: SORT_METRICS.ramEnergy
 		}
 		const metricKey = valueByMetric[sortMetric]
-		return [...(entries || [])].sort((a, b) => {
-			const aValue = (a[metricKey] as number | undefined) ?? 0
-			const bValue = (b[metricKey] as number | undefined) ?? 0
+		const toNumericMetric = (value: unknown): number => {
+			// Message payloads can carry numeric fields as strings; normalize before sorting.
+			if (typeof value === 'number') {
+				return Number.isFinite(value) ? value : 0
+			}
+			if (typeof value === 'string') {
+				const parsedValue = Number(value)
+				return Number.isFinite(parsedValue) ? parsedValue : 0
+			}
+			return 0
+		}
+		return [...(entries ?? [])].sort((a, b) => {
+			const aValue = toNumericMetric(a[metricKey])
+			const bValue = toNumericMetric(b[metricKey])
 			return bValue - aValue
 		})
 	}
 
 	function filterEntries(entries: FirstFunctionEntry[] | undefined): FirstFunctionEntry[] {
+		// Optional filter to hide runtime-only references.
 		if (showNotPresentInOriginalSourceCode) {
-			return entries || []
+			return entries ?? []
 		}
-		return (entries || []).filter((entry) => entry.notPresentInOriginalSourceCode !== true)
+		return (entries ?? []).filter((entry) => entry.notPresentInOriginalSourceCode !== true)
 	}
 
 	function prepareEntries(entries: FirstFunctionEntry[] | undefined): FirstFunctionEntry[] {
@@ -110,30 +139,31 @@ export function App() {
 	}
 
 	function getSortMetricLabel() {
-		if (sortMetric === 'cpuTime') {
+		if (sortMetric === SORT_METRICS.cpuTime) {
 			return 'Cpu(T)'
 		}
-		if (sortMetric === 'cpuEnergy') {
+		if (sortMetric === SORT_METRICS.cpuEnergy) {
 			return 'Cpu(E)'
 		}
 		return 'Ram(E)'
 	}
 
 	function cycleSortMetric() {
-		if (sortMetric === 'cpuTime') {
-			setSortMetric('cpuEnergy')
+		if (sortMetric === SORT_METRICS.cpuTime) {
+			setSortMetric(SORT_METRICS.cpuEnergy)
 			return
 		}
-		if (sortMetric === 'cpuEnergy') {
-			setSortMetric('ramEnergy')
+		if (sortMetric === SORT_METRICS.cpuEnergy) {
+			setSortMetric(SORT_METRICS.ramEnergy)
 			return
 		}
-		setSortMetric('cpuTime')
+		setSortMetric(SORT_METRICS.cpuTime)
 	}
 
 	const langInternalEntries = prepareEntries(firstFunctionData.langInternal)
 	const internEntries = prepareEntries(firstFunctionData.intern)
 	const externEntries = prepareEntries(firstFunctionData.extern)
+	const foreignReferencesEntries = prepareEntries(firstFunctionData.foreignReferences)
 
 	return (
 		<div className="reference-view">
@@ -170,9 +200,9 @@ export function App() {
 					</VSCodeButton>
 				</div>
 			</div>
-			{firstFunctionName ? (
+			{firstFunctionName !== '' ? (
 				<div className="reference-first-function">
-					<div className="reference-first-function__label">First function</div>
+					<div className="reference-first-function__label">Current function</div>
 					<div className="reference-first-function__name">{firstFunctionName}()</div>
 
 					{langInternalEntries.length > 0 ? (
@@ -274,6 +304,46 @@ export function App() {
 									</div>
 									{externEntries.map((entry, idx) => (
 										<div className="reference-first-function__row" key={`extern-${idx}`}>
+											<div
+												className={getClickableCellClass(entry)}
+												onClick={() => openReference(entry)}
+											>
+												{entry.name}
+											</div>
+											<div>{entry.cpuTime ?? ''}</div>
+											<div>{entry.cpuEnergy ?? ''}</div>
+											<div>{entry.ramEnergy ?? ''}</div>
+										</div>
+									))}
+								</div>
+							) : null}
+						</>
+					) : null}
+
+					{foreignReferencesEntries.length > 0 ? (
+						<>
+							<button
+								className="reference-first-function__label section reference-first-function__section-toggle"
+								onClick={() => setIsForeignReferencesOpen((current) => !current)}
+								type="button"
+							>
+								<span
+									className={`codicon ${
+										isForeignReferencesOpen ? 'codicon-chevron-down' : 'codicon-chevron-right'
+									} reference-first-function__section-icon`}
+								/>
+								<span>Foreign References:</span>
+							</button>
+							{isForeignReferencesOpen ? (
+								<div className="reference-first-function__table">
+									<div className="reference-first-function__row header">
+										<div>Identifier</div>
+										<div>Cpu(T)</div>
+										<div>Cpu(E)</div>
+										<div>Ram(E)</div>
+									</div>
+									{foreignReferencesEntries.map((entry, idx) => (
+										<div className="reference-first-function__row" key={`foreign-${idx}`}>
 											<div
 												className={getClickableCellClass(entry)}
 												onClick={() => openReference(entry)}

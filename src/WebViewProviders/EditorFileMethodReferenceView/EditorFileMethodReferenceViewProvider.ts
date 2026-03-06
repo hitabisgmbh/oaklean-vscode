@@ -1,30 +1,43 @@
 import path from 'path'
 
 import vscode from 'vscode'
-import { SourceNodeIdentifierHelper } from '@oaklean/profiler-core'
 import {
 	SourceNodeID_number,
-	UnifiedPath_string,
 	SourceNodeIdentifier_string} from '@oaklean/profiler-core/dist/src/types'
 
-import { getNonce } from '../utilities/getNonce'
-import { getUri } from '../utilities/getUri'
-import { Container } from '../container'
+import {
+	buildForeignReferences,
+	CallerEdgeDirection,
+	getCallerNodeIDsForCurrentNode,
+	isSourceNodeGraphLike,
+	resolveCurrentFunctionGraphNodeID,
+	SourceNodeGraphLike
+} from './EditorFileMethodReferenceGraph'
+import {
+	buildReferenceEntry,
+	getDisplayName,
+	toMetas,
+	toSourceNodeIdentifier,
+	toUnifiedPathString
+} from './EditorFileMethodReferenceMapper'
+import { getEditorFileMethodReferenceViewHtml } from './EditorFileMethodReferenceViewHtml'
+
+import { Container } from '../../container'
 import {
 	EditorFileMethodReferenceViewProtocolCommands,
 	EditorFileMethodReferenceViewProtocol_ChildToParent,
 	EditorFileMethodReferenceViewProtocol_ParentToChild
-} from '../protocols/EditorFileMethodReferenceViewProtocol'
-import WorkspaceUtils from '../helper/WorkspaceUtils'
+} from '../../protocols/EditorFileMethodReferenceViewProtocol'
+import WorkspaceUtils from '../../helper/WorkspaceUtils'
 import {
 	TextEditorChangeEvent,
 	TextEditorsChangeVisibilityEvent,
 	ScopeChangeEvent
-} from '../helper/EventHandler'
-import { FirstFunctionEntry } from '../protocols/EditorFileMethodReferenceViewProtocol'
-import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
-import { OpenSourceLocationProtocolCommands } from '../protocols/OpenSourceLocationProtocol'
-import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
+} from '../../helper/EventHandler'
+import { FirstFunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
+import { OpenSourceLocationCommandIdentifiers } from '../../types/commands/OpenSourceLocationCommand'
+import { OpenSourceLocationProtocolCommands } from '../../protocols/OpenSourceLocationProtocol'
+import OpenSourceLocationCommand from '../../commands/OpenSourceLocationCommand'
 
 // Minimal sensor subset used to render measurement values in the reference list.
 type SensorValuesLike = {
@@ -48,6 +61,8 @@ type JsonMetaLike = {
 	methodName?: string
 	filePath?: string
 }
+
+const CALLER_EDGE_DIRECTION: CallerEdgeDirection = 'outgoing'
 
 // Runtime shape of one reference entry from profiler metadata.
 type ReferenceMetaLike = {
@@ -109,7 +124,12 @@ export class EditorFileMethodReferenceViewProvider
 	private _view?: vscode.WebviewView
 	_container: Container
 	editor: vscode.TextEditor | undefined
+	// Identifier of the currently selected scope from Method view events.
 	private _currentScopeIdentifier: string | undefined
+	// Resolved graph node id for the selected/current function.
+	private _currentScopeGraphNodeID: string | undefined
+	// Caller node ids resolved from the graph for foreign-reference rendering.
+	private _currentScopeCallerGraphNodeIDs: string[] = []
 
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
@@ -134,15 +154,17 @@ export class EditorFileMethodReferenceViewProvider
 	}
 
 	dispose() {
-		this.subscriptions.forEach((d) => d.dispose())
+		// Explicitly release all listeners when the provider is disposed.
+		for (const subscription of this.subscriptions) {
+			subscription.dispose()
+		}
 		this.subscriptions = []
 	}
 
 	public resolveWebviewView(
-		webviewView: vscode.WebviewView,
-		context: vscode.WebviewViewResolveContext,
-		_token: vscode.CancellationToken
+		webviewView: vscode.WebviewView
 	) {
+		// Store webview handle once VS Code resolves the view instance.
 		this._view = webviewView
 		this.subscriptions.push(
 			this._view.onDidChangeVisibility(this.hardRefresh.bind(this)),
@@ -161,7 +183,7 @@ export class EditorFileMethodReferenceViewProvider
 			]
 		}
 
-		webviewView.webview.html = this._getHtmlForWebview(
+		webviewView.webview.html = getEditorFileMethodReferenceViewHtml(
 			webviewView.webview,
 			this._extensionUri
 		)
@@ -195,16 +217,19 @@ export class EditorFileMethodReferenceViewProvider
 	receiveMessageFromWebview(
 		message: EditorFileMethodReferenceViewProtocol_ChildToParent
 	) {
+		// User clicked "Close" in the toolbar.
 		if (
 			message.command ===
 			EditorFileMethodReferenceViewProtocolCommands.closeActiveFile
 		) {
 			void this.closeActiveFile()
+		// Webview requests latest file name after mount/reload.
 		} else if (
 			message.command ===
 			EditorFileMethodReferenceViewProtocolCommands.requestFileName
 		) {
 			this.sendFileName()
+		// Webview requests latest function/reference payload after mount/reload.
 		} else if (
 			message.command ===
 			EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction
@@ -230,11 +255,15 @@ export class EditorFileMethodReferenceViewProvider
 			if (relativeWorkspacePath === undefined) {
 				return
 			}
+			const sourceNodeIdentifier = toSourceNodeIdentifier(identifier)
+			if (sourceNodeIdentifier === undefined) {
+				return
+			}
 			OpenSourceLocationCommand.execute({
 				command: OpenSourceLocationCommandIdentifiers.openSourceLocation,
 				args: {
 					relativeWorkspacePath: relativeWorkspacePath.toString(),
-					sourceNodeIdentifier: identifier as SourceNodeIdentifier_string
+					sourceNodeIdentifier
 				}
 			})
 		}
@@ -246,10 +275,10 @@ export class EditorFileMethodReferenceViewProvider
 			return
 		}
 		// Rebuild the HTML so the webview picks up the latest assets
-		this._view.webview.html = this._getHtmlForWebview(
-			this._view.webview,
-			this._extensionUri
-		)
+			this._view.webview.html = getEditorFileMethodReferenceViewHtml(
+				this._view.webview,
+				this._extensionUri
+			)
 		this.sendFileName()
 		this.sendFirstFunctionName()
 	}
@@ -273,6 +302,7 @@ export class EditorFileMethodReferenceViewProvider
 	}
 
 	private onScopeChange(event: ScopeChangeEvent) {
+		// Ignore scope events when no active editor is tracked.
 		if (this.editor === undefined) {
 			return
 		}
@@ -324,14 +354,23 @@ export class EditorFileMethodReferenceViewProvider
 		if (this._view === undefined) {
 			return
 		}
+		// Graph data is optional (e.g., report not loaded); all graph operations below are guarded.
+		const projectReport = this._container.textDocumentController.projectReport
+		const rawSourceNodeGraph = projectReport?.asSourceNodeGraph()
+		const sourceNodeGraph: SourceNodeGraphLike | undefined = isSourceNodeGraphLike(rawSourceNodeGraph)
+			? rawSourceNodeGraph
+			: undefined
+
 		const sourceFileMetaData = this.getSourceFileMetaData()
 		let functionName = ''
 		let main: FirstFunctionEntry | undefined
 		const langInternal: FirstFunctionEntry[] = []
 		const intern: FirstFunctionEntry[] = []
 		const extern: FirstFunctionEntry[] = []
+		let foreignReferences: FirstFunctionEntry[] | undefined
 
 		if (sourceFileMetaData !== null) {
+			// Prefer scope-selected function; fall back to best-effort "first function" resolution.
 			const firstFn = this._currentScopeIdentifier === undefined
 				? this.getFirstFunctionMeta(sourceFileMetaData)
 				: this.getFunctionMetaByIdentifier(
@@ -340,23 +379,52 @@ export class EditorFileMethodReferenceViewProvider
 					) ?? this.getFirstFunctionMeta(sourceFileMetaData)
 
 			if (firstFn !== undefined) {
+				// Resolve graph context for "functions that use this function" section.
+				this._currentScopeGraphNodeID = resolveCurrentFunctionGraphNodeID(
+					sourceNodeGraph,
+					firstFn,
+					this._currentScopeIdentifier,
+					this.editor?.document.fileName
+				)
+				this._currentScopeCallerGraphNodeIDs = getCallerNodeIDsForCurrentNode(
+					sourceNodeGraph,
+					this._currentScopeGraphNodeID,
+					CALLER_EDGE_DIRECTION
+				)
+				foreignReferences = buildForeignReferences(
+					sourceNodeGraph,
+					this._currentScopeGraphNodeID,
+					this._currentScopeCallerGraphNodeIDs,
+					projectReport
+				)
+				console.debug(
+					'EditorFileMethodReferenceViewProvider: foreign references',
+					{
+						selectedIdentifier: firstFn.sourceNodeIndex?.identifier,
+						currentNodeID: this._currentScopeGraphNodeID,
+						callerNodeIDs: this._currentScopeCallerGraphNodeIDs.length,
+						foreignReferences: foreignReferences.length
+					}
+				)
+
 				const firstIdentifier = firstFn.sourceNodeIndex?.identifier
 				if (firstIdentifier !== undefined) {
-					functionName = this.getDisplayName(firstIdentifier)
+					functionName = getDisplayName(firstIdentifier)
 				}
 				// "main" represents the selected first function itself.
-				main = this.buildEntry(firstFn)
+				main = buildReferenceEntry(firstFn, projectReport)
 
-				for (const meta of this.toMetas(firstFn.lang_internal)) {
-					const entry = this.buildEntry(meta)
+				// Convert each group from report metadata to webview protocol entries.
+				for (const meta of toMetas(firstFn.lang_internal)) {
+					const entry = buildReferenceEntry(meta, projectReport)
 					if (entry) {
 						// Explicit requirement: lang_internal must not navigate.
 						entry.isNavigable = false
 						langInternal.push(entry)
 					}
 				}
-				for (const meta of this.toMetas(firstFn.intern)) {
-					const entry = this.buildEntry(meta)
+				for (const meta of toMetas(firstFn.intern)) {
+					const entry = buildReferenceEntry(meta, projectReport)
 					if (entry) {
 						// Intern rows are clickable only when navigation data is complete.
 						entry.isNavigable =
@@ -365,8 +433,8 @@ export class EditorFileMethodReferenceViewProvider
 						intern.push(entry)
 					}
 				}
-				for (const meta of this.toMetas(firstFn.extern)) {
-					const entry = this.buildEntry(meta)
+				for (const meta of toMetas(firstFn.extern)) {
+					const entry = buildReferenceEntry(meta, projectReport)
 					if (entry) {
 						// Extern rows follow the same navigation contract as intern rows.
 						entry.isNavigable =
@@ -376,6 +444,10 @@ export class EditorFileMethodReferenceViewProvider
 					}
 				}
 			}
+		} else {
+			// No metadata for current file: clear cached graph state to avoid stale foreign references.
+			this._currentScopeGraphNodeID = undefined
+			this._currentScopeCallerGraphNodeIDs = []
 		}
 
 		const message: EditorFileMethodReferenceViewProtocol_ParentToChild = {
@@ -385,7 +457,8 @@ export class EditorFileMethodReferenceViewProvider
 			main,
 			langInternal,
 			intern,
-			extern
+			extern,
+			foreignReferences
 		}
 		this._view.webview.postMessage(message)
 	}
@@ -394,6 +467,7 @@ export class EditorFileMethodReferenceViewProvider
 		sourceFileMetaData: SourceFileMetaDataLike,
 		identifier: string
 	): ReferenceMetaLike | undefined {
+		// The metadata map is keyed by node id; identifier lookup requires a scan by sourceNodeIndex.
 		for (const meta of sourceFileMetaData.functions.values()) {
 			if (!isReferenceMetaLike(meta)) {
 				continue
@@ -405,225 +479,71 @@ export class EditorFileMethodReferenceViewProvider
 		return undefined
 	}
 
-	// Normalizes one metadata entry into the webview's FirstFunctionEntry payload.
-	private buildEntry(meta: ReferenceMetaLike): FirstFunctionEntry | undefined {
-		// Primary identifier source.
-		const identifier = meta?.sourceNodeIndex?.identifier as
-			| SourceNodeIdentifier_string
-			| undefined
-
-		// Fallback 1: global identifier from local source-node index.
-		const globalIdentifier =
-			typeof meta?.sourceNodeIndex?.globalIdentifier === 'function'
-				? meta.sourceNodeIndex.globalIdentifier()?.identifier
-				: undefined
-
-		// Fallback 2: resolve index by id in current meta scope.
-		const resolvedIndex =
-			typeof meta?.getSourceNodeIndexByID === 'function' &&
-			meta?.id !== undefined
-				? meta.getSourceNodeIndexByID(meta.id)
-				: undefined
-
-		const resolvedIdentifier =
-			typeof resolvedIndex?.globalIdentifier === 'function'
-				? resolvedIndex.globalIdentifier()?.identifier
-				: resolvedIndex?.identifier
-
-		// Fallback 3: resolve via project global index.
-		const projectReport = this._container.textDocumentController.projectReport
-		const globalIndexEntry =
-			meta?.id !== undefined &&
-			projectReport?.globalIndex?.getSourceNodeIndexByID
-				? projectReport.globalIndex.getSourceNodeIndexByID(meta.id)
-				: undefined
-		const globalIndexIdentifier =
-			globalIndexEntry !== undefined
-				? globalIndexEntry.globalIdentifier?.()?.identifier ||
-					globalIndexEntry.identifier
-				: undefined
-
-		// Optional JSON projection used for display/path fallbacks.
-		const json = typeof meta?.toJSON === 'function'
-			? meta.toJSON()
-			: undefined
-		const jsonName =
-			json?.methodName ||
-			(json?.filePath ? path.basename(json.filePath) : '')
-
-		// Final identifier used for navigation and preferred display label.
-		const finalIdentifier =
-			identifier ||
-			(globalIdentifier as SourceNodeIdentifier_string | undefined) ||
-			(resolvedIdentifier as SourceNodeIdentifier_string | undefined) ||
-			(globalIndexIdentifier as SourceNodeIdentifier_string | undefined)
-
-		// Human-readable method name with robust fallback chain.
-		const name =
-			(finalIdentifier && this.getDisplayName(finalIdentifier)) ||
-			(globalIdentifier &&
-				this.getDisplayName(globalIdentifier as SourceNodeIdentifier_string)) ||
-			(resolvedIdentifier &&
-				this.getDisplayName(
-					resolvedIdentifier as SourceNodeIdentifier_string
-				)) ||
-			(globalIndexIdentifier &&
-				this.getDisplayName(
-					globalIndexIdentifier as SourceNodeIdentifier_string
-				)) ||
-			jsonName ||
-			meta?.methodName ||
-			''
-
-		// CPU and energy values; prefer aggregated values where available.
-		const cpuTime =
-			meta.sensorValues?.aggregatedCPUTime ?? meta.sensorValues?.selfCPUTime
-
-		const cpuEnergy =
-			meta.sensorValues?.aggregatedCPUEnergyConsumption ??
-			meta.sensorValues?.selfCPUEnergyConsumption
-
-		const ramEnergy = meta.sensorValues?.aggregatedRAMEnergyConsumption
-
-		// Path source 1: json filePath converted to workspace-relative format.
-		const filePath =
-			typeof json?.filePath === 'string' ? json.filePath : undefined
-		const relativePathFromMeta =
-			filePath === undefined
-				? undefined
-				: WorkspaceUtils.getRelativeWorkspacePath(filePath)?.toString()
-
-		// Path source 2/3: direct index path identifiers from resolved indexes.
-		const relativePathFromIndex =
-			meta?.sourceNodeIndex?.pathIndex?.identifier ||
-			resolvedIndex?.pathIndex?.identifier ||
-			globalIndexEntry?.pathIndex?.identifier
-
-			// Final path used for navigation payload.
-			const relativePath = relativePathFromMeta || relativePathFromIndex
-			const presentInOriginalSourceCode =
-				meta?.sourceNodeIndex?.presentInOriginalSourceCode ??
-				resolvedIndex?.presentInOriginalSourceCode ??
-				globalIndexEntry?.presentInOriginalSourceCode
-
-			return {
-				name,
-				cpuTime,
-				cpuEnergy,
-				ramEnergy,
-				identifier: finalIdentifier,
-				relativePath,
-				notPresentInOriginalSourceCode: presentInOriginalSourceCode === false
-			}
-		}
-
-	// Extracts readable method name from a full source-node identifier.
-	private getDisplayName(identifier: SourceNodeIdentifier_string): string {
-		const parts = SourceNodeIdentifierHelper.split(identifier)
-		const lastPart = parts[parts.length - 1]
-		const parsed = lastPart
-			? SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(lastPart)
-			: undefined
-		return parsed?.name || ''
-	}
-
-	// Normalizes different reference container shapes into a flat meta list.
-	private toMetas(ref: unknown): ReferenceMetaLike[] {
-		// Shape 1: values() iterator, potentially yielding [key, value] tuples.
-		if (isRecord(ref) && typeof ref.values === 'function') {
-			const result: ReferenceMetaLike[] = []
-			for (const item of ref.values() as Iterable<unknown>) {
-				if (Array.isArray(item) && item.length === 2) {
-					if (isReferenceMetaLike(item[1])) {
-						result.push(item[1])
-					}
-				} else if (isReferenceMetaLike(item)) {
-					result.push(item)
-				}
-			}
-			return result
-		}
-
-		// Shape 2: entries() iterator yielding [key, value].
-		if (isRecord(ref) && typeof ref.entries === 'function') {
-			const result: ReferenceMetaLike[] = []
-			for (const entry of ref.entries() as Iterable<[unknown, unknown]>) {
-				if (Array.isArray(entry) && entry.length === 2 && isReferenceMetaLike(entry[1])) {
-					result.push(entry[1])
-				}
-			}
-			return result
-		}
-
-		// Shape 3: plain object map.
-		if (ref && typeof ref === 'object') {
-			const result: ReferenceMetaLike[] = []
-			for (const value of Object.values(ref)) {
-				if (isReferenceMetaLike(value)) {
-					result.push(value)
-				}
-			}
-			return result
-		}
-		return []
-	}
-
 	// Resolves the "first function" for the current file using report indexes when possible.
 	private getFirstFunctionMeta(sourceFileMetaData: SourceFileMetaDataLike): ReferenceMetaLike | undefined {
+		// Stable fallback if report/global-index resolution cannot be completed.
+		const fallbackMeta = sourceFileMetaData.functions.values().next().value
+		// Profiler index API uses string operation dispatch ("get" / "set"/...).
+		const getOperation = 'get'
 		try {
 			const projectReport = this._container.textDocumentController.projectReport
 			if (projectReport === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 
 			const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
-				this.editor?.document.fileName || ''
+				this.editor?.document.fileName ?? ''
 			)
 			if (relativeWorkspacePath === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 
-			const moduleIndex = projectReport.globalIndex.getModuleIndex('get')
+			const moduleIndex = projectReport.globalIndex.getModuleIndex(getOperation)
 			if (moduleIndex === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 
+			const unifiedRelativeWorkspacePath = toUnifiedPathString(
+				relativeWorkspacePath.toString()
+			)
+			if (unifiedRelativeWorkspacePath === undefined) {
+				return fallbackMeta
+			}
 			const pathIndex = moduleIndex.getFilePathIndex(
-				'get',
-				relativeWorkspacePath.toString() as UnifiedPath_string
+				getOperation,
+				unifiedRelativeWorkspacePath
 			)
 			if (pathIndex?.file === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 			if (pathIndex.id === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 
 			// Use first local function identifier as lookup key in the file's path index.
 			const firstIdentifier = sourceFileMetaData.functions.entries().next()
-				.value?.[1]?.sourceNodeIndex?.identifier as
-				| SourceNodeIdentifier_string
-				| undefined
+				.value?.[1]?.sourceNodeIndex?.identifier
 
 			if (firstIdentifier === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 
-			const functionIndex = pathIndex.getSourceNodeIndex('get', firstIdentifier)
+			const functionIndex = pathIndex.getSourceNodeIndex(getOperation, firstIdentifier)
 
 			if (functionIndex?.id === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 
 			const functionMeta = sourceFileMetaData.functions.get(functionIndex.id)
 
 			if (functionMeta === undefined) {
-				return sourceFileMetaData.functions.values().next().value
+				return fallbackMeta
 			}
 			return functionMeta
 		} catch (e) {
+			// Defensive catch: third-party report/index structures may throw on malformed state.
 			console.error('getFirstFunctionMeta failed', e)
-			return sourceFileMetaData.functions.values().next().value
+			return fallbackMeta
 		}
 	}
 
@@ -639,70 +559,4 @@ export class EditorFileMethodReferenceViewProvider
 		}
 	}
 
-	private _getHtmlForWebview(
-		webview: vscode.Webview,
-		extensionUri: vscode.Uri
-	) {
-		// Build secure webview HTML with strict CSP and explicit asset URIs.
-		const nonce = getNonce()
-		const webviewUri = getUri(webview, extensionUri, [
-			'dist',
-			'webview',
-			'webpack',
-			'EditorFileMethodReferenceView.js'
-		])
-		const stylesUri = getUri(webview, extensionUri, [
-			'dist',
-			'webview',
-			'webpack',
-			'EditorFileMethodReferenceView.css'
-		])
-		const vendorsUri = getUri(webview, extensionUri, [
-			'dist',
-			'webview',
-			'webpack',
-			'vendors.js'
-		])
-		const codiconsUri = getUri(webview, extensionUri, [
-			'dist',
-			'webview',
-			'codicons',
-			'codicon.css'
-		])
-
-		const mediaPath = getUri(webview, extensionUri, ['media'])
-
-		const htmlContent = `<!DOCTYPE html>
-        <html lang="en">
-          <head>
-						<meta charset="UTF-8">
-						<meta name="viewport" content="width=device-width,initial-scale=1.0">
-						<meta
-							http-equiv="Content-Security-Policy"
-							content="
-								default-src 'none';
-								font-src ${webview.cspSource};
-								img-src ${webview.cspSource};
-								style-src 'unsafe-inline' ${webview.cspSource};
-								style-src-elem 'unsafe-inline' ${webview.cspSource};
-								script-src 'nonce-${nonce}';
-							"
-						>
-						<link rel="stylesheet" href="${stylesUri}">
-						<link rel="stylesheet" href="${codiconsUri}">
-            <title>Files Methods</title>
-						<script nonce="${nonce}">
-							window.__MEDIA_PATH__ = "${mediaPath}";
-						</script>
-          </head>
-          <body>
-						<div id="root"></div>
-						<script nonce="${nonce}" src="${vendorsUri}"></script>
-						<script nonce="${nonce}" src="${webviewUri}"></script>
-          </body>
-        </html>
-    `
-
-		return htmlContent
-	}
 }

@@ -8,10 +8,12 @@ type CodiconButtonProps = {
 
 export function CodiconButton({ codiconName, title, onClick }: CodiconButtonProps) {
 	return (
-		<div
-			className={`codicon-button button codicon ${codiconName}`}
+		<button
+			type="button"
+			className={`codicon-button codicon ${codiconName}`}
 			title={title}
+			aria-label={title ?? codiconName}
 			onClick={onClick}
-		></div>
+		></button>
 	)
 }

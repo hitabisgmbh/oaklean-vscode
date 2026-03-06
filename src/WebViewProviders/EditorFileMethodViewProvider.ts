@@ -57,9 +57,7 @@ export class EditorFileMethodViewProvider
 	}
 
 	public resolveWebviewView(
-		webviewView: vscode.WebviewView,
-		context: vscode.WebviewViewResolveContext,
-		_token: vscode.CancellationToken
+		webviewView: vscode.WebviewView
 	) {
 		this._view = webviewView
 		this.subscriptions.push(
