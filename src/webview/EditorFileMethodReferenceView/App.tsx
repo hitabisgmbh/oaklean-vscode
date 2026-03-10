@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react'
 
 import {
@@ -116,26 +116,18 @@ export function App() {
 	}
 
 	function sortEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
-		const valueByMetric: Record<SortMetric, keyof FunctionEntry> = {
+		const valueByMetric: Record<
+			SortMetric,
+			'cpuTime' | 'cpuEnergy' | 'ramEnergy'
+		> = {
 			[SORT_METRICS.cpuTime]: SORT_METRICS.cpuTime,
 			[SORT_METRICS.cpuEnergy]: SORT_METRICS.cpuEnergy,
 			[SORT_METRICS.ramEnergy]: SORT_METRICS.ramEnergy
 		}
 		const metricKey = valueByMetric[sortMetric]
-		const toNumericMetric = (value: unknown): number => {
-			// Message payloads can carry numeric fields as strings; normalize before sorting.
-			if (typeof value === 'number') {
-				return Number.isFinite(value) ? value : 0
-			}
-			if (typeof value === 'string') {
-				const parsedValue = Number(value)
-				return Number.isFinite(parsedValue) ? parsedValue : 0
-			}
-			return 0
-		}
 		return [...(entries ?? [])].sort((a, b) => {
-			const aValue = toNumericMetric(a[metricKey])
-			const bValue = toNumericMetric(b[metricKey])
+			const aValue = a[metricKey] ?? 0
+			const bValue = b[metricKey] ?? 0
 			if (sortDirection === SORT_DIRECTIONS.asc) {
 				return aValue - bValue
 			}
@@ -191,11 +183,41 @@ export function App() {
 		)
 	}
 
-	const langInternalEntries = prepareEntries(firstFunctionData.langInternal)
-	const internEntries = prepareEntries(firstFunctionData.intern)
-	const externEntries = prepareEntries(firstFunctionData.extern)
-	const foreignReferencesEntries = prepareEntries(
-		firstFunctionData.foreignReferences
+	const langInternalEntries = useMemo(
+		() => prepareEntries(firstFunctionData.langInternal),
+		[
+			firstFunctionData.langInternal,
+			sortMetric,
+			sortDirection,
+			showNotPresentInOriginalSourceCode
+		]
+	)
+	const internEntries = useMemo(
+		() => prepareEntries(firstFunctionData.intern),
+		[
+			firstFunctionData.intern,
+			sortMetric,
+			sortDirection,
+			showNotPresentInOriginalSourceCode
+		]
+	)
+	const externEntries = useMemo(
+		() => prepareEntries(firstFunctionData.extern),
+		[
+			firstFunctionData.extern,
+			sortMetric,
+			sortDirection,
+			showNotPresentInOriginalSourceCode
+		]
+	)
+	const foreignReferencesEntries = useMemo(
+		() => prepareEntries(firstFunctionData.foreignReferences),
+		[
+			firstFunctionData.foreignReferences,
+			sortMetric,
+			sortDirection,
+			showNotPresentInOriginalSourceCode
+		]
 	)
 	const hasReferenceData =
 		firstFunctionName !== '' ||
