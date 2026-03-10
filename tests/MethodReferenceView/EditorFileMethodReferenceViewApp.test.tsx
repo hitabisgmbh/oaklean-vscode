@@ -106,7 +106,7 @@ describe('EditorFileMethodReferenceView App UI', () => {
 	})
 
 	it('cycles sort metric and reorders intern entries based on selected metric', () => {
-		// Sort toggle should cycle Cpu(T) -> Cpu(E) and reorder rows accordingly.
+		// Clicking the metric label should cycle Cpu(T) -> Cpu(E) and reorder rows accordingly.
 		renderFreshApp()
 
 		dispatchReferenceMessage({
@@ -135,14 +135,56 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		const sortLabel = document.querySelector('.reference-toolbar__sort-label')
 		expect(sortLabel?.textContent).toBe('Cpu(T)')
 
-		const sortButton = screen.getByTitle('Sort entries by Cpu(T), Cpu(E), Ram(E)')
-		fireEvent.click(sortButton)
+		const sortMetricLabel = screen.getByTitle('Sort entries by Cpu(T), Cpu(E), Ram(E)')
+		fireEvent.click(sortMetricLabel)
 
 		expect(sortLabel?.textContent).toBe('Cpu(E)')
 		const sortedByEnergyText = document.body.textContent ?? ''
 		expect(sortedByEnergyText.indexOf('entryCpuLow')).toBeLessThan(
 			sortedByEnergyText.indexOf('entryCpuHigh')
 		)
+	})
+
+	it('toggles sort direction and sorts entries ascending', () => {
+		renderFreshApp()
+
+		dispatchReferenceMessage({
+			command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+			functionName: 'currentFn',
+			intern: [
+				{
+					name: 'entryLow',
+					cpuTime: 1
+				},
+				{
+					name: 'entryHigh',
+					cpuTime: 100
+				}
+			]
+		})
+
+		const initialText = document.body.textContent ?? ''
+		expect(initialText.indexOf('entryHigh')).toBeLessThan(
+			initialText.indexOf('entryLow')
+		)
+		const sortDirectionButton = screen.getByTitle('Toggle sort direction (Desc/Asc)')
+		const initialActiveDownIcon = sortDirectionButton.querySelector(
+			'.codicon-arrow-down.reference-toolbar__sort-direction-icon--active'
+		)
+		expect(initialActiveDownIcon).not.toBeNull()
+
+		fireEvent.click(sortDirectionButton)
+
+		const sortedAscendingText = document.body.textContent ?? ''
+		expect(sortedAscendingText.indexOf('entryLow')).toBeLessThan(
+			sortedAscendingText.indexOf('entryHigh')
+		)
+		const sortLabel = document.querySelector('.reference-toolbar__sort-label')
+		expect(sortLabel?.textContent).toBe('Cpu(T)')
+		const activeUpIcon = sortDirectionButton.querySelector(
+			'.codicon-arrow-up.reference-toolbar__sort-direction-icon--active'
+		)
+		expect(activeUpIcon).not.toBeNull()
 	})
 
 	it('toggles filtering of runtime-only entries through eye button', () => {

@@ -121,3 +121,42 @@
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground);
 }
+
+.reference-toolbar__sort-button {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.reference-toolbar__sort-direction-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	width: 16px;
+	height: 16px;
+	padding: 1px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background: transparent;
+	cursor: pointer;
+}
+
+.reference-toolbar__sort-direction-button:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.reference-toolbar__sort-direction-icon {
+	color: var(--vscode-descriptionForeground);
+	font-size: 10px;
+	line-height: 1;
+}
+
+.reference-toolbar__sort-direction-icon + .reference-toolbar__sort-direction-icon {
+	margin-left: -1px;
+}
+
+.reference-toolbar__sort-direction-icon--active {
+	color: var(--vscode-foreground);
+}

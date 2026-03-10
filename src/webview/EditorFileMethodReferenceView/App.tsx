@@ -28,6 +28,13 @@ const SORT_METRICS = {
 
 type SortMetric = typeof SORT_METRICS[keyof typeof SORT_METRICS]
 
+const SORT_DIRECTIONS = {
+	desc: 'desc',
+	asc: 'asc'
+} as const
+
+type SortDirection = typeof SORT_DIRECTIONS[keyof typeof SORT_DIRECTIONS]
+
 function postToProvider(message: EditorFileMethodReferenceViewProtocol_ChildToParent) {
 	vscode.postMessage(message)
 }
@@ -40,6 +47,7 @@ export function App() {
 	const [isExternOpen, setIsExternOpen] = useState(true)
 	const [isForeignReferencesOpen, setIsForeignReferencesOpen] = useState(true)
 	const [sortMetric, setSortMetric] = useState<SortMetric>(SORT_METRICS.cpuTime)
+	const [sortDirection, setSortDirection] = useState<SortDirection>(SORT_DIRECTIONS.desc)
 	const [showNotPresentInOriginalSourceCode, setShowNotPresentInOriginalSourceCode] = useState(true)
 	const [firstFunctionData, setFirstFunctionData] = useState<{
 		main?: FunctionEntry
@@ -126,6 +134,9 @@ export function App() {
 		return [...(entries ?? [])].sort((a, b) => {
 			const aValue = toNumericMetric(a[metricKey])
 			const bValue = toNumericMetric(b[metricKey])
+			if (sortDirection === SORT_DIRECTIONS.asc) {
+				return aValue - bValue
+			}
 			return bValue - aValue
 		})
 	}
@@ -164,6 +175,14 @@ export function App() {
 		setSortMetric(SORT_METRICS.cpuTime)
 	}
 
+	function toggleSortDirection() {
+		setSortDirection((currentDirection) =>
+			currentDirection === SORT_DIRECTIONS.desc
+				? SORT_DIRECTIONS.asc
+				: SORT_DIRECTIONS.desc
+		)
+	}
+
 	const langInternalEntries = prepareEntries(firstFunctionData.langInternal)
 	const internEntries = prepareEntries(firstFunctionData.intern)
 	const externEntries = prepareEntries(firstFunctionData.extern)
@@ -183,14 +202,35 @@ export function App() {
 			<div className="reference-toolbar">
 				<span className="reference-toolbar__file-name">{fileName}</span>
 				<div className="reference-toolbar__right">
-					<div className="reference-toolbar__sort-label">
-						{getSortMetricLabel()}
-					</div>
-					<CodiconButton
-						codiconName="codicon-arrow-swap"
+					<button
+						className="reference-toolbar__sort-label reference-toolbar__sort-button"
 						onClick={cycleSortMetric}
 						title="Sort entries by Cpu(T), Cpu(E), Ram(E)"
-					/>
+						type="button"
+					>
+						{getSortMetricLabel()}
+					</button>
+					<button
+						className="reference-toolbar__sort-direction-button"
+						onClick={toggleSortDirection}
+						title="Toggle sort direction (Desc/Asc)"
+						type="button"
+					>
+						<span
+							className={`codicon codicon-arrow-up reference-toolbar__sort-direction-icon ${
+								sortDirection === SORT_DIRECTIONS.asc
+									? 'reference-toolbar__sort-direction-icon--active'
+									: ''
+							}`}
+						/>
+						<span
+							className={`codicon codicon-arrow-down reference-toolbar__sort-direction-icon ${
+								sortDirection === SORT_DIRECTIONS.desc
+									? 'reference-toolbar__sort-direction-icon--active'
+									: ''
+							}`}
+						/>
+					</button>
 					<CodiconButton
 						codiconName={
 							showNotPresentInOriginalSourceCode ? 'codicon-eye' : 'codicon-eye-closed'
