@@ -1,6 +1,5 @@
 import vscode from 'vscode'
 
-
 import BaseCommand from './BaseCommand'
 
 import { Container } from '../container'
@@ -25,7 +24,11 @@ export default class ChangeSortDirectionCommands extends BaseCommand {
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 	private _direction: SortDirection
 
-	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider, direction: SortDirection) {
+	constructor(
+		container: Container,
+		treeDataProvider: SourceFileMetaDataTreeProvider,
+		direction: SortDirection
+	) {
 		super()
 		this.container = container
 		this._treeDataProvider = treeDataProvider
@@ -33,9 +36,21 @@ export default class ChangeSortDirectionCommands extends BaseCommand {
 		this._disposable = vscode.Disposable.from()
 
 		container.storage.storeWorkspace('sortDirection', SortDirection.default)
-		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDefault, true)
-		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDesc, false)
-		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionAsc, false)
+		vscode.commands.executeCommand(
+			'setContext',
+			ContextOptions.sortDirectionDefault,
+			true
+		)
+		vscode.commands.executeCommand(
+			'setContext',
+			ContextOptions.sortDirectionDesc,
+			false
+		)
+		vscode.commands.executeCommand(
+			'setContext',
+			ContextOptions.sortDirectionAsc,
+			false
+		)
 	}
 
 	dispose() {
@@ -65,12 +80,28 @@ export default class ChangeSortDirectionCommands extends BaseCommand {
 				this.directionChange(SortDirection.asc, false, false, true)
 				break
 		}
-
 	}
-	directionChange(newDirection: SortDirection, defaultToAsc: boolean, descToDefault: boolean, ascToDesc: boolean) {
+	directionChange(
+		newDirection: SortDirection,
+		defaultToAsc: boolean,
+		descToDefault: boolean,
+		ascToDesc: boolean
+	) {
 		this.container.storage.storeWorkspace('sortDirection', newDirection)
-		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDefault, defaultToAsc)
-		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionDesc, descToDefault)
-		vscode.commands.executeCommand('setContext', ContextOptions.sortDirectionAsc, ascToDesc)
+		vscode.commands.executeCommand(
+			'setContext',
+			ContextOptions.sortDirectionDefault,
+			defaultToAsc
+		)
+		vscode.commands.executeCommand(
+			'setContext',
+			ContextOptions.sortDirectionDesc,
+			descToDefault
+		)
+		vscode.commands.executeCommand(
+			'setContext',
+			ContextOptions.sortDirectionAsc,
+			ascToDesc
+		)
 	}
 }

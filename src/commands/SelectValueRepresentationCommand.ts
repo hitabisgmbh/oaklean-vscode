@@ -11,23 +11,29 @@ import QuickPick, { QuickPickOptions } from '../components/QuickPick'
 type ValueRepresentationMetaData = {
 	[key in ValueRepresentationType]: {
 		label: string
-	};
-};
+	}
+}
 
 const ValueRepresentations: ValueRepresentationMetaData = {
 	[ValueRepresentationType.absolute]: {
 		label: 'Absolute values'
 	},
 	[ValueRepresentationType.locallyRelative]: {
-		label: 'Locally relative values (relative to the current hierarchy level such as the folder level)'
+		label:
+			'Locally relative values (relative to the current hierarchy level such as the folder level)'
 	},
 	[ValueRepresentationType.totalRelative]: {
 		label: 'Total relative values (relative to the total sum in the project)'
 	}
 }
 
-function changeRepresentation(container: Container, selectedValueRepresentationID: ValueRepresentationType) {
-	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+function changeRepresentation(
+	container: Container,
+	selectedValueRepresentationID: ValueRepresentationType
+) {
+	const sensorValueRepresentation = container.storage.getWorkspace(
+		'sensorValueRepresentation'
+	) as SensorValueRepresentation
 	container.storage.storeWorkspace('sensorValueRepresentation', {
 		selectedSensorValueType: sensorValueRepresentation.selectedSensorValueType,
 		selectedValueRepresentation: selectedValueRepresentationID,
@@ -37,8 +43,7 @@ function changeRepresentation(container: Container, selectedValueRepresentationI
 
 export enum CommandIdentifiers {
 	selectValueRepresentation = 'selectValueRepresentation',
-	selectedSensorValueType = 'selectedSensorValueType',
-
+	selectedSensorValueType = 'selectedSensorValueType'
 }
 
 export default class SelectValueRepresentationCommand extends BaseCommand {
@@ -46,7 +51,10 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 	container: Container
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 
-	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider) {
+	constructor(
+		container: Container,
+		treeDataProvider: SourceFileMetaDataTreeProvider
+	) {
 		super()
 		this.container = container
 		this._treeDataProvider = treeDataProvider
@@ -70,18 +78,29 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 		})
 		quickPickOptions.set(ValueRepresentations.locallyRelative.label, {
 			selectionCallback: () => {
-				changeRepresentation(this.container, ValueRepresentationType.locallyRelative)
+				changeRepresentation(
+					this.container,
+					ValueRepresentationType.locallyRelative
+				)
 			}
 		})
 		quickPickOptions.set(ValueRepresentations.totalRelative.label, {
 			selectionCallback: () => {
-				changeRepresentation(this.container, ValueRepresentationType.totalRelative)
+				changeRepresentation(
+					this.container,
+					ValueRepresentationType.totalRelative
+				)
 			}
 		})
 
-		const currentSensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+		const currentSensorValueRepresentation =
+			this.container.storage.getWorkspace(
+				'sensorValueRepresentation'
+			) as SensorValueRepresentation
 		const currentlySelectedLabel =
-			ValueRepresentations[currentSensorValueRepresentation.selectedValueRepresentation].label
+			ValueRepresentations[
+				currentSensorValueRepresentation.selectedValueRepresentation
+			].label
 		const quickPick = new QuickPick(quickPickOptions)
 		if (currentlySelectedLabel) {
 			quickPick.setCurrentItem(currentlySelectedLabel)

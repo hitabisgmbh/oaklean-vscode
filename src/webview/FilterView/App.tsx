@@ -8,6 +8,7 @@ import {
 	FilterViewProtocol_ParentToChild
 } from '../../protocols/FilterViewProtocol'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const acquireVsCodeApi: any
 
 export const vscode = acquireVsCodeApi()
@@ -44,9 +45,8 @@ export function App() {
 		}
 	}, [])
 
-	function onFilterPathInput(
-		type: 'included' | 'excluded'
-	) {
+	function onFilterPathInput(type: 'included' | 'excluded') {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		return function (e: any) {
 			if (e.target) {
 				const newVal = (e.target as HTMLInputElement).value

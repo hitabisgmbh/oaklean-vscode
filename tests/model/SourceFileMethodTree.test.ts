@@ -66,7 +66,8 @@ const sourceNodeMetaData3 = sourceFileMetaData.createOrGetSourceNodeMetaData(
 
 describe('SourceFileMethodThree', () => {
 	test('should create the correct tree with all nodes', () => {
-		const instance = SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
+		const instance =
+			SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
 
 		expect(instance.toJSON()).toEqual({
 			pioscChildrenCount: 1,

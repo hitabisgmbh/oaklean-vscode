@@ -10,6 +10,7 @@ type IColorData = {
 }
 
 export class ThemeColorViewerPanel {
+	public static readonly viewType = 'oaklean.themeColorViewerPanel'
 	public static currentPanel: ThemeColorViewerPanel | undefined
 	private readonly _panel: vscode.WebviewPanel
 	private subscriptions: vscode.Disposable[] = []
@@ -18,25 +19,33 @@ export class ThemeColorViewerPanel {
 	_container: Container
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
-		container: Container
+		container: Container,
+		panel?: vscode.WebviewPanel
 	) {
 		this._container = container
 		this.subscriptions.push(
-			this._panel = vscode.window.createWebviewPanel('ThemeColorViewer', 'ThemeColorViewer', vscode.ViewColumn.Beside, {
-				enableScripts: true,
-				// Restrict the webview to only load resources from the `dist` directory
-				localResourceRoots: [this._extensionUri],
-				retainContextWhenHidden: true
-			}),
+			(this._panel =
+				panel ??
+				vscode.window.createWebviewPanel(
+					ThemeColorViewerPanel.viewType,
+					'ThemeColorViewer',
+					vscode.ViewColumn.Beside,
+					{
+						enableScripts: true,
+						// Restrict the webview to only load resources from the `dist` directory
+						localResourceRoots: [this._extensionUri],
+						retainContextWhenHidden: true
+					}
+				)),
 			this._panel.onDidDispose(() => this.dispose()),
-			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this))
+			this._container.eventHandler.onWebpackRecompile(
+				this.hardRefresh.bind(this)
+			)
 		)
 		this._panel.webview.options = {
 			enableScripts: true,
 
-			localResourceRoots: [
-				this._container.context.extensionUri
-			]
+			localResourceRoots: [this._container.context.extensionUri]
 		}
 		this.hardRefresh()
 	}
@@ -52,36 +61,50 @@ export class ThemeColorViewerPanel {
 	}
 
 	static async retrieveColorItems() {
-    ThemeColorViewerPanel.cachedColors ??= await (async () => {
-      try {
-        const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse('vscode://schemas/workbench-colors'))
-        const contents = JSON.parse(doc.getText())
+		ThemeColorViewerPanel.cachedColors ??= await (async () => {
+			try {
+				const doc = await vscode.workspace.openTextDocument(
+					vscode.Uri.parse('vscode://schemas/workbench-colors')
+				)
+				const contents = JSON.parse(doc.getText())
 
-        return Object.entries(contents.properties).map(([key, value]) => ({
-          description: (value as { description: string }).description,
-          key: key.replace(/\./g, '-'),
-        }))
-      } catch (e) {
-        console.error('error fetching updated vscode theme colors:', e)
-        return []
-      }
-    })()
+				return Object.entries(contents.properties).map(([key, value]) => ({
+					description: (value as { description: string }).description,
+					key: key.replace(/\./g, '-')
+				}))
+			} catch (e) {
+				console.error('error fetching updated vscode theme colors:', e)
+				return []
+			}
+		})()
 
-    return ThemeColorViewerPanel.cachedColors
-  }
-
+		return ThemeColorViewerPanel.cachedColors
+	}
 
 	public static async render(container: Container) {
 		await ThemeColorViewerPanel.retrieveColorItems()
 		if (ThemeColorViewerPanel.currentPanel) {
 			ThemeColorViewerPanel.currentPanel._panel.reveal()
 		} else {
-			ThemeColorViewerPanel.currentPanel = new ThemeColorViewerPanel(
-				container.context.extensionUri,
-				container
+			container.context.subscriptions.push(
+				(ThemeColorViewerPanel.currentPanel = new ThemeColorViewerPanel(
+					container.context.extensionUri,
+					container
+				))
 			)
-
 		}
+		return ThemeColorViewerPanel.currentPanel
+	}
+
+	public static async revive(panel: vscode.WebviewPanel, container: Container) {
+		await ThemeColorViewerPanel.retrieveColorItems()
+		container.context.subscriptions.push(
+			(ThemeColorViewerPanel.currentPanel = new ThemeColorViewerPanel(
+				container.context.extensionUri,
+				container,
+				panel
+			))
+		)
 		return ThemeColorViewerPanel.currentPanel
 	}
 
@@ -90,11 +113,7 @@ export class ThemeColorViewerPanel {
 		this.subscriptions.forEach((d) => d.dispose())
 	}
 
-	public resolveWebviewView(
-		webviewView: vscode.WebviewView,
-		context: vscode.WebviewViewResolveContext,
-		_token: vscode.CancellationToken
-	) {
+	public resolveWebviewView(webviewView: vscode.WebviewView) {
 		webviewView.webview.options = {
 			// Enable scripts in the webview
 			enableScripts: true,

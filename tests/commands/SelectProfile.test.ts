@@ -1,7 +1,9 @@
 import '../shared/mocks/vscode.mock'
 import vscode from 'vscode'
 
-import SelectProfileCommand, { CommandIdentifiers } from '../../src/commands/SelectProfile'
+import SelectProfileCommand, {
+	CommandIdentifiers
+} from '../../src/commands/SelectProfile'
 import { Container } from '../../src/container'
 import EventHandler from '../../src/helper/EventHandler'
 import { REQUEST_ADD_NEW_PROFILE } from '../../src/constants/webview'
@@ -29,21 +31,24 @@ describe('SelectProfileCommand', () => {
 		const selectedOption = quickPick.optionsWithCallBacks.get('Profile 1')
 		selectedOption?.selectionCallback()
 
-		expect(container.storage.storeWorkspace).toBeCalled()
+		expect(container.storage.storeWorkspace).toHaveBeenCalled()
 
-		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('profile',
-			{
-				name: 'Profile 1',
-				color: Color.Red,
-				measurement: 'profilerHits'
-			} satisfies Profile)
+		expect(container.storage.storeWorkspace).toHaveBeenCalledWith('profile', {
+			name: 'Profile 1',
+			color: Color.Red,
+			measurement: 'profilerHits'
+		} satisfies Profile)
 	})
 
 	it('should open settings to add a new profile', async () => {
 		const quickPick = await command.execute()
-		const selectedOption = quickPick.optionsWithCallBacks.get(REQUEST_ADD_NEW_PROFILE)
+		const selectedOption = quickPick.optionsWithCallBacks.get(
+			REQUEST_ADD_NEW_PROFILE
+		)
 		selectedOption?.selectionCallback()
-		expect(vscode.commands.executeCommand).toHaveBeenCalledWith('oaklean.settings')
+		expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+			'oaklean.settings'
+		)
 	})
 
 	it('should trigger Event when changing profile', async () => {
@@ -52,12 +57,11 @@ describe('SelectProfileCommand', () => {
 		const selectedOption = quickPick.optionsWithCallBacks.get('Profile 1')
 		selectedOption?.selectionCallback()
 
-		expect(fireProfileChangeSpy).toHaveBeenCalledWith(
-			{
-				'color': Color.Red,
-				'measurement': 'profilerHits',
-				'name': 'Profile 1',
-			} satisfies Profile)
+		expect(fireProfileChangeSpy).toHaveBeenCalledWith({
+			color: Color.Red,
+			measurement: 'profilerHits',
+			name: 'Profile 1'
+		} satisfies Profile)
 	})
 
 	it('should have activeItems', async () => {
@@ -65,7 +69,8 @@ describe('SelectProfileCommand', () => {
 		const selectedOption = quickPick.optionsWithCallBacks.get('Profile 1')
 		selectedOption?.selectionCallback()
 		const quickPick2 = await command.execute()
-		expect(quickPick2.vsCodeComponent.activeItems).toEqual([{ label: 'Profile 1' }])
+		expect(quickPick2.vsCodeComponent.activeItems).toEqual([
+			{ label: 'Profile 1' }
+		])
 	})
-
 })

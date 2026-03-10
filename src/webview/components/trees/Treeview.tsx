@@ -11,7 +11,8 @@ type TreeViewProps = {
 	childrenClassName?: string
 	children: React.ReactNode
 	treeViewClassName?: string
-	onClick?: (...args: any) => void,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	onClick?: (...args: any) => void
 }
 
 class TreeView extends React.Component<TreeViewProps, { collapsed: boolean }> {
@@ -24,6 +25,7 @@ class TreeView extends React.Component<TreeViewProps, { collapsed: boolean }> {
 		this.handleClick = this.handleClick.bind(this)
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	handleClick(...args: any) {
 		this.setState({ collapsed: !this.state.collapsed })
 		if (this.props.onClick) {

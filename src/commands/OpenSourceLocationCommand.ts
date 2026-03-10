@@ -1,8 +1,5 @@
 import vscode from 'vscode'
-import {
-	UnifiedPath,
-	SourceNodeIdentifierHelper
-} from '@oaklean/profiler-core'
+import { UnifiedPath, SourceNodeIdentifierHelper } from '@oaklean/profiler-core'
 
 import BaseCommand from './BaseCommand'
 
@@ -87,9 +84,7 @@ export default class OpenSourceLocationCommand extends BaseCommand {
 					vscode.window.showErrorMessage(
 						`${ERROR_SOURCE_NODE_NOT_FOUND} ${result ? result.name : identifier}`
 					)
-					console.error(
-						`${ERROR_SOURCE_NODE_NOT_FOUND} ${identifier}`
-					)
+					console.error(`${ERROR_SOURCE_NODE_NOT_FOUND} ${identifier}`)
 				}
 			}
 		} catch (error) {

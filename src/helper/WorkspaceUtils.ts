@@ -6,7 +6,7 @@ import { STATIC_CONFIG_FILENAME } from '@oaklean/profiler-core/dist/src/constant
 /*
  * WorkspaceUtils provides utility functions to interact with the workspace,
  * such as getting the workspace directory, resolving paths, resolving in-report paths via configuration files.
- * 
+ *
  * terminology:
  * - Workspace: The root directory of the project opened in VSCode.
  * - Workspace Directory: The directory where the workspace is located.
@@ -23,7 +23,9 @@ export default class WorkspaceUtils {
 		return undefined
 	}
 
-	static getRelativeWorkspacePath(absolutePath: UnifiedPath | string): UnifiedPath | undefined {
+	static getRelativeWorkspacePath(
+		absolutePath: UnifiedPath | string
+	): UnifiedPath | undefined {
 		const workspaceDir = this.getWorkspaceDir()
 		if (workspaceDir === undefined) {
 			return undefined
@@ -67,7 +69,9 @@ export default class WorkspaceUtils {
 		}
 
 		const path = workspaceDir.join('/**/profiles/**/*.cpuprofile').toString()
-		const profilePaths = globSync(path).map((profilePath) => workspaceDir.pathTo(profilePath).toPlatformString())
+		const profilePaths = globSync(path).map((profilePath) =>
+			workspaceDir.pathTo(profilePath).toPlatformString()
+		)
 		PathUtils.sortFilePathArray(profilePaths)
 		return profilePaths
 	}
@@ -79,27 +83,36 @@ export default class WorkspaceUtils {
 			return []
 		}
 
-		const result = globSync(workspaceDir.toString(), { ignore: ['**/node_modules/**'] })
+		const result = globSync(workspaceDir.toString(), {
+			ignore: ['**/node_modules/**']
+		})
 		PathUtils.sortFilePathArray(result)
 		return result.map((reportPath) => new UnifiedPath(reportPath))
 	}
 
-	static getFullFilePath(config: ProfilerConfig, filePath: UnifiedPath | string): UnifiedPath {
+	static getFullFilePath(
+		config: ProfilerConfig,
+		filePath: UnifiedPath | string
+	): UnifiedPath {
 		return config.getRootDir().join(filePath)
 	}
 
-	static getRelativeFilePath(config: ProfilerConfig, filePath: UnifiedPath | string): UnifiedPath {
+	static getRelativeFilePath(
+		config: ProfilerConfig,
+		filePath: UnifiedPath | string
+	): UnifiedPath {
 		return config.getRootDir().pathTo(filePath)
 	}
 
 	static resolveConfigFromFile(configPath: UnifiedPath): {
-		config?: ProfilerConfig,
+		config?: ProfilerConfig
 		error?: string
 	} {
 		try {
 			return {
 				config: ProfilerConfig.resolveFromFile(configPath)
 			}
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (e: any) {
 			return {
 				error: e.message
@@ -107,19 +120,24 @@ export default class WorkspaceUtils {
 		}
 	}
 
-	static autoResolveConfigFromReportPath(reportPath: UnifiedPath): ProfilerConfig | null {
+	static autoResolveConfigFromReportPath(
+		reportPath: UnifiedPath
+	): ProfilerConfig | null {
 		try {
 			return ProfilerConfig.autoResolveFromPath(reportPath.dirName())
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		} catch (e) {
 			vscode.window.showErrorMessage(
 				`Error while loading the .oaklean config file for the report: ${reportPath.basename()}.` +
-				' Please make sure that the config file is present and has the correct format.'
+					' Please make sure that the config file is present and has the correct format.'
 			)
 			return null
 		}
 	}
 
-	static getProjectReportPathsForConfig(config: ProfilerConfig): string[] | undefined {
+	static getProjectReportPathsForConfig(
+		config: ProfilerConfig
+	): string[] | undefined {
 		const workSpaceDir = WorkspaceUtils.getWorkspaceDir()
 		if (!workSpaceDir) {
 			return undefined
@@ -128,7 +146,9 @@ export default class WorkspaceUtils {
 		const outDir = config.getOutDir()
 		const outHistoryDir = config.getOutHistoryDir()
 		const outDirReportPaths = globSync(outDir.join('**', '*.oak').toString())
-		const historyOutDirPaths = globSync(outHistoryDir.join('**', '*.oak').toString())
+		const historyOutDirPaths = globSync(
+			outHistoryDir.join('**', '*.oak').toString()
+		)
 		const allPaths = [...outDirReportPaths, ...historyOutDirPaths]
 		return allPaths
 	}

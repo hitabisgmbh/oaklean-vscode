@@ -8,6 +8,7 @@ import {
 	ReportViewProtocol_ParentToChild
 } from '../../protocols/ReportViewProtocol'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const acquireVsCodeApi: any
 
 export const vscode = acquireVsCodeApi()

@@ -2,9 +2,9 @@ import { ExtendedSensorValueType } from './sensorValues'
 import { ValueRepresentationType } from './valueRepresentationTypes'
 
 export type SensorValueRepresentation = {
-	selectedSensorValueType: ExtendedSensorValueType,
-	selectedValueRepresentation: ValueRepresentationType,
-	formula: string | undefined,
+	selectedSensorValueType: ExtendedSensorValueType
+	selectedValueRepresentation: ValueRepresentationType
+	formula: string | undefined
 }
 
 export function defaultSensorValueRepresentation(): SensorValueRepresentation {

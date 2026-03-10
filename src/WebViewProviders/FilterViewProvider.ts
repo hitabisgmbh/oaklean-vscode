@@ -22,7 +22,9 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 	) {
 		this._container = container
 		this.subscriptions = [
-			this._container.eventHandler.onWebpackRecompile(this.hardRefresh.bind(this))
+			this._container.eventHandler.onWebpackRecompile(
+				this.hardRefresh.bind(this)
+			)
 		]
 	}
 
@@ -65,15 +67,19 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 	receiveMessageFromWebview(message: FilterViewProtocol_ChildToParent) {
 		if (message.command === FilterViewProtocolCommands.viewLoaded) {
 			this.refresh()
-			}
+		}
 
-		if (message.command === FilterViewProtocolCommands.includedFilterPathEdited) {
+		if (
+			message.command === FilterViewProtocolCommands.includedFilterPathEdited
+		) {
 			this._container.storage.storeWorkspace(
 				'includedFilterPath',
 				message.includedFilterPath
 			)
 		}
-		if (message.command === FilterViewProtocolCommands.excludedFilterPathEdited) {
+		if (
+			message.command === FilterViewProtocolCommands.excludedFilterPathEdited
+		) {
 			this._container.storage.storeWorkspace(
 				'excludedFilterPath',
 				message.excludedFilterPath
@@ -81,11 +87,7 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
-	public resolveWebviewView(
-		webviewView: vscode.WebviewView,
-		context: vscode.WebviewViewResolveContext,
-		_token: vscode.CancellationToken
-	) {
+	public resolveWebviewView(webviewView: vscode.WebviewView) {
 		this._view = webviewView
 
 		webviewView.webview.options = {
@@ -103,7 +105,7 @@ export class FilterViewProvider implements vscode.WebviewViewProvider {
 				this.receiveMessageFromWebview.bind(this)
 			)
 		)
-		
+
 		webviewView.webview.html = this._getHtmlForWebview(
 			webviewView.webview,
 			this._extensionUri

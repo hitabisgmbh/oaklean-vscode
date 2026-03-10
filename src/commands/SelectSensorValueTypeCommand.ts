@@ -10,30 +10,38 @@ import { checkFormulaValidity } from '../helper/FormulaHelper'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
 import QuickPick, { QuickPickOptions } from '../components/QuickPick'
 
-
-const QuickPickOptions_SensorValueTypes = new Map<ExtendedSensorValueType, string>(
-	([...Object.keys(SensorValueTypeNames)] as ExtendedSensorValueType[])
-		.map((id: ExtendedSensorValueType) => {
-			const label = id === 'customFormula' ? 'Add custom formula' : SensorValueTypeNames[id]
+const QuickPickOptions_SensorValueTypes = new Map<
+	ExtendedSensorValueType,
+	string
+>(
+	([...Object.keys(SensorValueTypeNames)] as ExtendedSensorValueType[]).map(
+		(id: ExtendedSensorValueType) => {
+			const label =
+				id === 'customFormula' ? 'Add custom formula' : SensorValueTypeNames[id]
 			return [id, label]
-		})
+		}
+	)
 )
 
-function changeSensorValueType(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider,
+function changeSensorValueType(
+	container: Container,
+	treeDataProvider: SourceFileMetaDataTreeProvider,
 	selectedSensorValueTypeID: ExtendedSensorValueType,
-	formula: string | undefined) {
-
-	const sensorValueRepresentation = container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+	formula: string | undefined
+) {
+	const sensorValueRepresentation = container.storage.getWorkspace(
+		'sensorValueRepresentation'
+	) as SensorValueRepresentation
 	container.storage.storeWorkspace('sensorValueRepresentation', {
 		selectedSensorValueType: selectedSensorValueTypeID,
-		selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation,
+		selectedValueRepresentation:
+			sensorValueRepresentation.selectedValueRepresentation,
 		formula
 	})
 }
 
 export enum CommandIdentifiers {
-	selectedSensorValueType = 'selectedSensorValueType',
-
+	selectedSensorValueType = 'selectedSensorValueType'
 }
 
 export default class SelectValueRepresentationCommand extends BaseCommand {
@@ -41,7 +49,10 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 	container: Container
 	private _treeDataProvider: SourceFileMetaDataTreeProvider
 
-	constructor(container: Container, treeDataProvider: SourceFileMetaDataTreeProvider) {
+	constructor(
+		container: Container,
+		treeDataProvider: SourceFileMetaDataTreeProvider
+	) {
 		super()
 		this.container = container
 		this._treeDataProvider = treeDataProvider
@@ -62,32 +73,49 @@ export default class SelectValueRepresentationCommand extends BaseCommand {
 			quickPickOptions.set(option[1], {
 				selectionCallback: () => {
 					if (option[0] === 'customFormula') {
-						const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+						const sensorValueRepresentation =
+							this.container.storage.getWorkspace(
+								'sensorValueRepresentation'
+							) as SensorValueRepresentation
 
 						const formula = sensorValueRepresentation.formula
-						vscode.window.showInputBox({
-							prompt: 'Enter a formula',
-							placeHolder: 'e.g., aggregatedCPUTime/profilerHits',
-							value: formula
-						}).then((formula: string | undefined) => {
-							if (formula) {
-								if (!checkFormulaValidity(formula)) {
-									return
+						vscode.window
+							.showInputBox({
+								prompt: 'Enter a formula',
+								placeHolder: 'e.g., aggregatedCPUTime/profilerHits',
+								value: formula
+							})
+							.then((formula: string | undefined) => {
+								if (formula) {
+									if (!checkFormulaValidity(formula)) {
+										return
+									}
+									changeSensorValueType(
+										this.container,
+										this._treeDataProvider,
+										option[0],
+										formula
+									)
 								}
-								changeSensorValueType(this.container, this._treeDataProvider,
-									option[0], formula)
-							}
-						})
+							})
 					} else if (option[0]) {
-						changeSensorValueType(this.container, this._treeDataProvider,
-							option[0], undefined)
+						changeSensorValueType(
+							this.container,
+							this._treeDataProvider,
+							option[0],
+							undefined
+						)
 					}
 				}
 			})
 		}
-		const currentSensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+		const currentSensorValueRepresentation =
+			this.container.storage.getWorkspace(
+				'sensorValueRepresentation'
+			) as SensorValueRepresentation
 		const currentlySelectedLabel = QuickPickOptions_SensorValueTypes.get(
-			currentSensorValueRepresentation.selectedSensorValueType)
+			currentSensorValueRepresentation.selectedSensorValueType
+		)
 		const quickPick = new QuickPick(quickPickOptions)
 		if (currentlySelectedLabel) {
 			quickPick.setCurrentItem(currentlySelectedLabel)

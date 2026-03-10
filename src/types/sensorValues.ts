@@ -1,4 +1,4 @@
-import { ISensorValues } from '@oaklean/profiler-core'
+import { ISensorValues } from '@oaklean/profiler-core/dist/src/types'
 
 export type SensorValueType = keyof Required<ISensorValues>
 
@@ -11,10 +11,8 @@ export enum SensorUnits {
 }
 
 type SensorValueToNameMap = {
-	[key in ExtendedSensorValueType]: string;
-};
-
-
+	[key in ExtendedSensorValueType]: string
+}
 
 export const SensorValueTypeNames: SensorValueToNameMap = {
 	profilerHits: 'profilerHits',
@@ -40,17 +38,18 @@ export const SensorValueTypeNames: SensorValueToNameMap = {
 	customFormula: 'customFormula'
 }
 
-
 export type ExtendedSensorValueType = SensorValueType | 'customFormula'
 
-export const ExtendedSensorValueTypeNames: SensorValueToNameMap & { customFormula: string } = {
+export const ExtendedSensorValueTypeNames: SensorValueToNameMap & {
+	customFormula: string
+} = {
 	...SensorValueTypeNames,
 	customFormula: 'customFormula'
 }
 
 type SensorValueToUnitMap = {
-	[key in ExtendedSensorValueType]: SensorUnits;
-};
+	[key in ExtendedSensorValueType]: SensorUnits
+}
 
 export const UnitPerSensorValue: SensorValueToUnitMap = {
 	profilerHits: SensorUnits.flat,
@@ -76,6 +75,10 @@ export const UnitPerSensorValue: SensorValueToUnitMap = {
 	customFormula: SensorUnits.flat
 }
 
-export const EnergyConsumptionSensorValueTypes = Object.keys(UnitPerSensorValue).filter(
-	(key) => UnitPerSensorValue[key as ExtendedSensorValueType] === SensorUnits.milliJoule
+export const EnergyConsumptionSensorValueTypes = Object.keys(
+	UnitPerSensorValue
+).filter(
+	(key) =>
+		UnitPerSensorValue[key as ExtendedSensorValueType] ===
+		SensorUnits.milliJoule
 ) as ExtendedSensorValueType[]

@@ -1,18 +1,23 @@
 import * as fs from 'fs'
 
-import { jsonc } from 'jsonc'
+import * as jsoncParser from 'jsonc-parser'
 import { UnifiedPath } from '@oaklean/profiler-core'
 import vscode, { Disposable } from 'vscode'
 
 import WorkspaceUtils from './WorkspaceUtils'
 
 import { DEFAULT_PROFILE, Profile } from '../types/profile'
-import { ERROR_EMPTY_NAME, ERROR_FAILED_TO_SAVE_PROFILE, ERROR_NO_PROFILE, ERROR_NO_PROFILE_FOUND, ERROR_SAME_NAME } from '../constants/infoMessages'
+import {
+	ERROR_EMPTY_NAME,
+	ERROR_FAILED_TO_SAVE_PROFILE,
+	ERROR_NO_PROFILE,
+	ERROR_NO_PROFILE_FOUND,
+	ERROR_SAME_NAME
+} from '../constants/infoMessages'
 import { Container } from '../container'
 import { PROFILE_IDENTIFIER } from '../constants/webview'
 import { ProfileChangeEvent } from '../helper/EventHandler'
 import { SensorValueRepresentation } from '../types/sensorValueRepresentation'
-
 
 export default class ProfileHelper implements Disposable {
 	private readonly _disposable: Disposable
@@ -35,10 +40,13 @@ export default class ProfileHelper implements Disposable {
 	}
 
 	private profileChanges(event: ProfileChangeEvent) {
-		const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
+		const sensorValueRepresentation = this.container.storage.getWorkspace(
+			'sensorValueRepresentation'
+		) as SensorValueRepresentation
 		this.container.storage.storeWorkspace('sensorValueRepresentation', {
 			selectedSensorValueType: event.profile.measurement,
-			selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation,
+			selectedValueRepresentation:
+				sensorValueRepresentation.selectedValueRepresentation,
 			formula: event.profile.formula
 		})
 	}
@@ -51,7 +59,7 @@ export default class ProfileHelper implements Disposable {
 		return workspaceFolder?.join('.vscode', 'settings.json')
 	}
 	readProfiles(): {
-		profiles: Profile[],
+		profiles: Profile[]
 		error?: string
 	} {
 		const settingsPath = this.returnSettingsPath()
@@ -59,7 +67,27 @@ export default class ProfileHelper implements Disposable {
 			if (fs.existsSync(settingsPath.toPlatformString())) {
 				const content = fs.readFileSync(settingsPath.toPlatformString(), 'utf8')
 				try {
-					const settings = jsonc.parse(content)
+					// Use jsonc-parser which handles comments and trailing commas
+					const errors: jsoncParser.ParseError[] = []
+					const settings = jsoncParser.parse(content, errors, {
+						allowTrailingComma: true,
+						allowEmptyContent: true
+					})
+
+					// Check for parsing errors
+					if (errors.length > 0) {
+						const errorMessages = errors
+							.map(
+								(err) =>
+									`Line ${err.offset}: ${jsoncParser.printParseErrorCode(err.error)}`
+							)
+							.join(', ')
+						return {
+							profiles: [],
+							error: `Failed to parse settings file: ${settingsPath}. Errors: ${errorMessages}`
+						}
+					}
+
 					const profiles: Profile[] = settings[PROFILE_IDENTIFIER] || []
 					return {
 						profiles
@@ -67,7 +95,7 @@ export default class ProfileHelper implements Disposable {
 				} catch (error) {
 					return {
 						profiles: [],
-						error: `Failed to parse settings file: ${settingsPath}, check if the file is valid JSON.`
+						error: `Failed to parse settings file: ${settingsPath}, check if the file is valid JSON. ${error instanceof Error ? error.message : ''}`
 					}
 				}
 			}
@@ -82,7 +110,7 @@ export default class ProfileHelper implements Disposable {
 			throw new Error(ERROR_EMPTY_NAME)
 		}
 		const profiles = this.profiles
-		if (profiles.some(p => p.name === profile.name)) {
+		if (profiles.some((p) => p.name === profile.name)) {
 			throw new Error(ERROR_SAME_NAME)
 		}
 		profiles.push(profile)
@@ -91,7 +119,7 @@ export default class ProfileHelper implements Disposable {
 	}
 	updateProfile(updatedProfile: Profile) {
 		const profiles = this.profiles
-		const index = profiles.findIndex(p => p.name === updatedProfile.name)
+		const index = profiles.findIndex((p) => p.name === updatedProfile.name)
 		if (index === -1) {
 			if (updatedProfile.name !== DEFAULT_PROFILE.name) {
 				vscode.window.showErrorMessage(ERROR_NO_PROFILE_FOUND)
@@ -103,7 +131,7 @@ export default class ProfileHelper implements Disposable {
 	}
 	deleteProfile(profileName: string) {
 		const profiles = this.profiles
-		const filteredProfiles = profiles.filter(p => p.name !== profileName)
+		const filteredProfiles = profiles.filter((p) => p.name !== profileName)
 		if (filteredProfiles.length === profiles.length) {
 			vscode.window.showErrorMessage(ERROR_NO_PROFILE)
 			return
@@ -114,19 +142,40 @@ export default class ProfileHelper implements Disposable {
 		try {
 			const settingsPath = this.returnSettingsPath()
 			if (settingsPath !== undefined) {
-				let settings: any = {}
 				if (!fs.existsSync(settingsPath.dirName().toPlatformString())) {
-					fs.mkdirSync(settingsPath.dirName().toPlatformString(), { recursive: true })
+					fs.mkdirSync(settingsPath.dirName().toPlatformString(), {
+						recursive: true
+					})
 				}
+
+				let content = ''
 				if (fs.existsSync(settingsPath.toPlatformString())) {
-					settings = jsonc.parse(fs.readFileSync(settingsPath.toPlatformString(), 'utf8').toString())
+					content = fs.readFileSync(settingsPath.toPlatformString(), 'utf8')
+				} else {
+					// Create new file with empty JSON object
+					content = '{}'
 				}
-				settings[PROFILE_IDENTIFIER] = profiles
-				fs.writeFileSync(settingsPath.toPlatformString(), jsonc.stringify(settings, undefined, 2))
+
+				// Use modify to preserve comments and formatting
+				const edits = jsoncParser.modify(
+					content,
+					[PROFILE_IDENTIFIER],
+					profiles,
+					{
+						formattingOptions: {
+							tabSize: 2,
+							insertSpaces: false,
+							eol: '\n'
+						}
+					}
+				)
+
+				const updatedContent = jsoncParser.applyEdits(content, edits)
+				fs.writeFileSync(settingsPath.toPlatformString(), updatedContent)
 			}
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		} catch (error) {
 			vscode.window.showErrorMessage(ERROR_FAILED_TO_SAVE_PROFILE)
 		}
 	}
-
 }

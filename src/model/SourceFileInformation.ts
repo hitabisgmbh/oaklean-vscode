@@ -13,11 +13,9 @@ import {
 	SourceNodeMetaDataType
 } from '@oaklean/profiler-core'
 
-import WorkspaceUtils from '../helper/WorkspaceUtils'
-
 const VALID_EXTENSIONS_TO_PARSE = ['.js', '.jsx', '.ts', '.tsx']
 
-type SourceNodeMetaDataDirect = SourceNodeMetaData<
+export type SourceNodeMetaDataDirect = SourceNodeMetaData<
 	| SourceNodeMetaDataType.SourceNode
 	| SourceNodeMetaDataType.LangInternalSourceNode
 >
@@ -37,7 +35,7 @@ export class SourceFileInformation {
 	private _sourceNodeMetaDataIndex:
 		| {
 				byLine: Map<number, SourceNodeMetaDataDirect[]>
-		}
+		  }
 		| undefined
 
 	constructor(
@@ -53,10 +51,7 @@ export class SourceFileInformation {
 		this._absoluteFilePath = new UnifiedPath(document.fileName)
 	}
 
-	update(
-		reportPath: UnifiedPath,
-		projectReport: ProjectReport,
-	) {
+	update(reportPath: UnifiedPath, projectReport: ProjectReport) {
 		this._reportPath = reportPath
 		this._projectReport = projectReport
 		this.invalidate()

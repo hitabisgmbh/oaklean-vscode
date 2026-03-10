@@ -47,13 +47,19 @@ export default class SelectReport extends BaseCommand {
 		const placeholder = `Select Project Report (${quickPickOptions.size} Report${quickPickOptions.size > 1 ? 's' : ''} Available)`
 		const quickPick = new QuickPick(quickPickOptions, placeholder)
 		if (quickPickOptions.size === 0) {
-			vscode.window.showInformationMessage('Oaklean: No Project Reports Available')
+			vscode.window.showInformationMessage(
+				'Oaklean: No Project Reports Available'
+			)
 			return quickPick
 		}
 
-		const currentReportPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
+		const currentReportPath = this.container.storage.getWorkspace(
+			'reportPath'
+		) as UnifiedPath
 		if (currentReportPath && workspaceDir) {
-			quickPick.setCurrentItem(workspaceDir.pathTo(currentReportPath).toString())
+			quickPick.setCurrentItem(
+				workspaceDir.pathTo(currentReportPath).toString()
+			)
 		}
 		quickPick.show()
 		return quickPick

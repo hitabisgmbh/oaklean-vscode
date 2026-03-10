@@ -1,14 +1,13 @@
 import * as fs from 'fs'
 
-import vscode,
-{
+import vscode, {
 	Disposable,
 	TextEditor,
 	TextDocument,
 	EventEmitter,
 	Event,
 	window,
-	TextDocumentChangeEvent,
+	TextDocumentChangeEvent
 } from 'vscode'
 import { TimeHelper, UnifiedPath } from '@oaklean/profiler-core'
 
@@ -93,16 +92,19 @@ export default class EventHandler implements Disposable {
 	private _reportPathChange = new EventEmitter<ReportPathChangeEvent>()
 	private _selectedSensorValueRepresentationChangeEvent =
 		new EventEmitter<SelectedSensorValueRepresentationChangeEvent>()
-	private _toggleLineAnnotationsChangeEvent = new EventEmitter<ToggleLineAnnotationsChangeEvent>()
+	private _toggleLineAnnotationsChangeEvent =
+		new EventEmitter<ToggleLineAnnotationsChangeEvent>()
 	private _reportLoaded = new EventEmitter<ReportLoadedEvent>()
 
-	private _textEditorsChangeVisibility = new EventEmitter<TextEditorsChangeVisibilityEvent>()
+	private _textEditorsChangeVisibility =
+		new EventEmitter<TextEditorsChangeVisibilityEvent>()
 	private _textEditorChange = new EventEmitter<TextEditorChangeEvent>()
 	private _textDocumentOpen = new EventEmitter<TextDocumentOpenEvent>()
 	private _textDocumentClose = new EventEmitter<TextDocumentCloseEvent>()
 	private _textDocumentChange = new EventEmitter<TextDocumentChangeEvent>()
 	private _textDocumentDidSave = new EventEmitter<vscode.TextDocument>()
-	private _sourceFileInformationChanged = new EventEmitter<SourceFileInformationChangeEvent>()
+	private _sourceFileInformationChanged =
+		new EventEmitter<SourceFileInformationChangeEvent>()
 	private _filterPathChange = new EventEmitter<FilterPathChangeEvent>()
 	private _sortDirectionChange = new EventEmitter<SortDirectionChangeEvent>()
 	private _profileChange = new EventEmitter<ProfileChangeEvent>()
@@ -113,16 +115,27 @@ export default class EventHandler implements Disposable {
 		this.container = container
 		this._disposable = Disposable.from(
 			this.container.storage.onDidChange(this.storeChanged.bind(this)),
-			vscode.workspace.onDidOpenTextDocument(this.fireTextDocumentOpen.bind(this)),
-			vscode.workspace.onDidCloseTextDocument(this.fireTextDocumentClose.bind(this)),
-			vscode.workspace.onDidSaveTextDocument(this.fireTextDocumentDidSave.bind(this)),
-			vscode.workspace.onDidChangeTextDocument(this.fireTextDocumentChange.bind(this)),
-			vscode.window.onDidChangeVisibleTextEditors(this.fireTextEditorsChangeVisibility.bind(this)),
-			vscode.window.onDidChangeActiveTextEditor(this.fireTextEditorChange.bind(this)),
+			vscode.workspace.onDidOpenTextDocument(
+				this.fireTextDocumentOpen.bind(this)
+			),
+			vscode.workspace.onDidCloseTextDocument(
+				this.fireTextDocumentClose.bind(this)
+			),
+			vscode.workspace.onDidSaveTextDocument(
+				this.fireTextDocumentDidSave.bind(this)
+			),
+			vscode.workspace.onDidChangeTextDocument(
+				this.fireTextDocumentChange.bind(this)
+			),
+			vscode.window.onDidChangeVisibleTextEditors(
+				this.fireTextEditorsChangeVisibility.bind(this)
+			),
+			vscode.window.onDidChangeActiveTextEditor(
+				this.fireTextEditorChange.bind(this)
+			),
 			this.onWebpackRecompileWatcher()
 		)
 	}
-
 
 	/*
 	 * Watches the webpack webview directory for changes and fires a recompile event
@@ -163,7 +176,9 @@ export default class EventHandler implements Disposable {
 	}
 
 	fireInitialEvents() {
-		const reportPath: UnifiedPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
+		const reportPath: UnifiedPath = this.container.storage.getWorkspace(
+			'reportPath'
+		) as UnifiedPath
 		if (reportPath && fs.existsSync(reportPath.toString())) {
 			this.fireReportPathChange(reportPath)
 		} else {
@@ -188,44 +203,64 @@ export default class EventHandler implements Disposable {
 			return
 		}
 		switch (key) {
-			case 'reportPath': {
-				const reportPath = this.container.storage.getWorkspace('reportPath') as UnifiedPath
-				if (reportPath) {
-					this.fireReportPathChange(reportPath)
+			case 'reportPath':
+				{
+					const reportPath = this.container.storage.getWorkspace(
+						'reportPath'
+					) as UnifiedPath
+					if (reportPath) {
+						this.fireReportPathChange(reportPath)
+					}
 				}
-			}
 				break
-			case 'sensorValueRepresentation': {
-				const sensorValueRepresentation = this.container.storage.getWorkspace('sensorValueRepresentation') as SensorValueRepresentation
-				if (sensorValueRepresentation.selectedSensorValueType
-					&& sensorValueRepresentation.selectedValueRepresentation) {
-					this.fireSelectedSensorValueTypeChange(sensorValueRepresentation)
+			case 'sensorValueRepresentation':
+				{
+					const sensorValueRepresentation = this.container.storage.getWorkspace(
+						'sensorValueRepresentation'
+					) as SensorValueRepresentation
+					if (
+						sensorValueRepresentation.selectedSensorValueType &&
+						sensorValueRepresentation.selectedValueRepresentation
+					) {
+						this.fireSelectedSensorValueTypeChange(sensorValueRepresentation)
+					}
 				}
-			}
 				break
-			case 'enableLineAnnotations': {
-				const enableLineAnnotations = this.container.storage.getWorkspace('enableLineAnnotations') as boolean
-				this.fireToggleLineAnnotationsChange(enableLineAnnotations)
-			}
+			case 'enableLineAnnotations':
+				{
+					const enableLineAnnotations = this.container.storage.getWorkspace(
+						'enableLineAnnotations'
+					) as boolean
+					this.fireToggleLineAnnotationsChange(enableLineAnnotations)
+				}
 				break
 			case 'includedFilterPath':
-			case 'excludedFilterPath': {
-				const includedFilterPath = this.container.storage.getWorkspace('includedFilterPath') as string
-				const excludedFilterPath = this.container.storage.getWorkspace('excludedFilterPath') as string
-				this.fireFilterPathChange({ includedFilterPath, excludedFilterPath })
-			}
-				break
-			case 'sortDirection': {
-				const sortDirection = this.container.storage.getWorkspace('sortDirection') as SortDirection
-				this.fireSortDirectionChange(sortDirection)
-			}
-				break
-			case 'profile': {
-				const profile = this.container.profileHelper.currentProfile
-				if (profile) {
-					this.fireProfileChange(profile)
+			case 'excludedFilterPath':
+				{
+					const includedFilterPath = this.container.storage.getWorkspace(
+						'includedFilterPath'
+					) as string
+					const excludedFilterPath = this.container.storage.getWorkspace(
+						'excludedFilterPath'
+					) as string
+					this.fireFilterPathChange({ includedFilterPath, excludedFilterPath })
 				}
-			}
+				break
+			case 'sortDirection':
+				{
+					const sortDirection = this.container.storage.getWorkspace(
+						'sortDirection'
+					) as SortDirection
+					this.fireSortDirectionChange(sortDirection)
+				}
+				break
+			case 'profile':
+				{
+					const profile = this.container.profileHelper.currentProfile
+					if (profile) {
+						this.fireProfileChange(profile)
+					}
+				}
 				break
 			default:
 				break
@@ -248,15 +283,20 @@ export default class EventHandler implements Disposable {
 		return this._selectedSensorValueRepresentationChangeEvent.event
 	}
 
-
-	fireSelectedSensorValueTypeChange(sensorValueRepresentation: SensorValueRepresentation) {
+	fireSelectedSensorValueTypeChange(
+		sensorValueRepresentation: SensorValueRepresentation
+	) {
 		console.debug('EventFire: EventHandler.fireSelectedSensorValueTypeChange', {
 			timestamp: TimeHelper.getCurrentHighResolutionTime(),
-			selectedSensorValueType: sensorValueRepresentation.selectedSensorValueType,
-			selectedValueRepresentation: sensorValueRepresentation.selectedValueRepresentation,
+			selectedSensorValueType:
+				sensorValueRepresentation.selectedSensorValueType,
+			selectedValueRepresentation:
+				sensorValueRepresentation.selectedValueRepresentation,
 			formula: sensorValueRepresentation.formula
 		})
-		this._selectedSensorValueRepresentationChangeEvent.fire({ sensorValueRepresentation })
+		this._selectedSensorValueRepresentationChangeEvent.fire({
+			sensorValueRepresentation
+		})
 	}
 
 	get onToggleLineAnnotationsChange(): Event<ToggleLineAnnotationsChangeEvent> {
@@ -289,7 +329,7 @@ export default class EventHandler implements Disposable {
 
 	fireReportLoaded(type: 'ProjectReport') {
 		console.debug('EventFire: EventHandler.fireReportLoaded', {
-			timestamp: TimeHelper.getCurrentHighResolutionTime(),
+			timestamp: TimeHelper.getCurrentHighResolutionTime()
 		})
 		this._reportLoaded.fire({ type: type })
 	}
@@ -404,18 +444,19 @@ export default class EventHandler implements Disposable {
 	}
 	get onTextDocumentDidSave(): Event<vscode.TextDocument> {
 		return this._textDocumentDidSave.event
-}
-// 
+	}
+	//
 	get onScopeChange(): Event<ScopeChangeEvent> {
 		return this._scopeChange.event
 	}
 
 	fireTextDocumentDidSave(document: vscode.TextDocument) {
-			console.debug('EventFire: EventHandler.fireTextDocumentDidSave', {
-					timestamp: TimeHelper.getCurrentHighResolutionTime()
-			})
-			this._textDocumentDidSave.fire(document)
+		console.debug('EventFire: EventHandler.fireTextDocumentDidSave', {
+			timestamp: TimeHelper.getCurrentHighResolutionTime()
+		})
+		this._textDocumentDidSave.fire(document)
 	}
+
 	// Fires when the user changes scope in the code view.
 	fireScopeChange(scopeChangeEvent: ScopeChangeEvent) {
 		console.debug('EventFire: EventHandler.fireScopeChange', {
@@ -424,5 +465,4 @@ export default class EventHandler implements Disposable {
 		})
 		this._scopeChange.fire(scopeChangeEvent)
 	}
-
 }

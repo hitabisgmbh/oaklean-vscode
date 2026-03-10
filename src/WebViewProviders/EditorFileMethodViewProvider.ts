@@ -22,7 +22,8 @@ import { SourceFileMethodTree } from '../model/SourceFileMethodTree'
 import OpenSourceLocationCommand from '../commands/OpenSourceLocationCommand'
 import { OpenSourceLocationCommandIdentifiers } from '../types/commands/OpenSourceLocationCommand'
 export class EditorFileMethodViewProvider
-	implements vscode.WebviewViewProvider {
+	implements vscode.WebviewViewProvider
+{
 	private subscriptions: vscode.Disposable[] = []
 
 	public static readonly viewType = 'editorFileMethodView'
@@ -56,9 +57,7 @@ export class EditorFileMethodViewProvider
 		this.subscriptions = []
 	}
 
-	public resolveWebviewView(
-		webviewView: vscode.WebviewView
-	) {
+	public resolveWebviewView(webviewView: vscode.WebviewView) {
 		this._view = webviewView
 		this.subscriptions.push(
 			this._view.onDidChangeVisibility(this.hardRefresh.bind(this)),
@@ -121,24 +120,27 @@ export class EditorFileMethodViewProvider
 							}
 						})
 					}
-				} break
+				}
+				break
 			case EditorFileMethodViewProtocolCommands.initMethods:
 				this.refresh()
 				break
-			case EditorFileMethodViewProtocolCommands.showPathIndex: {
-				if (this.editor === undefined) {
-					return
-				}
-				const sourceFileMetaData = this.getSourceFileMetaData()
-				if (sourceFileMetaData === null) {
-					return
-				}
+			case EditorFileMethodViewProtocolCommands.showPathIndex:
+				{
+					if (this.editor === undefined) {
+						return
+					}
+					const sourceFileMetaData = this.getSourceFileMetaData()
+					if (sourceFileMetaData === null) {
+						return
+					}
 
-				this._container.jsonTextDocumentContentProvider.openFileJsonReadonly(
-					this.editor.document.uri,
-					JSON.stringify(sourceFileMetaData.pathIndex, null, 2)
-				)
-			} break
+					this._container.jsonTextDocumentContentProvider.openFileJsonReadonly(
+						this.editor.document.uri,
+						JSON.stringify(sourceFileMetaData.pathIndex, null, 2)
+					)
+				}
+				break
 			default:
 				break
 		}
@@ -185,7 +187,6 @@ export class EditorFileMethodViewProvider
 			})
 			return
 		}
-		
 		const sourceFileMethodTree =
 			SourceFileMethodTree.fromSourceFileMetaData(sourceFileMetaData)
 
