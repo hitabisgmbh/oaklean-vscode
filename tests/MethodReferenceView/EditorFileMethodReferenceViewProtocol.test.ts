@@ -1,8 +1,4 @@
-import {
-	describe,
-	expect,
-	it
-} from '@jest/globals'
+import { describe, expect, it } from '@jest/globals'
 
 import {
 	EditorFileMethodReferenceViewProtocolCommands,
@@ -45,14 +41,16 @@ describe('EditorFileMethodReferenceViewProtocol guards', () => {
 	it('accepts valid parent-to-child updateFirstFunction and rejects broken entries', () => {
 		expect(
 			isEditorFileMethodReferenceViewProtocolParentToChild({
-				command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+				command:
+					EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 				functionName: 'fn',
 				intern: [{ name: 'entry', cpuTime: 1 }]
 			})
 		).toBe(true)
 		expect(
 			isEditorFileMethodReferenceViewProtocolParentToChild({
-				command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+				command:
+					EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 				functionName: 'fn',
 				intern: [{ cpuTime: 1 }]
 			})

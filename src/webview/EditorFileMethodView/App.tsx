@@ -86,8 +86,7 @@ export function App() {
 								codiconName={'codicon-file-text highlighted'}
 								onClick={() => {
 									postToProvider({
-										command:
-											EditorFileMethodViewProtocolCommands.showPathIndex
+										command: EditorFileMethodViewProtocolCommands.showPathIndex
 									})
 								}}
 								title="Show index of the source file"

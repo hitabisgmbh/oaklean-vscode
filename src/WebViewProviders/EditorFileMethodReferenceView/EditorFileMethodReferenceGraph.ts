@@ -71,13 +71,12 @@ function isSourceNodeMapLike(value: unknown): value is SourceNodeMapLike {
 	if (!isRecord(value)) {
 		return false
 	}
-	return (
-		typeof value.entries === 'function' &&
-		typeof value.get === 'function'
-	)
+	return typeof value.entries === 'function' && typeof value.get === 'function'
 }
 
-export function isSourceNodeGraphLike(value: unknown): value is SourceNodeGraphLike {
+export function isSourceNodeGraphLike(
+	value: unknown
+): value is SourceNodeGraphLike {
 	if (!isRecord(value)) {
 		return false
 	}
@@ -122,7 +121,8 @@ export function resolveCurrentFunctionGraphNodeID(
 		}
 		if (
 			currentFunctionId !== undefined &&
-			(node.id === currentFunctionId || nodeID.endsWith(`:${currentFunctionId}`))
+			(node.id === currentFunctionId ||
+				nodeID.endsWith(`:${currentFunctionId}`))
 		) {
 			idMatches.push([nodeID, node])
 		}
@@ -195,7 +195,10 @@ export function buildForeignReferences(
 			continue
 		}
 		const callerNode = sourceNodeGraph.sourceNodes.get(callerNodeID)
-		if (!isSourceGraphNodeLike(callerNode) || !isFunctionGraphNode(callerNode)) {
+		if (
+			!isSourceGraphNodeLike(callerNode) ||
+			!isFunctionGraphNode(callerNode)
+		) {
 			continue
 		}
 		const entry = buildReferenceEntry(callerNode, projectReport)
@@ -245,9 +248,8 @@ function isFunctionLikeIdentifier(identifier: string | undefined): boolean {
 			return false
 		}
 		const lastPart = parts[parts.length - 1]
-		const parsedType = SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(
-			lastPart
-		)?.type
+		const parsedType =
+			SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(lastPart)?.type
 		if (parsedType === undefined || parsedType === null) {
 			return false
 		}
@@ -270,7 +272,9 @@ function pickGraphNodeMatch(
 	// Path match first to avoid selecting same identifier from a different file.
 	if (relativeWorkspacePath !== undefined) {
 		for (const [nodeID, node] of candidates) {
-			if (node.sourceNodeIndex?.pathIndex?.identifier === relativeWorkspacePath) {
+			if (
+				node.sourceNodeIndex?.pathIndex?.identifier === relativeWorkspacePath
+			) {
 				if (
 					identifier === undefined ||
 					graphNodeMatchesIdentifier(node, identifier)

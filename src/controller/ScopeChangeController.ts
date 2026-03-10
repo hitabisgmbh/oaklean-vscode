@@ -97,11 +97,15 @@ function isProgramStructureTreeLike(
 	return typeof value.identifierNodeBySourceLocation === 'function'
 }
 
-function isSourceNodeMetaDataLike(value: unknown): value is SourceNodeMetaDataLike {
+function isSourceNodeMetaDataLike(
+	value: unknown
+): value is SourceNodeMetaDataLike {
 	return isRecord(value)
 }
 
-function isSourceFileMetaDataLike(value: unknown): value is SourceFileMetaDataLike {
+function isSourceFileMetaDataLike(
+	value: unknown
+): value is SourceFileMetaDataLike {
 	if (!isRecord(value)) {
 		return false
 	}
@@ -157,10 +161,16 @@ export default class ScopeChangeController implements Disposable {
 	constructor(container: Container) {
 		this.container = container
 		this._disposable = Disposable.from(
-			this.container.eventHandler.onTextEditorChange(this.onTextEditorChange.bind(this)),
-			this.container.eventHandler.onSourceFileInformationChange(this.onSourceFileInformationChange.bind(this)),
+			this.container.eventHandler.onTextEditorChange(
+				this.onTextEditorChange.bind(this)
+			),
+			this.container.eventHandler.onSourceFileInformationChange(
+				this.onSourceFileInformationChange.bind(this)
+			),
 			this.container.eventHandler.onReportLoaded(this.refresh.bind(this)),
-			vscode.window.onDidChangeTextEditorSelection(this.onSelectionChange.bind(this))
+			vscode.window.onDidChangeTextEditorSelection(
+				this.onSelectionChange.bind(this)
+			)
 		)
 		this._activeEditor = vscode.window.activeTextEditor
 	}
@@ -174,7 +184,9 @@ export default class ScopeChangeController implements Disposable {
 		this.refresh()
 	}
 
-	private onSourceFileInformationChange(event: { absolutePath: UnifiedPath }): void {
+	private onSourceFileInformationChange(event: {
+		absolutePath: UnifiedPath
+	}): void {
 		if (
 			this._activeEditor !== undefined &&
 			this._activeEditor.document.fileName === event.absolutePath.toString()
@@ -183,7 +195,9 @@ export default class ScopeChangeController implements Disposable {
 		}
 	}
 
-	private onSelectionChange(event: vscode.TextEditorSelectionChangeEvent): void {
+	private onSelectionChange(
+		event: vscode.TextEditorSelectionChangeEvent
+	): void {
 		if (event.textEditor !== this._activeEditor) {
 			return
 		}
@@ -194,12 +208,20 @@ export default class ScopeChangeController implements Disposable {
 		if (this._activeEditor === undefined) {
 			return
 		}
-		this.refreshScopeFromCursor(this._activeEditor, this._activeEditor.selection.active)
+		this.refreshScopeFromCursor(
+			this._activeEditor,
+			this._activeEditor.selection.active
+		)
 	}
 
-	private refreshScopeFromCursor(editor: TextEditor, position: vscode.Position): void {
+	private refreshScopeFromCursor(
+		editor: TextEditor,
+		position: vscode.Position
+	): void {
 		const document = editor.document
-		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(document.fileName)
+		const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
+			document.fileName
+		)
 
 		if (relativeWorkspacePath === undefined) {
 			return
@@ -326,10 +348,13 @@ export default class ScopeChangeController implements Disposable {
 		while (currentParts.length > 0) {
 			const currentIdentifier = currentParts.join('.')
 			if (measuredIdentifiers.has(currentIdentifier)) {
-				console.debug('ScopeChangeController: matched parent with measurements', {
-					file: relativeWorkspacePath.toString(),
-					identifier: currentIdentifier
-				})
+				console.debug(
+					'ScopeChangeController: matched parent with measurements',
+					{
+						file: relativeWorkspacePath.toString(),
+						identifier: currentIdentifier
+					}
+				)
 				return currentIdentifier
 			}
 			currentParts = currentParts.slice(0, currentParts.length - 1)

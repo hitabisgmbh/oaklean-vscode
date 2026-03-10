@@ -1,13 +1,7 @@
 /** @jest-environment jsdom */
 
 import React, { ReactNode } from 'react'
-import {
-	act,
-	cleanup,
-	fireEvent,
-	render,
-	screen
-} from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import {
 	afterEach,
 	beforeAll,
@@ -18,15 +12,16 @@ import {
 	jest
 } from '@jest/globals'
 
-import {
-	EditorFileMethodReferenceViewProtocolCommands
-} from '../../src/protocols/EditorFileMethodReferenceViewProtocol'
+import { EditorFileMethodReferenceViewProtocolCommands } from '../../src/protocols/EditorFileMethodReferenceViewProtocol'
 import { OpenSourceLocationProtocolCommands } from '../../src/protocols/OpenSourceLocationProtocol'
 
 jest.mock('@vscode/webview-ui-toolkit/react', () => ({
 	// Replace toolkit button with plain button so jsdom tests can click it reliably.
-	VSCodeButton: ({ children, onClick }: {
-		children?: ReactNode,
+	VSCodeButton: ({
+		children,
+		onClick
+	}: {
+		children?: ReactNode
 		onClick?: () => void
 	}) =>
 		React.createElement(
@@ -61,7 +56,8 @@ beforeAll(async () => {
 		}
 	})
 	// Import App only after API mock is attached to avoid initialization failures.
-	const appModule = await import('../../src/webview/EditorFileMethodReferenceView/App')
+	const appModule =
+		await import('../../src/webview/EditorFileMethodReferenceView/App')
 	AppComponent = appModule.App
 })
 
@@ -95,7 +91,8 @@ describe('EditorFileMethodReferenceView App UI', () => {
 			command: EditorFileMethodReferenceViewProtocolCommands.requestFileName
 		})
 		expect(postMessage).toHaveBeenNthCalledWith(2, {
-			command: EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction
+			command:
+				EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction
 		})
 
 		dispatchReferenceMessage({
@@ -110,7 +107,8 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		renderFreshApp()
 
 		dispatchReferenceMessage({
-			command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+			command:
+				EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 			functionName: 'currentFn',
 			intern: [
 				{
@@ -135,7 +133,9 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		const sortLabel = document.querySelector('.reference-toolbar__sort-label')
 		expect(sortLabel?.textContent).toBe('Cpu(T)')
 
-		const sortMetricLabel = screen.getByTitle('Sort entries by Cpu(T), Cpu(E), Ram(E)')
+		const sortMetricLabel = screen.getByTitle(
+			'Sort entries by Cpu(T), Cpu(E), Ram(E)'
+		)
 		fireEvent.click(sortMetricLabel)
 
 		expect(sortLabel?.textContent).toBe('Cpu(E)')
@@ -149,7 +149,8 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		renderFreshApp()
 
 		dispatchReferenceMessage({
-			command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+			command:
+				EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 			functionName: 'currentFn',
 			intern: [
 				{
@@ -167,7 +168,9 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		expect(initialText.indexOf('entryHigh')).toBeLessThan(
 			initialText.indexOf('entryLow')
 		)
-		const sortDirectionButton = screen.getByTitle('Toggle sort direction (Desc/Asc)')
+		const sortDirectionButton = screen.getByTitle(
+			'Toggle sort direction (Desc/Asc)'
+		)
 		const initialActiveDownIcon = sortDirectionButton.querySelector(
 			'.codicon-arrow-down.reference-toolbar__sort-direction-icon--active'
 		)
@@ -192,7 +195,8 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		renderFreshApp()
 
 		dispatchReferenceMessage({
-			command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+			command:
+				EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 			functionName: 'currentFn',
 			intern: [
 				{
@@ -224,7 +228,8 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		const { postMessage } = renderFreshApp()
 
 		dispatchReferenceMessage({
-			command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+			command:
+				EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 			functionName: 'currentFn',
 			intern: [
 				{
@@ -264,7 +269,8 @@ describe('EditorFileMethodReferenceView App UI', () => {
 		renderFreshApp()
 
 		dispatchReferenceMessage({
-			command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+			command:
+				EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 			functionName: '',
 			intern: [
 				{

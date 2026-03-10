@@ -15,7 +15,9 @@ export type SensorValuesLike = {
 // Minimal source-node index subset required for display + navigation fallback resolution.
 export type SourceNodeIndexLike = {
 	identifier?: SourceNodeIdentifier_string
-	globalIdentifier?: () => { identifier?: SourceNodeIdentifier_string } | undefined
+	globalIdentifier?: () =>
+		| { identifier?: SourceNodeIdentifier_string }
+		| undefined
 	pathIndex?: { identifier?: string }
 	presentInOriginalSourceCode?: boolean
 }
@@ -35,7 +37,9 @@ export type ReferenceMetaLike = {
 	lang_internal?: unknown
 	intern?: unknown
 	extern?: unknown
-	getSourceNodeIndexByID?: (id: SourceNodeID_number) => SourceNodeIndexLike | undefined
+	getSourceNodeIndexByID?: (
+		id: SourceNodeID_number
+	) => SourceNodeIndexLike | undefined
 	toJSON?: () => JsonMetaLike | undefined
 }
 
@@ -57,12 +61,16 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 // Lightweight guard: we only need object semantics for reference entries.
-export function isReferenceMetaLike(value: unknown): value is ReferenceMetaLike {
+export function isReferenceMetaLike(
+	value: unknown
+): value is ReferenceMetaLike {
 	return isRecord(value)
 }
 
 // Ensures SourceFileMetaData has the functions API this provider depends on.
-export function isSourceFileMetaDataLike(value: unknown): value is SourceFileMetaDataLike {
+export function isSourceFileMetaDataLike(
+	value: unknown
+): value is SourceFileMetaDataLike {
 	if (!isRecord(value)) {
 		return false
 	}

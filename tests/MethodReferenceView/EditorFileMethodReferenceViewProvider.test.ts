@@ -5,9 +5,7 @@ import { UnifiedPath } from '@oaklean/profiler-core'
 import vscode from 'vscode'
 
 import { EditorFileMethodReferenceViewProvider } from '../../src/WebViewProviders/EditorFileMethodReferenceView/EditorFileMethodReferenceViewProvider'
-import {
-	EditorFileMethodReferenceViewProtocolCommands
-} from '../../src/protocols/EditorFileMethodReferenceViewProtocol'
+import { EditorFileMethodReferenceViewProtocolCommands } from '../../src/protocols/EditorFileMethodReferenceViewProtocol'
 import WorkspaceUtils from '../../src/helper/WorkspaceUtils'
 
 jest.mock(
@@ -38,36 +36,60 @@ function createEventHook<T>(): EventHook<T> {
 describe('EditorFileMethodReferenceViewProvider integration events', () => {
 	const reportLoadedHook = createEventHook<{ type: 'ProjectReport' }>()
 	const scopeChangeHook = createEventHook<{
-		scopeInformation: { functionName: string, className?: string, namespace?: string }
+		scopeInformation: {
+			functionName: string
+			className?: string
+			namespace?: string
+		}
 		relativeWorkspacePath: UnifiedPath
 		selectedIdentifier?: string
 		selectedIdentifierFirstParentWithMeasurements?: string
 	}>()
 	const textEditorChangeHook = createEventHook<{ editor: unknown }>()
-	const textEditorsVisibilityHook = createEventHook<{ editors: readonly unknown[] }>()
+	const textEditorsVisibilityHook = createEventHook<{
+		editors: readonly unknown[]
+	}>()
 	const webpackRecompileHook = createEventHook<{ data?: undefined }>()
 
 	const postMessage = jest.fn<(message: unknown) => void>()
 	const getSourceFileMetaData = jest.fn().mockReturnValue(null)
 	const onDidReceiveMessage = jest.fn().mockReturnValue({ dispose: jest.fn() })
-	const onDidChangeVisibility = jest.fn().mockReturnValue({ dispose: jest.fn() })
+	const onDidChangeVisibility = jest
+		.fn()
+		.mockReturnValue({ dispose: jest.fn() })
 
 	const container = {
 		eventHandler: {
-			onWebpackRecompile: jest.fn((handler: (event: { data?: undefined }) => void) =>
-				webpackRecompileHook.register(handler)),
-			onReportLoaded: jest.fn((handler: (event: { type: 'ProjectReport' }) => void) =>
-				reportLoadedHook.register(handler)),
-			onTextEditorChange: jest.fn((handler: (event: { editor: unknown }) => void) =>
-				textEditorChangeHook.register(handler)),
-			onTextEditorsChangeVisibility: jest.fn((handler: (event: { editors: readonly unknown[] }) => void) =>
-				textEditorsVisibilityHook.register(handler)),
-			onScopeChange: jest.fn((handler: (event: {
-				scopeInformation: { functionName: string, className?: string, namespace?: string }
-				relativeWorkspacePath: UnifiedPath
-				selectedIdentifier?: string
-				selectedIdentifierFirstParentWithMeasurements?: string
-			}) => void) => scopeChangeHook.register(handler))
+			onWebpackRecompile: jest.fn(
+				(handler: (event: { data?: undefined }) => void) =>
+					webpackRecompileHook.register(handler)
+			),
+			onReportLoaded: jest.fn(
+				(handler: (event: { type: 'ProjectReport' }) => void) =>
+					reportLoadedHook.register(handler)
+			),
+			onTextEditorChange: jest.fn(
+				(handler: (event: { editor: unknown }) => void) =>
+					textEditorChangeHook.register(handler)
+			),
+			onTextEditorsChangeVisibility: jest.fn(
+				(handler: (event: { editors: readonly unknown[] }) => void) =>
+					textEditorsVisibilityHook.register(handler)
+			),
+			onScopeChange: jest.fn(
+				(
+					handler: (event: {
+						scopeInformation: {
+							functionName: string
+							className?: string
+							namespace?: string
+						}
+						relativeWorkspacePath: UnifiedPath
+						selectedIdentifier?: string
+						selectedIdentifierFirstParentWithMeasurements?: string
+					}) => void
+				) => scopeChangeHook.register(handler)
+			)
 		},
 		textDocumentController: {
 			projectReport: undefined,
@@ -87,16 +109,21 @@ describe('EditorFileMethodReferenceViewProvider integration events', () => {
 		onDidChangeVisibility: (...args: unknown[]) => { dispose: () => void }
 	}
 
-	function createSourceFileMetaData(functions: Array<{ id: number, identifier: string }>) {
-		const metaEntries = functions.map((entry) => [
-			entry.id,
-			{
-				id: entry.id,
-				sourceNodeIndex: {
-					identifier: entry.identifier
-				}
-			}
-		] as const)
+	function createSourceFileMetaData(
+		functions: Array<{ id: number; identifier: string }>
+	) {
+		const metaEntries = functions.map(
+			(entry) =>
+				[
+					entry.id,
+					{
+						id: entry.id,
+						sourceNodeIndex: {
+							identifier: entry.identifier
+						}
+					}
+				] as const
+		)
 
 		const map = new Map(metaEntries)
 
@@ -115,8 +142,9 @@ describe('EditorFileMethodReferenceViewProvider integration events', () => {
 		onDidReceiveMessage.mockReset().mockReturnValue({ dispose: jest.fn() })
 		onDidChangeVisibility.mockReset().mockReturnValue({ dispose: jest.fn() })
 		jest.restoreAllMocks()
-
-		;(vscode.window as unknown as { activeTextEditor?: unknown }).activeTextEditor = {
+		;(
+			vscode.window as unknown as { activeTextEditor?: unknown }
+		).activeTextEditor = {
 			document: { fileName: '/workspace/src/current.ts' }
 		}
 
@@ -127,9 +155,13 @@ describe('EditorFileMethodReferenceViewProvider integration events', () => {
 		webviewView = {
 			webview: {
 				postMessage,
-				onDidReceiveMessage: onDidReceiveMessage as unknown as (...args: unknown[]) => { dispose: () => void }
+				onDidReceiveMessage: onDidReceiveMessage as unknown as (
+					...args: unknown[]
+				) => { dispose: () => void }
 			},
-			onDidChangeVisibility: onDidChangeVisibility as unknown as (...args: unknown[]) => { dispose: () => void }
+			onDidChangeVisibility: onDidChangeVisibility as unknown as (
+				...args: unknown[]
+			) => { dispose: () => void }
 		}
 		provider.resolveWebviewView(webviewView as never)
 		postMessage.mockClear()
@@ -144,7 +176,8 @@ describe('EditorFileMethodReferenceViewProvider integration events', () => {
 		})
 		expect(postMessage).toHaveBeenCalledWith(
 			expect.objectContaining({
-				command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction
+				command:
+					EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction
 			})
 		)
 	})
@@ -168,12 +201,14 @@ describe('EditorFileMethodReferenceViewProvider integration events', () => {
 
 		expect(postMessage).toHaveBeenCalledWith(
 			expect.objectContaining({
-				command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction
+				command:
+					EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction
 			})
 		)
 		expect(postMessage).toHaveBeenLastCalledWith(
 			expect.objectContaining({
-				command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+				command:
+					EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
 				functionName: 'testFn'
 			})
 		)

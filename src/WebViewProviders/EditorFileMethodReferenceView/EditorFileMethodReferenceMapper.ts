@@ -20,7 +20,9 @@ type SensorValuesLike = {
 
 type SourceNodeIndexLike = {
 	identifier?: SourceNodeIdentifier_string
-	globalIdentifier?: () => { identifier?: SourceNodeIdentifier_string } | undefined
+	globalIdentifier?: () =>
+		| { identifier?: SourceNodeIdentifier_string }
+		| undefined
 	pathIndex?: { identifier?: string }
 	presentInOriginalSourceCode?: boolean
 }
@@ -35,13 +37,17 @@ type ReferenceMetaLike = {
 	methodName?: string
 	sourceNodeIndex?: SourceNodeIndexLike
 	sensorValues?: SensorValuesLike
-	getSourceNodeIndexByID?: (id: SourceNodeID_number) => SourceNodeIndexLike | undefined
+	getSourceNodeIndexByID?: (
+		id: SourceNodeID_number
+	) => SourceNodeIndexLike | undefined
 	toJSON?: () => JsonMetaLike | undefined
 }
 
 type ProjectReportLike = {
 	globalIndex?: {
-		getSourceNodeIndexByID?: (id: SourceNodeID_number) => SourceNodeIndexLike | undefined
+		getSourceNodeIndexByID?: (
+			id: SourceNodeID_number
+		) => SourceNodeIndexLike | undefined
 	}
 }
 
@@ -94,7 +100,8 @@ export function getDisplayName(identifier: string): string {
 		if (lastPart === undefined) {
 			return ''
 		}
-		const parsed = SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(lastPart)
+		const parsed =
+			SourceNodeIdentifierHelper.parseSourceNodeIdentifierPart(lastPart)
 		return parsed?.name ?? ''
 	} catch {
 		return ''
@@ -118,7 +125,9 @@ export function toSourceNodeIdentifier(
 }
 
 // Unified path strings are contract types in profiler APIs; this narrows plain strings.
-export function toUnifiedPathString(value: string): UnifiedPath_string | undefined {
+export function toUnifiedPathString(
+	value: string
+): UnifiedPath_string | undefined {
 	if (value.length === 0) {
 		return undefined
 	}
@@ -155,7 +164,11 @@ export function toMetas(ref: unknown): unknown[] {
 			return result
 		}
 		for (const entry of entriesResult) {
-			if (Array.isArray(entry) && entry.length === 2 && isReferenceMetaLike(entry[1])) {
+			if (
+				Array.isArray(entry) &&
+				entry.length === 2 &&
+				isReferenceMetaLike(entry[1])
+			) {
 				result.push(entry[1])
 			}
 		}
@@ -207,24 +220,26 @@ export function buildReferenceEntry(
 			: resolvedIndex?.identifier
 
 	// Fallback 3: resolve via project global index.
-	const projectReport =
-		isProjectReportLike(projectReportLike) ? projectReportLike : undefined
+	const projectReport = isProjectReportLike(projectReportLike)
+		? projectReportLike
+		: undefined
 	const globalIndexEntry =
 		meta.id !== undefined && projectReport?.globalIndex?.getSourceNodeIndexByID
 			? projectReport.globalIndex.getSourceNodeIndexByID(meta.id)
 			: undefined
 	const globalIndexIdentifier =
 		globalIndexEntry !== undefined
-			? globalIndexEntry.globalIdentifier?.()?.identifier ??
-				globalIndexEntry.identifier
+			? (globalIndexEntry.globalIdentifier?.()?.identifier ??
+				globalIndexEntry.identifier)
 			: undefined
-	const globalIndexSourceNodeIdentifier = toSourceNodeIdentifier(globalIndexIdentifier)
+	const globalIndexSourceNodeIdentifier = toSourceNodeIdentifier(
+		globalIndexIdentifier
+	)
 
 	// Optional JSON projection used for display/path fallbacks.
 	const json = typeof meta.toJSON === 'function' ? meta.toJSON() : undefined
 	const jsonName =
-		json?.methodName ??
-		(json?.filePath ? path.basename(json.filePath) : '')
+		json?.methodName ?? (json?.filePath ? path.basename(json.filePath) : '')
 
 	// Final identifier used for navigation and preferred display label.
 	const finalIdentifier =
@@ -243,10 +258,14 @@ export function buildReferenceEntry(
 		finalIdentifier === undefined ? undefined : getDisplayName(finalIdentifier)
 	)
 	const nameFromGlobalIdentifier = toNonEmptyName(
-		globalIdentifier === undefined ? undefined : getDisplayName(globalIdentifier)
+		globalIdentifier === undefined
+			? undefined
+			: getDisplayName(globalIdentifier)
 	)
 	const nameFromResolvedIdentifier = toNonEmptyName(
-		resolvedIdentifier === undefined ? undefined : getDisplayName(resolvedIdentifier)
+		resolvedIdentifier === undefined
+			? undefined
+			: getDisplayName(resolvedIdentifier)
 	)
 	const nameFromGlobalIndexIdentifier =
 		globalIndexSourceNodeIdentifier === undefined
@@ -264,14 +283,16 @@ export function buildReferenceEntry(
 		''
 
 	// CPU and energy values; prefer aggregated values where available.
-	const cpuTime = meta.sensorValues?.aggregatedCPUTime ?? meta.sensorValues?.selfCPUTime
+	const cpuTime =
+		meta.sensorValues?.aggregatedCPUTime ?? meta.sensorValues?.selfCPUTime
 	const cpuEnergy =
 		meta.sensorValues?.aggregatedCPUEnergyConsumption ??
 		meta.sensorValues?.selfCPUEnergyConsumption
 	const ramEnergy = meta.sensorValues?.aggregatedRAMEnergyConsumption
 
 	// Path source 1: json filePath converted to workspace-relative format.
-	const filePath = typeof json?.filePath === 'string' ? json.filePath : undefined
+	const filePath =
+		typeof json?.filePath === 'string' ? json.filePath : undefined
 	const relativePathFromMeta =
 		filePath === undefined
 			? undefined

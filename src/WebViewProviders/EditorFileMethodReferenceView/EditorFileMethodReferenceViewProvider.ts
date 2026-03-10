@@ -64,7 +64,8 @@ type BuiltFunctionSections = {
 }
 
 export class EditorFileMethodReferenceViewProvider
-	implements vscode.WebviewViewProvider {
+	implements vscode.WebviewViewProvider
+{
 	private subscriptions: vscode.Disposable[] = []
 
 	public static readonly viewType = 'editorFileMethodReferenceView'
@@ -85,16 +86,16 @@ export class EditorFileMethodReferenceViewProvider
 			this._container.eventHandler.onWebpackRecompile(
 				this.hardRefresh.bind(this)
 			),
-			this._container.eventHandler.onReportLoaded(this.refreshViewState.bind(this)),
+			this._container.eventHandler.onReportLoaded(
+				this.refreshViewState.bind(this)
+			),
 			this._container.eventHandler.onTextEditorChange(
 				this.textEditorChanged.bind(this)
 			),
 			this._container.eventHandler.onTextEditorsChangeVisibility(
 				this.onTextEditorsChangeVisibility.bind(this)
 			),
-			this._container.eventHandler.onScopeChange(
-				this.onScopeChange.bind(this)
-			)
+			this._container.eventHandler.onScopeChange(this.onScopeChange.bind(this))
 		]
 	}
 
@@ -106,9 +107,7 @@ export class EditorFileMethodReferenceViewProvider
 		this.subscriptions = []
 	}
 
-	public resolveWebviewView(
-		webviewView: vscode.WebviewView
-	) {
+	public resolveWebviewView(webviewView: vscode.WebviewView) {
 		// Store webview handle once VS Code resolves the view instance.
 		this._view = webviewView
 		this.subscriptions.push(
@@ -148,9 +147,10 @@ export class EditorFileMethodReferenceViewProvider
 		if (relativeWorkspacePath === undefined) {
 			return null
 		}
-		const sourceFileMetaData = this._container.textDocumentController.getSourceFileMetaData(
-			relativeWorkspacePath
-		)
+		const sourceFileMetaData =
+			this._container.textDocumentController.getSourceFileMetaData(
+				relativeWorkspacePath
+			)
 		if (!isSourceFileMetaDataLike(sourceFileMetaData)) {
 			return null
 		}
@@ -158,9 +158,7 @@ export class EditorFileMethodReferenceViewProvider
 	}
 
 	// Central message handler for webview -> extension communication.
-	receiveMessageFromWebview(
-		message: unknown
-	) {
+	receiveMessageFromWebview(message: unknown) {
 		if (!isEditorFileMethodReferenceViewProtocolChildToParent(message)) {
 			return
 		}
@@ -258,7 +256,10 @@ export class EditorFileMethodReferenceViewProvider
 		if (relativeWorkspacePath === undefined) {
 			return
 		}
-		if (event.relativeWorkspacePath.toString() !== relativeWorkspacePath.toString()) {
+		if (
+			event.relativeWorkspacePath.toString() !==
+			relativeWorkspacePath.toString()
+		) {
 			return
 		}
 		console.debug('EditorFileMethodReferenceViewProvider: scope change', {
@@ -267,7 +268,8 @@ export class EditorFileMethodReferenceViewProvider
 			selectedIdentifierFirstParentWithMeasurements:
 				event.selectedIdentifierFirstParentWithMeasurements
 		})
-		this._currentScopeIdentifier = event.selectedIdentifierFirstParentWithMeasurements
+		this._currentScopeIdentifier =
+			event.selectedIdentifierFirstParentWithMeasurements
 		this.sendFirstFunctionName()
 	}
 
@@ -313,11 +315,12 @@ export class EditorFileMethodReferenceViewProvider
 			const firstFn = this.resolveCurrentFunctionMeta(sourceFileMetaData)
 
 			if (firstFn !== undefined) {
-				sections.foreignReferences = this.buildForeignReferencesForCurrentFunction(
-					sourceNodeGraph,
-					firstFn,
-					projectReport
-				)
+				sections.foreignReferences =
+					this.buildForeignReferencesForCurrentFunction(
+						sourceNodeGraph,
+						firstFn,
+						projectReport
+					)
 				sections.main = buildReferenceEntry(firstFn, projectReport)
 				sections.functionName = this.resolveFunctionName(firstFn, sections.main)
 				sections.langInternal = this.buildEntriesFromGroup(
@@ -328,12 +331,14 @@ export class EditorFileMethodReferenceViewProvider
 				sections.intern = this.buildEntriesFromGroup(
 					firstFn.intern,
 					projectReport,
-					(entry) => entry.identifier !== undefined && entry.relativePath !== undefined
+					(entry) =>
+						entry.identifier !== undefined && entry.relativePath !== undefined
 				)
 				sections.extern = this.buildEntriesFromGroup(
 					firstFn.extern,
 					projectReport,
-					(entry) => entry.identifier !== undefined && entry.relativePath !== undefined
+					(entry) =>
+						entry.identifier !== undefined && entry.relativePath !== undefined
 				)
 			}
 		}
@@ -361,10 +366,15 @@ export class EditorFileMethodReferenceViewProvider
 		}
 	}
 
-	private resolveSourceNodeGraph(projectReport: unknown): SourceNodeGraphLike | undefined {
-		const rawSourceNodeGraph =
-			(projectReport as { asSourceNodeGraph?: () => unknown } | undefined)?.asSourceNodeGraph?.()
-		return isSourceNodeGraphLike(rawSourceNodeGraph) ? rawSourceNodeGraph : undefined
+	private resolveSourceNodeGraph(
+		projectReport: unknown
+	): SourceNodeGraphLike | undefined {
+		const rawSourceNodeGraph = (
+			projectReport as { asSourceNodeGraph?: () => unknown } | undefined
+		)?.asSourceNodeGraph?.()
+		return isSourceNodeGraphLike(rawSourceNodeGraph)
+			? rawSourceNodeGraph
+			: undefined
 	}
 
 	// Prefer scope-selected function; fall back to best-effort "first function" resolution.
@@ -374,10 +384,12 @@ export class EditorFileMethodReferenceViewProvider
 		if (this._currentScopeIdentifier === undefined) {
 			return this.getFirstFunctionMeta(sourceFileMetaData)
 		}
-		return this.getFunctionMetaByIdentifier(
-			sourceFileMetaData,
-			this._currentScopeIdentifier
-		) ?? this.getFirstFunctionMeta(sourceFileMetaData)
+		return (
+			this.getFunctionMetaByIdentifier(
+				sourceFileMetaData,
+				this._currentScopeIdentifier
+			) ?? this.getFirstFunctionMeta(sourceFileMetaData)
+		)
 	}
 
 	private buildForeignReferencesForCurrentFunction(
@@ -402,15 +414,12 @@ export class EditorFileMethodReferenceViewProvider
 			callerGraphNodeIDs,
 			projectReport
 		)
-		console.debug(
-			'EditorFileMethodReferenceViewProvider: foreign references',
-			{
-				selectedIdentifier: firstFn.sourceNodeIndex?.identifier,
-				currentNodeID: currentScopeGraphNodeID,
-				callerNodeIDs: callerGraphNodeIDs.length,
-				foreignReferences: foreignReferences.length
-			}
-		)
+		console.debug('EditorFileMethodReferenceViewProvider: foreign references', {
+			selectedIdentifier: firstFn.sourceNodeIndex?.identifier,
+			currentNodeID: currentScopeGraphNodeID,
+			callerNodeIDs: callerGraphNodeIDs.length,
+			foreignReferences: foreignReferences.length
+		})
 		return foreignReferences
 	}
 
@@ -422,7 +431,11 @@ export class EditorFileMethodReferenceViewProvider
 		const nameFromIdentifier =
 			firstIdentifier === undefined ? '' : getDisplayName(firstIdentifier)
 		// Fallback for reports where identifier parsing fails but entry display name exists.
-		if (nameFromIdentifier === '' && main?.name !== undefined && main.name.length > 0) {
+		if (
+			nameFromIdentifier === '' &&
+			main?.name !== undefined &&
+			main.name.length > 0
+		) {
 			return main.name
 		}
 		return nameFromIdentifier
@@ -462,7 +475,9 @@ export class EditorFileMethodReferenceViewProvider
 	}
 
 	// Resolves the "first function" for the current file using report indexes when possible.
-	private getFirstFunctionMeta(sourceFileMetaData: SourceFileMetaDataLike): ReferenceMetaLike | undefined {
+	private getFirstFunctionMeta(
+		sourceFileMetaData: SourceFileMetaDataLike
+	): ReferenceMetaLike | undefined {
 		// Stable fallback if report/global-index resolution cannot be completed.
 		const fallbackMeta = sourceFileMetaData.functions.values().next().value
 		// Profiler index API uses string operation dispatch ("get" / "set"/...).
@@ -510,7 +525,10 @@ export class EditorFileMethodReferenceViewProvider
 				return fallbackMeta
 			}
 
-			const functionIndex = pathIndex.getSourceNodeIndex(getOperation, firstIdentifier)
+			const functionIndex = pathIndex.getSourceNodeIndex(
+				getOperation,
+				firstIdentifier
+			)
 
 			if (functionIndex?.id === undefined) {
 				return fallbackMeta
@@ -540,5 +558,4 @@ export class EditorFileMethodReferenceViewProvider
 			)
 		}
 	}
-
 }

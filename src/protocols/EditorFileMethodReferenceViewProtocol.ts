@@ -1,6 +1,4 @@
-import {
-	OpenSourceLocationProtocol_ChildToParent
-}	 from './OpenSourceLocationProtocol'
+import { OpenSourceLocationProtocol_ChildToParent } from './OpenSourceLocationProtocol'
 import { OpenSourceLocationProtocolCommands } from './OpenSourceLocationProtocol'
 
 export enum EditorFileMethodReferenceViewProtocolCommands {
@@ -20,7 +18,6 @@ export type FunctionEntry = {
 	relativePath?: string
 	isNavigable?: boolean
 	notPresentInOriginalSourceCode?: boolean
-
 }
 
 export type EditorFileMethodReferenceViewProtocol_CloseActiveFileMessage = {
@@ -31,9 +28,10 @@ export type EditorFileMethodReferenceViewProtocol_RequestFileNameMessage = {
 	command: EditorFileMethodReferenceViewProtocolCommands.requestFileName
 }
 
-export type EditorFileMethodReferenceViewProtocol_RequestFirstFunctionMessage = {
-	command: EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction
-}
+export type EditorFileMethodReferenceViewProtocol_RequestFirstFunctionMessage =
+	{
+		command: EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction
+	}
 
 export type EditorFileMethodReferenceViewProtocol_UpdateFileNameMessage = {
 	command: EditorFileMethodReferenceViewProtocolCommands.updateFileName
@@ -135,44 +133,61 @@ const isRequestFirstFunctionMessage: MessageValidator<
 	EditorFileMethodReferenceViewProtocol_RequestFirstFunctionMessage
 > = (
 	value: Record<string, unknown>
-): value is EditorFileMethodReferenceViewProtocol_RequestFirstFunctionMessage => true
+): value is EditorFileMethodReferenceViewProtocol_RequestFirstFunctionMessage =>
+	true
 
 const isOpenSourceLocationMessage: MessageValidator<
 	ChildToParentMessageByCommand[OpenSourceLocationProtocolCommands.openSourceLocation]
-> = (value): value is ChildToParentMessageByCommand[OpenSourceLocationProtocolCommands.openSourceLocation] =>
-	typeof value.identifier === 'string' &&
-	typeof value.relativePath === 'string'
+> = (
+	value
+): value is ChildToParentMessageByCommand[OpenSourceLocationProtocolCommands.openSourceLocation] =>
+	typeof value.identifier === 'string' && typeof value.relativePath === 'string'
 
 const isUpdateFileNameMessage: MessageValidator<
 	EditorFileMethodReferenceViewProtocol_UpdateFileNameMessage
-> = (value): value is EditorFileMethodReferenceViewProtocol_UpdateFileNameMessage =>
+> = (
+	value
+): value is EditorFileMethodReferenceViewProtocol_UpdateFileNameMessage =>
 	typeof value.fileName === 'string'
 
 const isUpdateFirstFunctionMessage: MessageValidator<
 	EditorFileMethodReferenceViewProtocol_UpdateFirstFunctionMessage
-> = (value): value is EditorFileMethodReferenceViewProtocol_UpdateFirstFunctionMessage => (
+> = (
+	value
+): value is EditorFileMethodReferenceViewProtocol_UpdateFirstFunctionMessage =>
 	typeof value.functionName === 'string' &&
 	(value.main === undefined || isFunctionEntry(value.main)) &&
-	(value.langInternal === undefined || isFunctionEntryArray(value.langInternal)) &&
+	(value.langInternal === undefined ||
+		isFunctionEntryArray(value.langInternal)) &&
 	(value.intern === undefined || isFunctionEntryArray(value.intern)) &&
 	(value.extern === undefined || isFunctionEntryArray(value.extern)) &&
-	(value.foreignReferences === undefined || isFunctionEntryArray(value.foreignReferences))
-)
+	(value.foreignReferences === undefined ||
+		isFunctionEntryArray(value.foreignReferences))
 
 const childToParentValidators: {
-	[K in ChildToParentCommand]: MessageValidator<ChildToParentMessageByCommand[K]>
+	[K in ChildToParentCommand]: MessageValidator<
+		ChildToParentMessageByCommand[K]
+	>
 } = {
-	[EditorFileMethodReferenceViewProtocolCommands.closeActiveFile]: isCloseActiveFileMessage,
-	[EditorFileMethodReferenceViewProtocolCommands.requestFileName]: isRequestFileNameMessage,
-	[EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction]: isRequestFirstFunctionMessage,
-	[OpenSourceLocationProtocolCommands.openSourceLocation]: isOpenSourceLocationMessage
+	[EditorFileMethodReferenceViewProtocolCommands.closeActiveFile]:
+		isCloseActiveFileMessage,
+	[EditorFileMethodReferenceViewProtocolCommands.requestFileName]:
+		isRequestFileNameMessage,
+	[EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction]:
+		isRequestFirstFunctionMessage,
+	[OpenSourceLocationProtocolCommands.openSourceLocation]:
+		isOpenSourceLocationMessage
 }
 
 const parentToChildValidators: {
-	[K in ParentToChildCommand]: MessageValidator<ParentToChildMessageByCommand[K]>
+	[K in ParentToChildCommand]: MessageValidator<
+		ParentToChildMessageByCommand[K]
+	>
 } = {
-	[EditorFileMethodReferenceViewProtocolCommands.updateFileName]: isUpdateFileNameMessage,
-	[EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction]: isUpdateFirstFunctionMessage
+	[EditorFileMethodReferenceViewProtocolCommands.updateFileName]:
+		isUpdateFileNameMessage,
+	[EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction]:
+		isUpdateFirstFunctionMessage
 }
 
 function hasValidatorForCommand<T extends Record<string, unknown>>(

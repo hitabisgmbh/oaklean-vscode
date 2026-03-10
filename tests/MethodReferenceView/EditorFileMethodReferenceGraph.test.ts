@@ -19,7 +19,9 @@ import WorkspaceUtils from '../../src/helper/WorkspaceUtils'
 
 jest.mock('vscode')
 
-type GraphNode = NonNullable<ReturnType<SourceNodeGraphLike['sourceNodes']['get']>>
+type GraphNode = NonNullable<
+	ReturnType<SourceNodeGraphLike['sourceNodes']['get']>
+>
 type GraphNodeID = NonNullable<GraphNode['id']>
 
 // Cast helper to keep IDs readable in tests without leaking real profiler internals.
@@ -57,7 +59,9 @@ function createGraph() {
 describe('EditorFileMethodReferenceGraph', () => {
 	beforeEach(() => {
 		// Default to "path not resolvable"; tests override this when needed.
-		jest.spyOn(WorkspaceUtils, 'getRelativeWorkspacePath').mockReturnValue(undefined)
+		jest
+			.spyOn(WorkspaceUtils, 'getRelativeWorkspacePath')
+			.mockReturnValue(undefined)
 	})
 
 	afterEach(() => {
@@ -131,7 +135,13 @@ describe('EditorFileMethodReferenceGraph', () => {
 	it('returns caller node ids from selected edge direction', () => {
 		// Incoming/outgoing edge selection is controlled by the direction argument.
 		const graph = createGraph()
-		graph.incomingEdges.set('current', new Map([['inc-1', true], ['inc-2', true]]))
+		graph.incomingEdges.set(
+			'current',
+			new Map([
+				['inc-1', true],
+				['inc-2', true]
+			])
+		)
 		graph.outgoingEdges.set('current', new Map([['out-1', true]]))
 
 		expect(
@@ -181,7 +191,13 @@ describe('EditorFileMethodReferenceGraph', () => {
 		const result = buildForeignReferences(
 			graph.asShape(),
 			'current',
-			['current', 'caller-a', 'caller-a-dup', 'not-a-function', 'caller-no-path'],
+			[
+				'current',
+				'caller-a',
+				'caller-a-dup',
+				'not-a-function',
+				'caller-no-path'
+			],
 			undefined
 		)
 

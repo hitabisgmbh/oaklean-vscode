@@ -26,16 +26,18 @@ const SORT_METRICS = {
 	ramEnergy: 'ramEnergy'
 } as const
 
-type SortMetric = typeof SORT_METRICS[keyof typeof SORT_METRICS]
+type SortMetric = (typeof SORT_METRICS)[keyof typeof SORT_METRICS]
 
 const SORT_DIRECTIONS = {
 	desc: 'desc',
 	asc: 'asc'
 } as const
 
-type SortDirection = typeof SORT_DIRECTIONS[keyof typeof SORT_DIRECTIONS]
+type SortDirection = (typeof SORT_DIRECTIONS)[keyof typeof SORT_DIRECTIONS]
 
-function postToProvider(message: EditorFileMethodReferenceViewProtocol_ChildToParent) {
+function postToProvider(
+	message: EditorFileMethodReferenceViewProtocol_ChildToParent
+) {
 	vscode.postMessage(message)
 }
 
@@ -47,8 +49,13 @@ export function App() {
 	const [isExternOpen, setIsExternOpen] = useState(true)
 	const [isForeignReferencesOpen, setIsForeignReferencesOpen] = useState(true)
 	const [sortMetric, setSortMetric] = useState<SortMetric>(SORT_METRICS.cpuTime)
-	const [sortDirection, setSortDirection] = useState<SortDirection>(SORT_DIRECTIONS.desc)
-	const [showNotPresentInOriginalSourceCode, setShowNotPresentInOriginalSourceCode] = useState(true)
+	const [sortDirection, setSortDirection] = useState<SortDirection>(
+		SORT_DIRECTIONS.desc
+	)
+	const [
+		showNotPresentInOriginalSourceCode,
+		setShowNotPresentInOriginalSourceCode
+	] = useState(true)
 	const [firstFunctionData, setFirstFunctionData] = useState<{
 		main?: FunctionEntry
 		langInternal?: FunctionEntry[]
@@ -64,9 +71,15 @@ export function App() {
 			if (!isEditorFileMethodReferenceViewProtocolParentToChild(data)) {
 				return
 			}
-			if (data.command === EditorFileMethodReferenceViewProtocolCommands.updateFileName) {
+			if (
+				data.command ===
+				EditorFileMethodReferenceViewProtocolCommands.updateFileName
+			) {
 				setFileName(data.fileName ?? '')
-			} else if (data.command === EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction) {
+			} else if (
+				data.command ===
+				EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction
+			) {
 				setFirstFunctionName(data.functionName ?? '')
 				// New function context should reopen all sections by default.
 				setIsLangInternalOpen(true)
@@ -89,7 +102,8 @@ export function App() {
 			command: EditorFileMethodReferenceViewProtocolCommands.requestFileName
 		})
 		postToProvider({
-			command: EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction
+			command:
+				EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction
 		})
 		return () => window.removeEventListener('message', handleMessage)
 	}, [])
@@ -110,7 +124,9 @@ export function App() {
 	}
 
 	function getClickableCellClass(entry: FunctionEntry) {
-		return entry.isNavigable === true ? 'reference-first-function__cell--clickable' : ''
+		return entry.isNavigable === true
+			? 'reference-first-function__cell--clickable'
+			: ''
 	}
 
 	function sortEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
@@ -141,15 +157,21 @@ export function App() {
 		})
 	}
 
-	function filterEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
+	function filterEntries(
+		entries: FunctionEntry[] | undefined
+	): FunctionEntry[] {
 		// Optional filter to hide runtime-only references.
 		if (showNotPresentInOriginalSourceCode) {
 			return entries ?? []
 		}
-		return (entries ?? []).filter((entry) => entry.notPresentInOriginalSourceCode !== true)
+		return (entries ?? []).filter(
+			(entry) => entry.notPresentInOriginalSourceCode !== true
+		)
 	}
 
-	function prepareEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
+	function prepareEntries(
+		entries: FunctionEntry[] | undefined
+	): FunctionEntry[] {
 		return sortEntries(filterEntries(entries))
 	}
 
@@ -186,7 +208,9 @@ export function App() {
 	const langInternalEntries = prepareEntries(firstFunctionData.langInternal)
 	const internEntries = prepareEntries(firstFunctionData.intern)
 	const externEntries = prepareEntries(firstFunctionData.extern)
-	const foreignReferencesEntries = prepareEntries(firstFunctionData.foreignReferences)
+	const foreignReferencesEntries = prepareEntries(
+		firstFunctionData.foreignReferences
+	)
 	const hasReferenceData =
 		firstFunctionName !== '' ||
 		firstFunctionData.main !== undefined ||
@@ -195,7 +219,9 @@ export function App() {
 		externEntries.length > 0 ||
 		foreignReferencesEntries.length > 0
 	const displayedFunctionName =
-		firstFunctionName !== '' ? firstFunctionName : (firstFunctionData.main?.name ?? '')
+		firstFunctionName !== ''
+			? firstFunctionName
+			: (firstFunctionData.main?.name ?? '')
 
 	return (
 		<div className="reference-view">
@@ -233,7 +259,9 @@ export function App() {
 					</button>
 					<CodiconButton
 						codiconName={
-							showNotPresentInOriginalSourceCode ? 'codicon-eye' : 'codicon-eye-closed'
+							showNotPresentInOriginalSourceCode
+								? 'codicon-eye'
+								: 'codicon-eye-closed'
 						}
 						onClick={() => {
 							setShowNotPresentInOriginalSourceCode((previous) => !previous)
@@ -255,7 +283,9 @@ export function App() {
 			</div>
 			{hasReferenceData ? (
 				<div className="reference-first-function">
-					<div className="reference-first-function__label">Current function</div>
+					<div className="reference-first-function__label">
+						Current function
+					</div>
 					<div className="reference-first-function__name">
 						{displayedFunctionName !== '' ? `${displayedFunctionName}()` : ''}
 					</div>
@@ -269,7 +299,9 @@ export function App() {
 							>
 								<span
 									className={`codicon ${
-										isLangInternalOpen ? 'codicon-chevron-down' : 'codicon-chevron-right'
+										isLangInternalOpen
+											? 'codicon-chevron-down'
+											: 'codicon-chevron-right'
 									} reference-first-function__section-icon`}
 								/>
 								<span>Lang internal:</span>
@@ -283,7 +315,10 @@ export function App() {
 										<div>Ram(E)</div>
 									</div>
 									{langInternalEntries.map((entry, idx) => (
-										<div className="reference-first-function__row" key={`lang-${idx}`}>
+										<div
+											className="reference-first-function__row"
+											key={`lang-${idx}`}
+										>
 											<div>{entry.name}</div>
 											<div>{entry.cpuTime ?? ''}</div>
 											<div>{entry.cpuEnergy ?? ''}</div>
@@ -304,7 +339,9 @@ export function App() {
 							>
 								<span
 									className={`codicon ${
-										isInternOpen ? 'codicon-chevron-down' : 'codicon-chevron-right'
+										isInternOpen
+											? 'codicon-chevron-down'
+											: 'codicon-chevron-right'
 									} reference-first-function__section-icon`}
 								/>
 								<span>Intern:</span>
@@ -318,7 +355,10 @@ export function App() {
 										<div>Ram(E)</div>
 									</div>
 									{internEntries.map((entry, idx) => (
-										<div className="reference-first-function__row" key={`intern-${idx}`}>
+										<div
+											className="reference-first-function__row"
+											key={`intern-${idx}`}
+										>
 											<div
 												className={getClickableCellClass(entry)}
 												onClick={() => openReference(entry)}
@@ -344,7 +384,9 @@ export function App() {
 							>
 								<span
 									className={`codicon ${
-										isExternOpen ? 'codicon-chevron-down' : 'codicon-chevron-right'
+										isExternOpen
+											? 'codicon-chevron-down'
+											: 'codicon-chevron-right'
 									} reference-first-function__section-icon`}
 								/>
 								<span>Extern:</span>
@@ -358,7 +400,10 @@ export function App() {
 										<div>Ram(E)</div>
 									</div>
 									{externEntries.map((entry, idx) => (
-										<div className="reference-first-function__row" key={`extern-${idx}`}>
+										<div
+											className="reference-first-function__row"
+											key={`extern-${idx}`}
+										>
 											<div
 												className={getClickableCellClass(entry)}
 												onClick={() => openReference(entry)}
@@ -379,12 +424,16 @@ export function App() {
 						<>
 							<button
 								className="reference-first-function__label section reference-first-function__section-toggle"
-								onClick={() => setIsForeignReferencesOpen((current) => !current)}
+								onClick={() =>
+									setIsForeignReferencesOpen((current) => !current)
+								}
 								type="button"
 							>
 								<span
 									className={`codicon ${
-										isForeignReferencesOpen ? 'codicon-chevron-down' : 'codicon-chevron-right'
+										isForeignReferencesOpen
+											? 'codicon-chevron-down'
+											: 'codicon-chevron-right'
 									} reference-first-function__section-icon`}
 								/>
 								<span>Foreign References:</span>
@@ -398,7 +447,10 @@ export function App() {
 										<div>Ram(E)</div>
 									</div>
 									{foreignReferencesEntries.map((entry, idx) => (
-										<div className="reference-first-function__row" key={`foreign-${idx}`}>
+										<div
+											className="reference-first-function__row"
+											key={`foreign-${idx}`}
+										>
 											<div
 												className={getClickableCellClass(entry)}
 												onClick={() => openReference(entry)}
