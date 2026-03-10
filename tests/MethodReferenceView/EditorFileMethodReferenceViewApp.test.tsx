@@ -217,4 +217,21 @@ describe('EditorFileMethodReferenceView App UI', () => {
 			command: EditorFileMethodReferenceViewProtocolCommands.closeActiveFile
 		})
 	})
+
+	it('renders sections even when functionName is empty but data exists', () => {
+		renderFreshApp()
+
+		dispatchReferenceMessage({
+			command: EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction,
+			functionName: '',
+			intern: [
+				{
+					name: 'entryWithoutFunctionName',
+					cpuTime: 1
+				}
+			]
+		})
+
+		expect(screen.getByText('entryWithoutFunctionName')).toBeTruthy()
+	})
 })

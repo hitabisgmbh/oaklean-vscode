@@ -4,9 +4,9 @@ import { VSCodeButton } from '@vscode/webview-ui-toolkit/react'
 import {
 	EditorFileMethodReferenceViewProtocolCommands,
 	EditorFileMethodReferenceViewProtocol_ChildToParent,
-	EditorFileMethodReferenceViewProtocol_ParentToChild
+	isEditorFileMethodReferenceViewProtocolParentToChild
 } from '../../protocols/EditorFileMethodReferenceViewProtocol'
-import { FirstFunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
+import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
 import { OpenSourceLocationProtocolCommands } from '../../protocols/OpenSourceLocationProtocol'
 import { CodiconButton } from '../components/buttons/CodiconButton'
 
@@ -42,31 +42,35 @@ export function App() {
 	const [sortMetric, setSortMetric] = useState<SortMetric>(SORT_METRICS.cpuTime)
 	const [showNotPresentInOriginalSourceCode, setShowNotPresentInOriginalSourceCode] = useState(true)
 	const [firstFunctionData, setFirstFunctionData] = useState<{
-		main?: FirstFunctionEntry
-		langInternal?: FirstFunctionEntry[]
-		intern?: FirstFunctionEntry[]
-		extern?: FirstFunctionEntry[]
-		foreignReferences?: FirstFunctionEntry[]
+		main?: FunctionEntry
+		langInternal?: FunctionEntry[]
+		intern?: FunctionEntry[]
+		extern?: FunctionEntry[]
+		foreignReferences?: FunctionEntry[]
 	}>({})
 
 	// Keep local state in sync with provider messages and request initial payload on mount.
 	useEffect(() => {
-			function handleMessage(event: { data: EditorFileMethodReferenceViewProtocol_ParentToChild }) {
-				if (event.data?.command === EditorFileMethodReferenceViewProtocolCommands.updateFileName) {
-					setFileName(event.data.fileName ?? '')
-				} else if (event.data?.command === EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction) {
-					setFirstFunctionName(event.data.functionName ?? '')
+		function handleMessage(event: MessageEvent<unknown>) {
+			const data = event.data
+			if (!isEditorFileMethodReferenceViewProtocolParentToChild(data)) {
+				return
+			}
+			if (data.command === EditorFileMethodReferenceViewProtocolCommands.updateFileName) {
+				setFileName(data.fileName ?? '')
+			} else if (data.command === EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction) {
+				setFirstFunctionName(data.functionName ?? '')
 				// New function context should reopen all sections by default.
 				setIsLangInternalOpen(true)
 				setIsInternOpen(true)
 				setIsExternOpen(true)
 				setIsForeignReferencesOpen(true)
 				setFirstFunctionData({
-					main: event.data.main,
-					langInternal: event.data.langInternal,
-					intern: event.data.intern,
-					extern: event.data.extern,
-					foreignReferences: event.data.foreignReferences
+					main: data.main,
+					langInternal: data.langInternal,
+					intern: data.intern,
+					extern: data.extern,
+					foreignReferences: data.foreignReferences
 				})
 			}
 		}
@@ -82,7 +86,7 @@ export function App() {
 		return () => window.removeEventListener('message', handleMessage)
 	}, [])
 
-	function openReference(entry: FirstFunctionEntry) {
+	function openReference(entry: FunctionEntry) {
 		// Only navigable rows with complete location data can trigger file navigation.
 		if (entry.isNavigable !== true) {
 			return
@@ -97,12 +101,12 @@ export function App() {
 		})
 	}
 
-	function getClickableCellClass(entry: FirstFunctionEntry) {
+	function getClickableCellClass(entry: FunctionEntry) {
 		return entry.isNavigable === true ? 'reference-first-function__cell--clickable' : ''
 	}
 
-	function sortEntries(entries: FirstFunctionEntry[] | undefined): FirstFunctionEntry[] {
-		const valueByMetric: Record<SortMetric, keyof FirstFunctionEntry> = {
+	function sortEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
+		const valueByMetric: Record<SortMetric, keyof FunctionEntry> = {
 			[SORT_METRICS.cpuTime]: SORT_METRICS.cpuTime,
 			[SORT_METRICS.cpuEnergy]: SORT_METRICS.cpuEnergy,
 			[SORT_METRICS.ramEnergy]: SORT_METRICS.ramEnergy
@@ -126,7 +130,7 @@ export function App() {
 		})
 	}
 
-	function filterEntries(entries: FirstFunctionEntry[] | undefined): FirstFunctionEntry[] {
+	function filterEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
 		// Optional filter to hide runtime-only references.
 		if (showNotPresentInOriginalSourceCode) {
 			return entries ?? []
@@ -134,7 +138,7 @@ export function App() {
 		return (entries ?? []).filter((entry) => entry.notPresentInOriginalSourceCode !== true)
 	}
 
-	function prepareEntries(entries: FirstFunctionEntry[] | undefined): FirstFunctionEntry[] {
+	function prepareEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
 		return sortEntries(filterEntries(entries))
 	}
 
@@ -164,6 +168,15 @@ export function App() {
 	const internEntries = prepareEntries(firstFunctionData.intern)
 	const externEntries = prepareEntries(firstFunctionData.extern)
 	const foreignReferencesEntries = prepareEntries(firstFunctionData.foreignReferences)
+	const hasReferenceData =
+		firstFunctionName !== '' ||
+		firstFunctionData.main !== undefined ||
+		langInternalEntries.length > 0 ||
+		internEntries.length > 0 ||
+		externEntries.length > 0 ||
+		foreignReferencesEntries.length > 0
+	const displayedFunctionName =
+		firstFunctionName !== '' ? firstFunctionName : (firstFunctionData.main?.name ?? '')
 
 	return (
 		<div className="reference-view">
@@ -200,10 +213,12 @@ export function App() {
 					</VSCodeButton>
 				</div>
 			</div>
-			{firstFunctionName !== '' ? (
+			{hasReferenceData ? (
 				<div className="reference-first-function">
 					<div className="reference-first-function__label">Current function</div>
-					<div className="reference-first-function__name">{firstFunctionName}()</div>
+					<div className="reference-first-function__name">
+						{displayedFunctionName !== '' ? `${displayedFunctionName}()` : ''}
+					</div>
 
 					{langInternalEntries.length > 0 ? (
 						<>

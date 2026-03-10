@@ -8,7 +8,7 @@ import {
 } from '@oaklean/profiler-core/dist/src/types'
 
 import WorkspaceUtils from '../../helper/WorkspaceUtils'
-import { FirstFunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
+import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
 
 type SensorValuesLike = {
 	aggregatedCPUTime?: number
@@ -180,7 +180,7 @@ export function toMetas(ref: unknown): unknown[] {
 export function buildReferenceEntry(
 	metaLike: unknown,
 	projectReportLike: unknown
-): FirstFunctionEntry | undefined {
+): FunctionEntry | undefined {
 	if (!isReferenceMetaLike(metaLike)) {
 		return undefined
 	}
@@ -233,26 +233,34 @@ export function buildReferenceEntry(
 		resolvedIdentifier ??
 		globalIndexSourceNodeIdentifier
 
+	const toNonEmptyName = (value: string | undefined): string | undefined =>
+		value !== undefined && value.length > 0 ? value : undefined
+
 	// Keep display-name resolution independent for each fallback source.
 	// This prevents one malformed identifier from suppressing all name fallbacks.
 	// Human-readable method name with robust fallback chain.
-	const nameFromFinalIdentifier =
+	const nameFromFinalIdentifier = toNonEmptyName(
 		finalIdentifier === undefined ? undefined : getDisplayName(finalIdentifier)
-	const nameFromGlobalIdentifier =
+	)
+	const nameFromGlobalIdentifier = toNonEmptyName(
 		globalIdentifier === undefined ? undefined : getDisplayName(globalIdentifier)
-	const nameFromResolvedIdentifier =
+	)
+	const nameFromResolvedIdentifier = toNonEmptyName(
 		resolvedIdentifier === undefined ? undefined : getDisplayName(resolvedIdentifier)
+	)
 	const nameFromGlobalIndexIdentifier =
 		globalIndexSourceNodeIdentifier === undefined
 			? undefined
-			: getDisplayName(globalIndexSourceNodeIdentifier)
+			: toNonEmptyName(getDisplayName(globalIndexSourceNodeIdentifier))
+	const normalizedJsonName = toNonEmptyName(jsonName)
+	const normalizedMethodName = toNonEmptyName(meta.methodName)
 	const name =
 		nameFromFinalIdentifier ??
 		nameFromGlobalIdentifier ??
 		nameFromResolvedIdentifier ??
 		nameFromGlobalIndexIdentifier ??
-		jsonName ??
-		meta.methodName ??
+		normalizedJsonName ??
+		normalizedMethodName ??
 		''
 
 	// CPU and energy values; prefer aggregated values where available.

@@ -7,7 +7,7 @@ import {
 } from './EditorFileMethodReferenceMapper'
 
 import WorkspaceUtils from '../../helper/WorkspaceUtils'
-import { FirstFunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
+import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
 
 type SourceNodeIndexLike = {
 	identifier?: string
@@ -180,12 +180,12 @@ export function buildForeignReferences(
 	currentNodeID: string | undefined,
 	callerNodeIDs: string[],
 	projectReport: unknown
-): FirstFunctionEntry[] {
+): FunctionEntry[] {
 	if (sourceNodeGraph === undefined || currentNodeID === undefined) {
 		return []
 	}
 
-	const result: FirstFunctionEntry[] = []
+	const result: FunctionEntry[] = []
 	// Use identifier (or node id fallback) as stable dedupe key.
 	const dedupeIdentifiers = new Set<string>()
 
@@ -227,7 +227,10 @@ function isFunctionGraphNode(node: SourceGraphNodeLike): boolean {
 		typeof node.globalIdentifier === 'function'
 			? node.globalIdentifier()
 			: undefined
-	return isFunctionLikeIdentifier(globalIdentifier?.sourceNodeIdentifier)
+	return (
+		isFunctionLikeIdentifier(globalIdentifier?.sourceNodeIdentifier) ||
+		isFunctionLikeIdentifier(globalIdentifier?.identifier)
+	)
 }
 
 // Identifier parser can throw on malformed values; this helper must stay fail-safe.

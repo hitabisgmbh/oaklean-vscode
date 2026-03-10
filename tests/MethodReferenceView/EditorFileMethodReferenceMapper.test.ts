@@ -86,6 +86,20 @@ describe('EditorFileMethodReferenceMapper', () => {
 		})
 	})
 
+	it('falls back to method name when identifier-based display name is empty', () => {
+		const result = buildReferenceEntry(
+			{
+				methodName: 'fallbackMethodName',
+				sourceNodeIndex: {
+					identifier: 'invalid-identifier'
+				}
+			},
+			undefined
+		)
+
+		expect(result?.name).toBe('fallbackMethodName')
+	})
+
 	it('uses project report global index fallback for identifier/path resolution', () => {
 		// Missing local index data should be resolved through project global index lookup.
 		const result = buildReferenceEntry(

@@ -191,4 +191,31 @@ describe('EditorFileMethodReferenceGraph', () => {
 		expect(result[1]?.identifier).toBe('{function:callerNoPath}')
 		expect(result[1]?.isNavigable).toBe(false)
 	})
+
+	it('treats global identifier fallback field as function-like when filtering callers', () => {
+		const graph = createGraph()
+		graph.sourceNodes.set('current', {
+			sourceNodeIndex: {
+				identifier: '{function:current}'
+			}
+		})
+		graph.sourceNodes.set('caller-via-global-identifier', {
+			sourceNodeIndex: {
+				pathIndex: { identifier: 'src/global-caller.ts' }
+			},
+			globalIdentifier: () => ({
+				identifier: '{function:callerViaGlobalIdentifier}'
+			})
+		})
+
+		const result = buildForeignReferences(
+			graph.asShape(),
+			'current',
+			['caller-via-global-identifier'],
+			undefined
+		)
+
+		expect(result).toHaveLength(1)
+		expect(result[0]?.isNavigable).toBe(false)
+	})
 })
