@@ -9,6 +9,7 @@ import {
 import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
 import { OpenSourceLocationProtocolCommands } from '../../protocols/OpenSourceLocationProtocol'
 import { CodiconButton } from '../components/buttons/CodiconButton'
+import { ReferenceList } from '../components/methodReference/ReferenceList'
 
 import './main.css'
 
@@ -44,10 +45,6 @@ function postToProvider(
 export function App() {
 	const [fileName, setFileName] = useState('')
 	const [firstFunctionName, setFirstFunctionName] = useState('')
-	const [isLangInternalOpen, setIsLangInternalOpen] = useState(true)
-	const [isInternOpen, setIsInternOpen] = useState(true)
-	const [isExternOpen, setIsExternOpen] = useState(true)
-	const [isForeignReferencesOpen, setIsForeignReferencesOpen] = useState(true)
 	const [sortMetric, setSortMetric] = useState<SortMetric>(SORT_METRICS.cpuTime)
 	const [sortDirection, setSortDirection] = useState<SortDirection>(
 		SORT_DIRECTIONS.desc
@@ -81,11 +78,6 @@ export function App() {
 				EditorFileMethodReferenceViewProtocolCommands.updateFirstFunction
 			) {
 				setFirstFunctionName(data.functionName ?? '')
-				// New function context should reopen all sections by default.
-				setIsLangInternalOpen(true)
-				setIsInternOpen(true)
-				setIsExternOpen(true)
-				setIsForeignReferencesOpen(true)
 				setFirstFunctionData({
 					main: data.main,
 					langInternal: data.langInternal,
@@ -121,12 +113,6 @@ export function App() {
 			identifier: entry.identifier,
 			relativePath: entry.relativePath
 		})
-	}
-
-	function getClickableCellClass(entry: FunctionEntry) {
-		return entry.isNavigable === true
-			? 'reference-first-function__cell--clickable'
-			: ''
 	}
 
 	function sortEntries(entries: FunctionEntry[] | undefined): FunctionEntry[] {
@@ -289,183 +275,29 @@ export function App() {
 					<div className="reference-first-function__name">
 						{displayedFunctionName !== '' ? `${displayedFunctionName}()` : ''}
 					</div>
-
-					{langInternalEntries.length > 0 ? (
-						<>
-							<button
-								className="reference-first-function__label section reference-first-function__section-toggle"
-								onClick={() => setIsLangInternalOpen((current) => !current)}
-								type="button"
-							>
-								<span
-									className={`codicon ${
-										isLangInternalOpen
-											? 'codicon-chevron-down'
-											: 'codicon-chevron-right'
-									} reference-first-function__section-icon`}
-								/>
-								<span>Lang internal:</span>
-							</button>
-							{isLangInternalOpen ? (
-								<div className="reference-first-function__table">
-									<div className="reference-first-function__row header">
-										<div>Identifier</div>
-										<div>Cpu(T)</div>
-										<div>Cpu(E)</div>
-										<div>Ram(E)</div>
-									</div>
-									{langInternalEntries.map((entry, idx) => (
-										<div
-											className="reference-first-function__row"
-											key={`lang-${idx}`}
-										>
-											<div>{entry.name}</div>
-											<div>{entry.cpuTime ?? ''}</div>
-											<div>{entry.cpuEnergy ?? ''}</div>
-											<div>{entry.ramEnergy ?? ''}</div>
-										</div>
-									))}
-								</div>
-							) : null}
-						</>
-					) : null}
-
-					{internEntries.length > 0 ? (
-						<>
-							<button
-								className="reference-first-function__label section reference-first-function__section-toggle"
-								onClick={() => setIsInternOpen((current) => !current)}
-								type="button"
-							>
-								<span
-									className={`codicon ${
-										isInternOpen
-											? 'codicon-chevron-down'
-											: 'codicon-chevron-right'
-									} reference-first-function__section-icon`}
-								/>
-								<span>Intern:</span>
-							</button>
-							{isInternOpen ? (
-								<div className="reference-first-function__table">
-									<div className="reference-first-function__row header">
-										<div>Identifier</div>
-										<div>Cpu(T)</div>
-										<div>Cpu(E)</div>
-										<div>Ram(E)</div>
-									</div>
-									{internEntries.map((entry, idx) => (
-										<div
-											className="reference-first-function__row"
-											key={`intern-${idx}`}
-										>
-											<div
-												className={getClickableCellClass(entry)}
-												onClick={() => openReference(entry)}
-											>
-												{entry.name}
-											</div>
-											<div>{entry.cpuTime ?? ''}</div>
-											<div>{entry.cpuEnergy ?? ''}</div>
-											<div>{entry.ramEnergy ?? ''}</div>
-										</div>
-									))}
-								</div>
-							) : null}
-						</>
-					) : null}
-
-					{externEntries.length > 0 ? (
-						<>
-							<button
-								className="reference-first-function__label section reference-first-function__section-toggle"
-								onClick={() => setIsExternOpen((current) => !current)}
-								type="button"
-							>
-								<span
-									className={`codicon ${
-										isExternOpen
-											? 'codicon-chevron-down'
-											: 'codicon-chevron-right'
-									} reference-first-function__section-icon`}
-								/>
-								<span>Extern:</span>
-							</button>
-							{isExternOpen ? (
-								<div className="reference-first-function__table">
-									<div className="reference-first-function__row header">
-										<div>Identifier</div>
-										<div>Cpu(T)</div>
-										<div>Cpu(E)</div>
-										<div>Ram(E)</div>
-									</div>
-									{externEntries.map((entry, idx) => (
-										<div
-											className="reference-first-function__row"
-											key={`extern-${idx}`}
-										>
-											<div
-												className={getClickableCellClass(entry)}
-												onClick={() => openReference(entry)}
-											>
-												{entry.name}
-											</div>
-											<div>{entry.cpuTime ?? ''}</div>
-											<div>{entry.cpuEnergy ?? ''}</div>
-											<div>{entry.ramEnergy ?? ''}</div>
-										</div>
-									))}
-								</div>
-							) : null}
-						</>
-					) : null}
-
-					{foreignReferencesEntries.length > 0 ? (
-						<>
-							<button
-								className="reference-first-function__label section reference-first-function__section-toggle"
-								onClick={() =>
-									setIsForeignReferencesOpen((current) => !current)
-								}
-								type="button"
-							>
-								<span
-									className={`codicon ${
-										isForeignReferencesOpen
-											? 'codicon-chevron-down'
-											: 'codicon-chevron-right'
-									} reference-first-function__section-icon`}
-								/>
-								<span>Foreign References:</span>
-							</button>
-							{isForeignReferencesOpen ? (
-								<div className="reference-first-function__table">
-									<div className="reference-first-function__row header">
-										<div>Identifier</div>
-										<div>Cpu(T)</div>
-										<div>Cpu(E)</div>
-										<div>Ram(E)</div>
-									</div>
-									{foreignReferencesEntries.map((entry, idx) => (
-										<div
-											className="reference-first-function__row"
-											key={`foreign-${idx}`}
-										>
-											<div
-												className={getClickableCellClass(entry)}
-												onClick={() => openReference(entry)}
-											>
-												{entry.name}
-											</div>
-											<div>{entry.cpuTime ?? ''}</div>
-											<div>{entry.cpuEnergy ?? ''}</div>
-											<div>{entry.ramEnergy ?? ''}</div>
-										</div>
-									))}
-								</div>
-							) : null}
-						</>
-					) : null}
+					<ReferenceList
+						entries={langInternalEntries}
+						keyPrefix="lang"
+						title="Lang internal:"
+					/>
+					<ReferenceList
+						entries={internEntries}
+						keyPrefix="intern"
+						onEntryClick={openReference}
+						title="Intern:"
+					/>
+					<ReferenceList
+						entries={externEntries}
+						keyPrefix="extern"
+						onEntryClick={openReference}
+						title="Extern:"
+					/>
+					<ReferenceList
+						entries={foreignReferencesEntries}
+						keyPrefix="foreign"
+						onEntryClick={openReference}
+						title="Foreign References:"
+					/>
 				</div>
 			) : null}
 		</div>
