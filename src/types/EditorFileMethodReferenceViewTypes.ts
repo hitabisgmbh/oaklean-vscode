@@ -1,7 +1,7 @@
 import {
 	SourceNodeID_number,
 	SourceNodeIdentifier_string
-} from '@oaklean/profiler-core/dist/src/types'
+} from '@oaklean/profiler-core'
 
 // Minimal sensor subset used to render measurement values in the reference list.
 export type SensorValuesLike = {

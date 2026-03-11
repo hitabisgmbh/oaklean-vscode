@@ -1,11 +1,11 @@
 import path from 'path'
 
-import { SourceNodeIdentifierHelper } from '@oaklean/profiler-core'
 import {
 	SourceNodeID_number,
+	SourceNodeIdentifierHelper,
 	SourceNodeIdentifier_string,
 	UnifiedPath_string
-} from '@oaklean/profiler-core/dist/src/types'
+} from '@oaklean/profiler-core'
 
 import WorkspaceUtils from '../../helper/WorkspaceUtils'
 import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'

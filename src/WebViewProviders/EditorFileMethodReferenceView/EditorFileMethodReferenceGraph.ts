@@ -1,5 +1,7 @@
-import { SourceNodeIdentifierHelper } from '@oaklean/profiler-core'
-import { SourceNodeID_number } from '@oaklean/profiler-core/dist/src/types'
+import {
+	SourceNodeID_number,
+	SourceNodeIdentifierHelper
+} from '@oaklean/profiler-core'
 
 import {
 	buildReferenceEntry,
