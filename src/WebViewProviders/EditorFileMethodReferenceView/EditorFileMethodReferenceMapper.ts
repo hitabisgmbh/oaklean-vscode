@@ -11,6 +11,7 @@ import WorkspaceUtils from '../../helper/WorkspaceUtils'
 import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
 import {
 	isReferenceMetaLike,
+	JsonMetaLike,
 	ReferenceMetaLike,
 	SourceNodeIndexLike
 } from '../../types/EditorFileMethodReferenceViewTypes'
@@ -45,6 +46,159 @@ function isIterableUnknown(value: unknown): value is Iterable<unknown> {
 		return false
 	}
 	return typeof Reflect.get(value, Symbol.iterator) === 'function'
+}
+
+function toNonEmptyName(value: string | undefined): string | undefined {
+	return value !== undefined && value.length > 0 ? value : undefined
+}
+
+type IdentifierResolution = {
+	finalIdentifier: string | undefined
+	globalIdentifier: string | undefined
+	resolvedIdentifier: string | undefined
+	globalIndexSourceNodeIdentifier: SourceNodeIdentifier_string | undefined
+	resolvedIndex: SourceNodeIndexLike | undefined
+	globalIndexEntry: SourceNodeIndexLike | undefined
+}
+
+function resolveIdentifiers(
+	meta: ReferenceMetaLike,
+	projectReportLike: unknown
+): IdentifierResolution {
+	const identifier = meta.sourceNodeIndex?.identifier
+	const globalIdentifier =
+		typeof meta.sourceNodeIndex?.globalIdentifier === 'function'
+			? meta.sourceNodeIndex.globalIdentifier()?.identifier
+			: undefined
+
+	const resolvedIndex =
+		typeof meta.getSourceNodeIndexByID === 'function' && meta.id !== undefined
+			? meta.getSourceNodeIndexByID(meta.id)
+			: undefined
+
+	const resolvedIdentifier =
+		typeof resolvedIndex?.globalIdentifier === 'function'
+			? resolvedIndex.globalIdentifier()?.identifier
+			: resolvedIndex?.identifier
+
+	const projectReport = isProjectReportLike(projectReportLike)
+		? projectReportLike
+		: undefined
+	const globalIndexEntry =
+		meta.id !== undefined && projectReport?.globalIndex?.getSourceNodeIndexByID
+			? projectReport.globalIndex.getSourceNodeIndexByID(meta.id)
+			: undefined
+	const globalIndexIdentifier =
+		globalIndexEntry !== undefined
+			? (globalIndexEntry.globalIdentifier?.()?.identifier ??
+				globalIndexEntry.identifier)
+			: undefined
+	const globalIndexSourceNodeIdentifier = toSourceNodeIdentifier(
+		globalIndexIdentifier
+	)
+	const finalIdentifier =
+		identifier ??
+		globalIdentifier ??
+		resolvedIdentifier ??
+		globalIndexSourceNodeIdentifier
+
+	return {
+		finalIdentifier,
+		globalIdentifier,
+		resolvedIdentifier,
+		globalIndexSourceNodeIdentifier,
+		resolvedIndex,
+		globalIndexEntry
+	}
+}
+
+function resolveDisplayName(
+	meta: ReferenceMetaLike,
+	jsonName: string,
+	identifierResolution: IdentifierResolution
+): string {
+	const {
+		finalIdentifier,
+		globalIdentifier,
+		resolvedIdentifier,
+		globalIndexSourceNodeIdentifier
+	} = identifierResolution
+
+	const nameFromFinalIdentifier = toNonEmptyName(
+		finalIdentifier === undefined ? undefined : getDisplayName(finalIdentifier)
+	)
+	const nameFromGlobalIdentifier = toNonEmptyName(
+		globalIdentifier === undefined
+			? undefined
+			: getDisplayName(globalIdentifier)
+	)
+	const nameFromResolvedIdentifier = toNonEmptyName(
+		resolvedIdentifier === undefined
+			? undefined
+			: getDisplayName(resolvedIdentifier)
+	)
+	const nameFromGlobalIndexIdentifier =
+		globalIndexSourceNodeIdentifier === undefined
+			? undefined
+			: toNonEmptyName(getDisplayName(globalIndexSourceNodeIdentifier))
+	const normalizedJsonName = toNonEmptyName(jsonName)
+	const normalizedMethodName = toNonEmptyName(meta.methodName)
+
+	return (
+		nameFromFinalIdentifier ??
+		nameFromGlobalIdentifier ??
+		nameFromResolvedIdentifier ??
+		nameFromGlobalIndexIdentifier ??
+		normalizedJsonName ??
+		normalizedMethodName ??
+		''
+	)
+}
+
+function resolveSensorValues(meta: ReferenceMetaLike): {
+	cpuTime: number | undefined
+	cpuEnergy: number | undefined
+	ramEnergy: number | undefined
+} {
+	return {
+		cpuTime:
+			meta.sensorValues?.aggregatedCPUTime ?? meta.sensorValues?.selfCPUTime,
+		cpuEnergy:
+			meta.sensorValues?.aggregatedCPUEnergyConsumption ??
+			meta.sensorValues?.selfCPUEnergyConsumption,
+		ramEnergy: meta.sensorValues?.aggregatedRAMEnergyConsumption
+	}
+}
+
+function resolveRelativePath(
+	meta: ReferenceMetaLike,
+	json: JsonMetaLike | undefined,
+	resolvedIndex: SourceNodeIndexLike | undefined,
+	globalIndexEntry: SourceNodeIndexLike | undefined
+): string | undefined {
+	const filePath =
+		typeof json?.filePath === 'string' ? json.filePath : undefined
+	const relativePathFromMeta =
+		filePath === undefined
+			? undefined
+			: WorkspaceUtils.getRelativeWorkspacePath(filePath)?.toString()
+	const relativePathFromIndex =
+		meta.sourceNodeIndex?.pathIndex?.identifier ??
+		resolvedIndex?.pathIndex?.identifier ??
+		globalIndexEntry?.pathIndex?.identifier
+	return relativePathFromMeta ?? relativePathFromIndex
+}
+
+function resolveNotPresentInOriginalSourceCode(
+	meta: ReferenceMetaLike,
+	resolvedIndex: SourceNodeIndexLike | undefined,
+	globalIndexEntry: SourceNodeIndexLike | undefined
+): boolean {
+	const presentInOriginalSourceCode =
+		meta.sourceNodeIndex?.presentInOriginalSourceCode ??
+		resolvedIndex?.presentInOriginalSourceCode ??
+		globalIndexEntry?.presentInOriginalSourceCode
+	return presentInOriginalSourceCode === false
 }
 
 // Extract human-readable function/method name from source-node identifier.
@@ -162,118 +316,27 @@ export function buildReferenceEntry(
 	}
 	const meta = metaLike
 
-	// Primary identifier source.
-	const identifier = meta.sourceNodeIndex?.identifier
-
-	// Fallback 1: global identifier from local source-node index.
-	const globalIdentifier =
-		typeof meta.sourceNodeIndex?.globalIdentifier === 'function'
-			? meta.sourceNodeIndex.globalIdentifier()?.identifier
-			: undefined
-
-	// Fallback 2: resolve index by id in current meta scope.
-	const resolvedIndex =
-		typeof meta.getSourceNodeIndexByID === 'function' && meta.id !== undefined
-			? meta.getSourceNodeIndexByID(meta.id)
-			: undefined
-
-	const resolvedIdentifier =
-		typeof resolvedIndex?.globalIdentifier === 'function'
-			? resolvedIndex.globalIdentifier()?.identifier
-			: resolvedIndex?.identifier
-
-	// Fallback 3: resolve via project global index.
-	const projectReport = isProjectReportLike(projectReportLike)
-		? projectReportLike
-		: undefined
-	const globalIndexEntry =
-		meta.id !== undefined && projectReport?.globalIndex?.getSourceNodeIndexByID
-			? projectReport.globalIndex.getSourceNodeIndexByID(meta.id)
-			: undefined
-	const globalIndexIdentifier =
-		globalIndexEntry !== undefined
-			? (globalIndexEntry.globalIdentifier?.()?.identifier ??
-				globalIndexEntry.identifier)
-			: undefined
-	const globalIndexSourceNodeIdentifier = toSourceNodeIdentifier(
-		globalIndexIdentifier
-	)
-
 	// Optional JSON projection used for display/path fallbacks.
 	const json = typeof meta.toJSON === 'function' ? meta.toJSON() : undefined
 	const jsonName =
 		json?.methodName ?? (json?.filePath ? path.basename(json.filePath) : '')
+	const identifierResolution = resolveIdentifiers(meta, projectReportLike)
+	const { finalIdentifier, resolvedIndex, globalIndexEntry } =
+		identifierResolution
 
-	// Final identifier used for navigation and preferred display label.
-	const finalIdentifier =
-		identifier ??
-		globalIdentifier ??
-		resolvedIdentifier ??
-		globalIndexSourceNodeIdentifier
-
-	const toNonEmptyName = (value: string | undefined): string | undefined =>
-		value !== undefined && value.length > 0 ? value : undefined
-
-	// Keep display-name resolution independent for each fallback source.
-	// This prevents one malformed identifier from suppressing all name fallbacks.
-	// Human-readable method name with robust fallback chain.
-	const nameFromFinalIdentifier = toNonEmptyName(
-		finalIdentifier === undefined ? undefined : getDisplayName(finalIdentifier)
+	const name = resolveDisplayName(meta, jsonName, identifierResolution)
+	const { cpuTime, cpuEnergy, ramEnergy } = resolveSensorValues(meta)
+	const relativePath = resolveRelativePath(
+		meta,
+		json,
+		resolvedIndex,
+		globalIndexEntry
 	)
-	const nameFromGlobalIdentifier = toNonEmptyName(
-		globalIdentifier === undefined
-			? undefined
-			: getDisplayName(globalIdentifier)
+	const notPresentInOriginalSourceCode = resolveNotPresentInOriginalSourceCode(
+		meta,
+		resolvedIndex,
+		globalIndexEntry
 	)
-	const nameFromResolvedIdentifier = toNonEmptyName(
-		resolvedIdentifier === undefined
-			? undefined
-			: getDisplayName(resolvedIdentifier)
-	)
-	const nameFromGlobalIndexIdentifier =
-		globalIndexSourceNodeIdentifier === undefined
-			? undefined
-			: toNonEmptyName(getDisplayName(globalIndexSourceNodeIdentifier))
-	const normalizedJsonName = toNonEmptyName(jsonName)
-	const normalizedMethodName = toNonEmptyName(meta.methodName)
-	const name =
-		nameFromFinalIdentifier ??
-		nameFromGlobalIdentifier ??
-		nameFromResolvedIdentifier ??
-		nameFromGlobalIndexIdentifier ??
-		normalizedJsonName ??
-		normalizedMethodName ??
-		''
-
-	// CPU and energy values; prefer aggregated values where available.
-	const cpuTime =
-		meta.sensorValues?.aggregatedCPUTime ?? meta.sensorValues?.selfCPUTime
-	const cpuEnergy =
-		meta.sensorValues?.aggregatedCPUEnergyConsumption ??
-		meta.sensorValues?.selfCPUEnergyConsumption
-	const ramEnergy = meta.sensorValues?.aggregatedRAMEnergyConsumption
-
-	// Path source 1: json filePath converted to workspace-relative format.
-	const filePath =
-		typeof json?.filePath === 'string' ? json.filePath : undefined
-	const relativePathFromMeta =
-		filePath === undefined
-			? undefined
-			: WorkspaceUtils.getRelativeWorkspacePath(filePath)?.toString()
-
-	// Path source 2/3: direct index path identifiers from resolved indexes.
-	const relativePathFromIndex =
-		meta.sourceNodeIndex?.pathIndex?.identifier ??
-		resolvedIndex?.pathIndex?.identifier ??
-		globalIndexEntry?.pathIndex?.identifier
-
-	// Final path used for navigation payload.
-	const relativePath = relativePathFromMeta ?? relativePathFromIndex
-	// Track runtime-only nodes so the webview can optionally filter them out.
-	const presentInOriginalSourceCode =
-		meta.sourceNodeIndex?.presentInOriginalSourceCode ??
-		resolvedIndex?.presentInOriginalSourceCode ??
-		globalIndexEntry?.presentInOriginalSourceCode
 
 	return {
 		name,
@@ -282,6 +345,6 @@ export function buildReferenceEntry(
 		ramEnergy,
 		identifier: finalIdentifier,
 		relativePath,
-		notPresentInOriginalSourceCode: presentInOriginalSourceCode === false
+		notPresentInOriginalSourceCode
 	}
 }
