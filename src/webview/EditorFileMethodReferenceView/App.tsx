@@ -29,6 +29,18 @@ const SORT_METRICS = {
 
 type SortMetric = (typeof SORT_METRICS)[keyof typeof SORT_METRICS]
 
+const SORT_METRIC_LABEL: Record<SortMetric, string> = {
+	[SORT_METRICS.cpuTime]: 'Cpu(T)',
+	[SORT_METRICS.cpuEnergy]: 'Cpu(E)',
+	[SORT_METRICS.ramEnergy]: 'Ram(E)'
+}
+
+const NEXT_SORT_METRIC: Record<SortMetric, SortMetric> = {
+	[SORT_METRICS.cpuTime]: SORT_METRICS.cpuEnergy,
+	[SORT_METRICS.cpuEnergy]: SORT_METRICS.ramEnergy,
+	[SORT_METRICS.ramEnergy]: SORT_METRICS.cpuTime
+}
+
 const SORT_DIRECTIONS = {
 	desc: 'desc',
 	asc: 'asc'
@@ -154,25 +166,11 @@ export function App() {
 	}
 
 	function getSortMetricLabel() {
-		if (sortMetric === SORT_METRICS.cpuTime) {
-			return 'Cpu(T)'
-		}
-		if (sortMetric === SORT_METRICS.cpuEnergy) {
-			return 'Cpu(E)'
-		}
-		return 'Ram(E)'
+		return SORT_METRIC_LABEL[sortMetric]
 	}
 
 	function cycleSortMetric() {
-		if (sortMetric === SORT_METRICS.cpuTime) {
-			setSortMetric(SORT_METRICS.cpuEnergy)
-			return
-		}
-		if (sortMetric === SORT_METRICS.cpuEnergy) {
-			setSortMetric(SORT_METRICS.ramEnergy)
-			return
-		}
-		setSortMetric(SORT_METRICS.cpuTime)
+		setSortMetric((currentMetric) => NEXT_SORT_METRIC[currentMetric])
 	}
 
 	function toggleSortDirection() {
