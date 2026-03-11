@@ -8,6 +8,7 @@ import {
 	toSourceNodeIdentifier
 } from './EditorFileMethodReferenceMapper'
 
+import { isRecord } from '../../helper/typeGuards'
 import WorkspaceUtils from '../../helper/WorkspaceUtils'
 import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
 
@@ -59,11 +60,6 @@ const SOURCE_NODE_FUNCTION_TYPES = new Set([
 	'GetAccessorDeclaration',
 	'SetAccessorDeclaration'
 ])
-
-// Generic object guard used by all shape validators in this module.
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === 'object'
-}
 
 function isSourceGraphNodeLike(value: unknown): value is SourceGraphNodeLike {
 	return isRecord(value)

@@ -1,63 +1,26 @@
 import path from 'path'
 
 import {
-	SourceNodeID_number,
 	SourceNodeIdentifierHelper,
 	SourceNodeIdentifier_string,
 	UnifiedPath_string
 } from '@oaklean/profiler-core'
 
+import { isRecord } from '../../helper/typeGuards'
 import WorkspaceUtils from '../../helper/WorkspaceUtils'
 import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
-
-type SensorValuesLike = {
-	aggregatedCPUTime?: number
-	selfCPUTime?: number
-	aggregatedCPUEnergyConsumption?: number
-	selfCPUEnergyConsumption?: number
-	aggregatedRAMEnergyConsumption?: number
-}
-
-type SourceNodeIndexLike = {
-	identifier?: SourceNodeIdentifier_string
-	globalIdentifier?: () =>
-		| { identifier?: SourceNodeIdentifier_string }
-		| undefined
-	pathIndex?: { identifier?: string }
-	presentInOriginalSourceCode?: boolean
-}
-
-type JsonMetaLike = {
-	methodName?: string
-	filePath?: string
-}
-
-type ReferenceMetaLike = {
-	id?: SourceNodeID_number
-	methodName?: string
-	sourceNodeIndex?: SourceNodeIndexLike
-	sensorValues?: SensorValuesLike
-	getSourceNodeIndexByID?: (
-		id: SourceNodeID_number
-	) => SourceNodeIndexLike | undefined
-	toJSON?: () => JsonMetaLike | undefined
-}
+import {
+	isReferenceMetaLike,
+	ReferenceMetaLike,
+	SourceNodeIndexLike
+} from '../../types/EditorFileMethodReferenceViewTypes'
 
 type ProjectReportLike = {
 	globalIndex?: {
 		getSourceNodeIndexByID?: (
-			id: SourceNodeID_number
+			id: NonNullable<ReferenceMetaLike['id']>
 		) => SourceNodeIndexLike | undefined
 	}
-}
-
-// Generic object guard reused by all runtime-shape checks in this file.
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === 'object'
-}
-
-function isReferenceMetaLike(value: unknown): value is ReferenceMetaLike {
-	return isRecord(value)
 }
 
 function isProjectReportLike(value: unknown): value is ProjectReportLike {

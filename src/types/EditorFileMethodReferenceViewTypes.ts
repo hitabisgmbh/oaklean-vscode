@@ -3,6 +3,10 @@ import {
 	SourceNodeIdentifier_string
 } from '@oaklean/profiler-core'
 
+import { isRecord } from '../helper/typeGuards'
+
+export { isRecord }
+
 // Minimal sensor subset used to render measurement values in the reference list.
 export type SensorValuesLike = {
 	aggregatedCPUTime?: number
@@ -53,11 +57,6 @@ export type SourceFileFunctionsLike = {
 // Minimal SourceFileMetaData shape needed by this provider.
 export type SourceFileMetaDataLike = {
 	functions: SourceFileFunctionsLike
-}
-
-// Generic runtime object guard used by all custom validators below.
-export function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === 'object'
 }
 
 // Lightweight guard: we only need object semantics for reference entries.

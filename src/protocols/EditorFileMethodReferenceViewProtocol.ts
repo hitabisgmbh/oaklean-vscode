@@ -1,6 +1,8 @@
 import { OpenSourceLocationProtocol_ChildToParent } from './OpenSourceLocationProtocol'
 import { OpenSourceLocationProtocolCommands } from './OpenSourceLocationProtocol'
 
+import { isRecord } from '../helper/typeGuards'
+
 export enum EditorFileMethodReferenceViewProtocolCommands {
 	closeActiveFile = 'closeActiveFile',
 	updateFileName = 'updateFileName',
@@ -57,10 +59,6 @@ export type EditorFileMethodReferenceViewProtocol_ChildToParent =
 export type EditorFileMethodReferenceViewProtocol_ParentToChild =
 	| EditorFileMethodReferenceViewProtocol_UpdateFileNameMessage
 	| EditorFileMethodReferenceViewProtocol_UpdateFirstFunctionMessage
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === 'object'
-}
 
 function isNumberOrUndefined(value: unknown): value is number | undefined {
 	return value === undefined || typeof value === 'number'

@@ -2,6 +2,7 @@ import vscode, { Disposable, TextEditor } from 'vscode'
 import { UnifiedPath } from '@oaklean/profiler-core'
 
 import { Container } from '../container'
+import { isRecord } from '../helper/typeGuards'
 import WorkspaceUtils from '../helper/WorkspaceUtils'
 
 // Type representing a source code location with line and column numbers.
@@ -80,11 +81,6 @@ type SourceFileMetaDataLike = {
 	functions?: {
 		values: () => Iterator<unknown>
 	}
-}
-
-// Type guard to check if a value is a Record<string, unknown>
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === 'object'
 }
 
 // Type guard to check if a value is ProgramStructureTreeLike
