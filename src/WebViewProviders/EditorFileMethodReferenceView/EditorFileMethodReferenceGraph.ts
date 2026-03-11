@@ -1,4 +1,5 @@
 import {
+	ProgramStructureTreeType,
 	SourceNodeID_number,
 	SourceNodeIdentifierHelper
 } from '@oaklean/profiler-core'
@@ -52,14 +53,23 @@ export type SourceNodeGraphLike = {
 
 export type CallerEdgeDirection = 'incoming' | 'outgoing'
 
-const SOURCE_NODE_FUNCTION_TYPES = new Set([
-	'FunctionDeclaration',
-	'FunctionExpression',
-	'MethodDefinition',
-	'ConstructorDeclaration',
-	'GetAccessorDeclaration',
-	'SetAccessorDeclaration'
-])
+type FunctionLikePstType =
+	| ProgramStructureTreeType.FunctionDeclaration
+	| ProgramStructureTreeType.FunctionExpression
+	| ProgramStructureTreeType.MethodDefinition
+	| ProgramStructureTreeType.ConstructorDeclaration
+	| ProgramStructureTreeType.GetAccessorDeclaration
+	| ProgramStructureTreeType.SetAccessorDeclaration
+
+const SOURCE_NODE_FUNCTION_TYPES: ReadonlySet<ProgramStructureTreeType> =
+	new Set<FunctionLikePstType>([
+		ProgramStructureTreeType.FunctionDeclaration,
+		ProgramStructureTreeType.FunctionExpression,
+		ProgramStructureTreeType.MethodDefinition,
+		ProgramStructureTreeType.ConstructorDeclaration,
+		ProgramStructureTreeType.GetAccessorDeclaration,
+		ProgramStructureTreeType.SetAccessorDeclaration
+	])
 
 function isSourceGraphNodeLike(value: unknown): value is SourceGraphNodeLike {
 	return isRecord(value)
