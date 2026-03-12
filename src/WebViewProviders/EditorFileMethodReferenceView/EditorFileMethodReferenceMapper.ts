@@ -112,7 +112,7 @@ function resolveIdentifiers(
 	}
 }
 
-function resolveDisplayName(
+function resolveName(
 	meta: ReferenceMetaLike,
 	jsonName: string,
 	identifierResolution: IdentifierResolution
@@ -124,35 +124,53 @@ function resolveDisplayName(
 		globalIndexSourceNodeIdentifier
 	} = identifierResolution
 
-	const nameFromFinalIdentifier = toNonEmptyName(
-		finalIdentifier === undefined ? undefined : getDisplayName(finalIdentifier)
-	)
-	const nameFromGlobalIdentifier = toNonEmptyName(
-		globalIdentifier === undefined
-			? undefined
-			: getDisplayName(globalIdentifier)
-	)
-	const nameFromResolvedIdentifier = toNonEmptyName(
-		resolvedIdentifier === undefined
-			? undefined
-			: getDisplayName(resolvedIdentifier)
-	)
-	const nameFromGlobalIndexIdentifier =
-		globalIndexSourceNodeIdentifier === undefined
-			? undefined
-			: toNonEmptyName(getDisplayName(globalIndexSourceNodeIdentifier))
-	const normalizedJsonName = toNonEmptyName(jsonName)
-	const normalizedMethodName = toNonEmptyName(meta.methodName)
+	if (finalIdentifier !== undefined) {
+		const nameFromFinalIdentifier = toNonEmptyName(
+			getDisplayName(finalIdentifier)
+		)
+		if (nameFromFinalIdentifier !== undefined) {
+			return nameFromFinalIdentifier
+		}
+	}
 
-	return (
-		nameFromFinalIdentifier ??
-		nameFromGlobalIdentifier ??
-		nameFromResolvedIdentifier ??
-		nameFromGlobalIndexIdentifier ??
-		normalizedJsonName ??
-		normalizedMethodName ??
-		''
-	)
+	if (globalIdentifier !== undefined) {
+		const nameFromGlobalIdentifier = toNonEmptyName(
+			getDisplayName(globalIdentifier)
+		)
+		if (nameFromGlobalIdentifier !== undefined) {
+			return nameFromGlobalIdentifier
+		}
+	}
+
+	if (resolvedIdentifier !== undefined) {
+		const nameFromResolvedIdentifier = toNonEmptyName(
+			getDisplayName(resolvedIdentifier)
+		)
+		if (nameFromResolvedIdentifier !== undefined) {
+			return nameFromResolvedIdentifier
+		}
+	}
+
+	if (globalIndexSourceNodeIdentifier !== undefined) {
+		const nameFromGlobalIndexIdentifier = toNonEmptyName(
+			getDisplayName(globalIndexSourceNodeIdentifier)
+		)
+		if (nameFromGlobalIndexIdentifier !== undefined) {
+			return nameFromGlobalIndexIdentifier
+		}
+	}
+
+	const normalizedJsonName = toNonEmptyName(jsonName)
+	if (normalizedJsonName !== undefined) {
+		return normalizedJsonName
+	}
+
+	const normalizedMethodName = toNonEmptyName(meta.methodName)
+	if (normalizedMethodName !== undefined) {
+		return normalizedMethodName
+	}
+
+	return ''
 }
 
 function resolveSensorValues(meta: ReferenceMetaLike): {
@@ -324,7 +342,7 @@ export function buildReferenceEntry(
 	const { finalIdentifier, resolvedIndex, globalIndexEntry } =
 		identifierResolution
 
-	const name = resolveDisplayName(meta, jsonName, identifierResolution)
+	const name = resolveName(meta, jsonName, identifierResolution)
 	const { cpuTime, cpuEnergy, ramEnergy } = resolveSensorValues(meta)
 	const relativePath = resolveRelativePath(
 		meta,
