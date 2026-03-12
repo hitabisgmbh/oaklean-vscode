@@ -115,24 +115,9 @@ type MessageValidator<T extends Record<string, unknown>> = (
 	value: Record<string, unknown>
 ) => value is T
 
-const isCloseActiveFileMessage: MessageValidator<
-	EditorFileMethodReferenceViewProtocol_CloseActiveFileMessage
-> = (
+const alwaysValidMessage = <T extends Record<string, unknown>>(
 	value: Record<string, unknown>
-): value is EditorFileMethodReferenceViewProtocol_CloseActiveFileMessage => true
-
-const isRequestFileNameMessage: MessageValidator<
-	EditorFileMethodReferenceViewProtocol_RequestFileNameMessage
-> = (
-	value: Record<string, unknown>
-): value is EditorFileMethodReferenceViewProtocol_RequestFileNameMessage => true
-
-const isRequestFirstFunctionMessage: MessageValidator<
-	EditorFileMethodReferenceViewProtocol_RequestFirstFunctionMessage
-> = (
-	value: Record<string, unknown>
-): value is EditorFileMethodReferenceViewProtocol_RequestFirstFunctionMessage =>
-	true
+): value is T => true
 
 const isOpenSourceLocationMessage: MessageValidator<
 	ChildToParentMessageByCommand[OpenSourceLocationProtocolCommands.openSourceLocation]
@@ -168,11 +153,11 @@ const childToParentValidators: {
 	>
 } = {
 	[EditorFileMethodReferenceViewProtocolCommands.closeActiveFile]:
-		isCloseActiveFileMessage,
+		alwaysValidMessage,
 	[EditorFileMethodReferenceViewProtocolCommands.requestFileName]:
-		isRequestFileNameMessage,
+		alwaysValidMessage,
 	[EditorFileMethodReferenceViewProtocolCommands.requestFirstFunction]:
-		isRequestFirstFunctionMessage,
+		alwaysValidMessage,
 	[OpenSourceLocationProtocolCommands.openSourceLocation]:
 		isOpenSourceLocationMessage
 }
