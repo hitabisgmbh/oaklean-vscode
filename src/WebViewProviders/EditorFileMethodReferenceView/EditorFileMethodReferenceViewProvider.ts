@@ -18,8 +18,7 @@ import {
 	buildReferenceEntry,
 	getDisplayName,
 	toMetas,
-	toSourceNodeIdentifier,
-	toUnifiedPathString
+	toSourceNodeIdentifier
 } from './EditorFileMethodReferenceMapper'
 import { getEditorFileMethodReferenceViewHtml } from './EditorFileMethodReferenceViewHtml'
 
@@ -477,77 +476,11 @@ export class EditorFileMethodReferenceViewProvider
 		return undefined
 	}
 
-	// Resolves the "first function" for the current file using report indexes when possible.
+	// Resolve the first function in file metadata with no extra index indirection.
 	private getFirstFunctionMeta(
 		sourceFileMetaData: SourceFileMetaDataLike
 	): ReferenceMetaLike | undefined {
-		// Stable fallback if report/global-index resolution cannot be completed.
-		const fallbackMeta = sourceFileMetaData.functions.values().next().value
-		// Profiler index API uses string operation dispatch ("get" / "set"/...).
-		const getOperation = 'get'
-		try {
-			const projectReport = this._container.textDocumentController.projectReport
-			if (projectReport === undefined) {
-				return fallbackMeta
-			}
-
-			const relativeWorkspacePath = WorkspaceUtils.getRelativeWorkspacePath(
-				this.editor?.document.fileName ?? ''
-			)
-			if (relativeWorkspacePath === undefined) {
-				return fallbackMeta
-			}
-
-			const moduleIndex = projectReport.globalIndex.getModuleIndex(getOperation)
-			if (moduleIndex === undefined) {
-				return fallbackMeta
-			}
-
-			const unifiedRelativeWorkspacePath = toUnifiedPathString(
-				relativeWorkspacePath.toString()
-			)
-			if (unifiedRelativeWorkspacePath === undefined) {
-				return fallbackMeta
-			}
-			const pathIndex = moduleIndex.getFilePathIndex(
-				getOperation,
-				unifiedRelativeWorkspacePath
-			)
-			if (pathIndex?.file === undefined) {
-				return fallbackMeta
-			}
-			if (pathIndex.id === undefined) {
-				return fallbackMeta
-			}
-
-			// Use first local function identifier as lookup key in the file's path index.
-			const firstIdentifier = sourceFileMetaData.functions.entries().next()
-				.value?.[1]?.sourceNodeIndex?.identifier
-
-			if (firstIdentifier === undefined) {
-				return fallbackMeta
-			}
-
-			const functionIndex = pathIndex.getSourceNodeIndex(
-				getOperation,
-				firstIdentifier
-			)
-
-			if (functionIndex?.id === undefined) {
-				return fallbackMeta
-			}
-
-			const functionMeta = sourceFileMetaData.functions.get(functionIndex.id)
-
-			if (functionMeta === undefined) {
-				return fallbackMeta
-			}
-			return functionMeta
-		} catch (e) {
-			// Defensive catch: third-party report/index structures may throw on malformed state.
-			console.error('getFirstFunctionMeta failed', e)
-			return fallbackMeta
-		}
+		return sourceFileMetaData.functions.values().next().value
 	}
 
 	// Closes the currently active editor tab.
