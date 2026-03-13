@@ -1,6 +1,10 @@
 import {
-	SourceNodeID_number,
-	SourceNodeIdentifier_string
+	ISensorValues,
+	SourceFileMetaData,
+	SourceNodeIndex,
+	SourceNodeIndexType,
+	SourceNodeMetaData,
+	SourceNodeMetaDataType
 } from '@oaklean/profiler-core'
 
 import { isRecord } from '../helper/typeGuards'
@@ -8,23 +12,23 @@ import { isRecord } from '../helper/typeGuards'
 export { isRecord }
 
 // Minimal sensor subset used to render measurement values in the reference list.
-export type SensorValuesLike = {
-	aggregatedCPUTime?: number
-	selfCPUTime?: number
-	aggregatedCPUEnergyConsumption?: number
-	selfCPUEnergyConsumption?: number
-	aggregatedRAMEnergyConsumption?: number
-}
+export type SensorValuesLike = Pick<
+	ISensorValues,
+	| 'aggregatedCPUTime'
+	| 'selfCPUTime'
+	| 'aggregatedCPUEnergyConsumption'
+	| 'selfCPUEnergyConsumption'
+	| 'aggregatedRAMEnergyConsumption'
+>
 
 // Minimal source-node index subset required for display + navigation fallback resolution.
-export type SourceNodeIndexLike = {
-	identifier?: SourceNodeIdentifier_string
-	globalIdentifier?: () =>
-		| { identifier?: SourceNodeIdentifier_string }
-		| undefined
-	pathIndex?: { identifier?: string }
-	presentInOriginalSourceCode?: boolean
-}
+export type SourceNodeIndexLike = Pick<
+	SourceNodeIndex<SourceNodeIndexType.SourceNode>,
+	| 'identifier'
+	| 'globalIdentifier'
+	| 'pathIndex'
+	| 'presentInOriginalSourceCode'
+>
 
 // JSON projection we read from profiler metadata objects.
 export type JsonMetaLike = {
@@ -32,32 +36,30 @@ export type JsonMetaLike = {
 	filePath?: string
 }
 
-// Runtime shape of one reference entry from profiler metadata.
-export type ReferenceMetaLike = {
-	id?: SourceNodeID_number
-	methodName?: string
-	sourceNodeIndex?: SourceNodeIndexLike
-	sensorValues?: SensorValuesLike
-	lang_internal?: unknown
-	intern?: unknown
-	extern?: unknown
-	getSourceNodeIndexByID?: (
-		id: SourceNodeID_number
-	) => SourceNodeIndexLike | undefined
-	toJSON?: () => JsonMetaLike | undefined
-}
+type CoreReferenceMeta = SourceNodeMetaData<
+	| SourceNodeMetaDataType.SourceNode
+	| SourceNodeMetaDataType.LangInternalSourceNode
+>
 
-// Runtime API shape for the function collection in SourceFileMetaData.
-export type SourceFileFunctionsLike = {
-	values: () => IterableIterator<ReferenceMetaLike>
-	entries: () => Iterator<[unknown, ReferenceMetaLike]>
-	get: (id: SourceNodeID_number) => ReferenceMetaLike | undefined
+// Runtime shape of one reference entry from profiler metadata.
+export type ReferenceMetaLike = Partial<
+	Pick<
+		CoreReferenceMeta,
+		| 'id'
+		| 'sourceNodeIndex'
+		| 'sensorValues'
+		| 'lang_internal'
+		| 'intern'
+		| 'extern'
+		| 'getSourceNodeIndexByID'
+		| 'toJSON'
+	>
+> & {
+	methodName?: string
 }
 
 // Minimal SourceFileMetaData shape needed by this provider.
-export type SourceFileMetaDataLike = {
-	functions: SourceFileFunctionsLike
-}
+export type SourceFileMetaDataLike = Pick<SourceFileMetaData, 'functions'>
 
 // Lightweight guard: we only need object semantics for reference entries.
 export function isReferenceMetaLike(

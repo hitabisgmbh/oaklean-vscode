@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals'
+import type { ProjectReport } from '@oaklean/profiler-core'
 
 import {
 	buildReferenceEntry,
@@ -13,12 +14,17 @@ jest.mock('vscode')
 describe('EditorFileMethodReferenceMapper', () => {
 	it('returns readable name for valid function identifier', () => {
 		// "{function:name}" should be converted to plain display label.
-		expect(getDisplayName('{function:myFunction}')).toBe('myFunction')
+		const identifier = toSourceNodeIdentifier('{function:myFunction}')
+		expect(identifier).toBeDefined()
+		expect(getDisplayName(identifier!)).toBe('myFunction')
 	})
 
 	it('returns empty name for malformed identifier', () => {
 		// Invalid identifier formats are intentionally rendered as empty labels.
-		expect(getDisplayName('invalid-identifier')).toBe('')
+		const malformedIdentifier = 'invalid-identifier' as Parameters<
+			typeof getDisplayName
+		>[0]
+		expect(getDisplayName(malformedIdentifier)).toBe('')
 	})
 
 	it('normalizes metadata collections from values(), entries(), and object maps', () => {
@@ -97,6 +103,21 @@ describe('EditorFileMethodReferenceMapper', () => {
 
 	it('uses project report global index fallback for identifier/path resolution', () => {
 		// Missing local index data should be resolved through project global index lookup.
+		const projectReportMock = {
+			globalIndex: {
+				getSourceNodeIndexByID: (id: number) => {
+					if (id === 42) {
+						return {
+							identifier: '{function:globalFallback}',
+							pathIndex: { identifier: 'src/global.ts' },
+							presentInOriginalSourceCode: true
+						}
+					}
+					return undefined
+				}
+			}
+		} as unknown as ProjectReport
+
 		const result = buildReferenceEntry(
 			{
 				id: 42,
@@ -105,20 +126,7 @@ describe('EditorFileMethodReferenceMapper', () => {
 					selfCPUEnergyConsumption: 5
 				}
 			},
-			{
-				globalIndex: {
-					getSourceNodeIndexByID: (id: number) => {
-						if (id === 42) {
-							return {
-								identifier: '{function:globalFallback}',
-								pathIndex: { identifier: 'src/global.ts' },
-								presentInOriginalSourceCode: true
-							}
-						}
-						return undefined
-					}
-				}
-			}
+			projectReportMock
 		)
 
 		expect(result).toEqual({

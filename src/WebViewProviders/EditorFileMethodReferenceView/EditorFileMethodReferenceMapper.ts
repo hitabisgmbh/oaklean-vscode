@@ -5,6 +5,7 @@ import {
 	SourceNodeIdentifier_string,
 	UnifiedPath_string
 } from '@oaklean/profiler-core'
+import type { ProjectReport } from '@oaklean/profiler-core'
 
 import { isRecord } from '../../helper/typeGuards'
 import WorkspaceUtils from '../../helper/WorkspaceUtils'
@@ -16,31 +17,6 @@ import {
 	SourceNodeIndexLike
 } from '../../types/EditorFileMethodReferenceViewTypes'
 
-type ProjectReportLike = {
-	globalIndex?: {
-		getSourceNodeIndexByID?: (
-			id: NonNullable<ReferenceMetaLike['id']>
-		) => SourceNodeIndexLike | undefined
-	}
-}
-
-function isProjectReportLike(value: unknown): value is ProjectReportLike {
-	if (!isRecord(value)) {
-		return false
-	}
-	const globalIndex = value.globalIndex
-	if (globalIndex === undefined) {
-		return true
-	}
-	if (!isRecord(globalIndex)) {
-		return false
-	}
-	return (
-		globalIndex.getSourceNodeIndexByID === undefined ||
-		typeof globalIndex.getSourceNodeIndexByID === 'function'
-	)
-}
-
 function isIterableUnknown(value: unknown): value is Iterable<unknown> {
 	if (!isRecord(value)) {
 		return false
@@ -50,6 +26,17 @@ function isIterableUnknown(value: unknown): value is Iterable<unknown> {
 
 function toNonEmptyName(value: string | undefined): string | undefined {
 	return value !== undefined && value.length > 0 ? value : undefined
+}
+
+function toJsonMetaLike(value: unknown): JsonMetaLike | undefined {
+	if (!isRecord(value)) {
+		return undefined
+	}
+	return {
+		methodName:
+			typeof value.methodName === 'string' ? value.methodName : undefined,
+		filePath: typeof value.filePath === 'string' ? value.filePath : undefined
+	}
 }
 
 type IdentifierResolution = {
@@ -63,7 +50,7 @@ type IdentifierResolution = {
 
 function resolveIdentifiers(
 	meta: ReferenceMetaLike,
-	projectReportLike: unknown
+	projectReport: ProjectReport | undefined
 ): IdentifierResolution {
 	const identifier = meta.sourceNodeIndex?.identifier
 	const globalIdentifier =
@@ -81,9 +68,6 @@ function resolveIdentifiers(
 			? resolvedIndex.globalIdentifier()?.identifier
 			: resolvedIndex?.identifier
 
-	const projectReport = isProjectReportLike(projectReportLike)
-		? projectReportLike
-		: undefined
 	const globalIndexEntry =
 		meta.id !== undefined && projectReport?.globalIndex?.getSourceNodeIndexByID
 			? projectReport.globalIndex.getSourceNodeIndexByID(meta.id)
@@ -124,27 +108,31 @@ function resolveName(
 		globalIndexSourceNodeIdentifier
 	} = identifierResolution
 
-	if (finalIdentifier !== undefined) {
+	const finalSourceNodeIdentifier = toSourceNodeIdentifier(finalIdentifier)
+	if (finalSourceNodeIdentifier !== undefined) {
 		const nameFromFinalIdentifier = toNonEmptyName(
-			getDisplayName(finalIdentifier)
+			getDisplayName(finalSourceNodeIdentifier)
 		)
 		if (nameFromFinalIdentifier !== undefined) {
 			return nameFromFinalIdentifier
 		}
 	}
 
-	if (globalIdentifier !== undefined) {
+	const globalSourceNodeIdentifier = toSourceNodeIdentifier(globalIdentifier)
+	if (globalSourceNodeIdentifier !== undefined) {
 		const nameFromGlobalIdentifier = toNonEmptyName(
-			getDisplayName(globalIdentifier)
+			getDisplayName(globalSourceNodeIdentifier)
 		)
 		if (nameFromGlobalIdentifier !== undefined) {
 			return nameFromGlobalIdentifier
 		}
 	}
 
-	if (resolvedIdentifier !== undefined) {
+	const resolvedSourceNodeIdentifier =
+		toSourceNodeIdentifier(resolvedIdentifier)
+	if (resolvedSourceNodeIdentifier !== undefined) {
 		const nameFromResolvedIdentifier = toNonEmptyName(
-			getDisplayName(resolvedIdentifier)
+			getDisplayName(resolvedSourceNodeIdentifier)
 		)
 		if (nameFromResolvedIdentifier !== undefined) {
 			return nameFromResolvedIdentifier
@@ -221,13 +209,11 @@ function resolveNotPresentInOriginalSourceCode(
 
 // Extract human-readable function/method name from source-node identifier.
 // Returns empty string on invalid/malformed identifiers by design.
-export function getDisplayName(identifier: string): string {
-	const sourceNodeIdentifier = toSourceNodeIdentifier(identifier)
-	if (sourceNodeIdentifier === undefined) {
-		return ''
-	}
+export function getDisplayName(
+	identifier: SourceNodeIdentifier_string
+): string {
 	try {
-		const parts = SourceNodeIdentifierHelper.split(sourceNodeIdentifier)
+		const parts = SourceNodeIdentifierHelper.split(identifier)
 		if (parts.length === 0) {
 			return ''
 		}
@@ -327,7 +313,7 @@ export function toMetas(ref: unknown): unknown[] {
 // for name, identifier, measurements, and relative path.
 export function buildReferenceEntry(
 	metaLike: unknown,
-	projectReportLike: unknown
+	projectReport: ProjectReport | undefined
 ): FunctionEntry | undefined {
 	if (!isReferenceMetaLike(metaLike)) {
 		return undefined
@@ -335,10 +321,12 @@ export function buildReferenceEntry(
 	const meta = metaLike
 
 	// Optional JSON projection used for display/path fallbacks.
-	const json = typeof meta.toJSON === 'function' ? meta.toJSON() : undefined
+	const json = toJsonMetaLike(
+		typeof meta.toJSON === 'function' ? meta.toJSON() : undefined
+	)
 	const jsonName =
 		json?.methodName ?? (json?.filePath ? path.basename(json.filePath) : '')
-	const identifierResolution = resolveIdentifiers(meta, projectReportLike)
+	const identifierResolution = resolveIdentifiers(meta, projectReport)
 	const { finalIdentifier, resolvedIndex, globalIndexEntry } =
 		identifierResolution
 

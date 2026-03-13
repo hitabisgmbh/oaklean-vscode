@@ -1,6 +1,10 @@
 import path from 'path'
 
 import vscode from 'vscode'
+import type {
+	ProjectReport,
+	SourceNodeIdentifier_string
+} from '@oaklean/profiler-core'
 
 import {
 	buildForeignReferences,
@@ -74,7 +78,7 @@ export class EditorFileMethodReferenceViewProvider
 	_container: Container
 	editor: vscode.TextEditor | undefined
 	// Identifier of the currently selected scope from Method view events.
-	private _currentScopeIdentifier: string | undefined
+	private _currentScopeIdentifier: SourceNodeIdentifier_string | undefined
 
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
@@ -268,8 +272,9 @@ export class EditorFileMethodReferenceViewProvider
 			selectedIdentifierFirstParentWithMeasurements:
 				event.selectedIdentifierFirstParentWithMeasurements
 		})
-		this._currentScopeIdentifier =
+		this._currentScopeIdentifier = toSourceNodeIdentifier(
 			event.selectedIdentifierFirstParentWithMeasurements
+		)
 		this.sendFirstFunctionName()
 	}
 
@@ -367,11 +372,9 @@ export class EditorFileMethodReferenceViewProvider
 	}
 
 	private resolveSourceNodeGraph(
-		projectReport: unknown
+		projectReport: ProjectReport | undefined
 	): SourceNodeGraphLike | undefined {
-		const rawSourceNodeGraph = (
-			projectReport as { asSourceNodeGraph?: () => unknown } | undefined
-		)?.asSourceNodeGraph?.()
+		const rawSourceNodeGraph = projectReport?.asSourceNodeGraph()
 		return isSourceNodeGraphLike(rawSourceNodeGraph)
 			? rawSourceNodeGraph
 			: undefined
@@ -395,7 +398,7 @@ export class EditorFileMethodReferenceViewProvider
 	private buildForeignReferencesForCurrentFunction(
 		sourceNodeGraph: SourceNodeGraphLike | undefined,
 		firstFn: ReferenceMetaLike,
-		projectReport: unknown
+		projectReport: ProjectReport | undefined
 	): FunctionEntry[] {
 		const currentScopeGraphNodeID = resolveCurrentFunctionGraphNodeID(
 			sourceNodeGraph,
@@ -443,7 +446,7 @@ export class EditorFileMethodReferenceViewProvider
 
 	private buildEntriesFromGroup(
 		group: unknown,
-		projectReport: unknown,
+		projectReport: ProjectReport | undefined,
 		resolveIsNavigable: (entry: FunctionEntry) => boolean
 	): FunctionEntry[] {
 		const entries: FunctionEntry[] = []
@@ -460,7 +463,7 @@ export class EditorFileMethodReferenceViewProvider
 
 	private getFunctionMetaByIdentifier(
 		sourceFileMetaData: SourceFileMetaDataLike,
-		identifier: string
+		identifier: SourceNodeIdentifier_string
 	): ReferenceMetaLike | undefined {
 		// The metadata map is keyed by node id; identifier lookup requires a scan by sourceNodeIndex.
 		for (const meta of sourceFileMetaData.functions.values()) {

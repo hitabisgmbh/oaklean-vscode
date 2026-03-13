@@ -1,7 +1,13 @@
 import {
 	ProgramStructureTreeType,
-	SourceNodeID_number,
+	SourceNodeGraph,
+	SourceNodeMetaData,
+	SourceNodeMetaDataType_Node,
 	SourceNodeIdentifierHelper
+} from '@oaklean/profiler-core'
+import type {
+	ProjectReport,
+	SourceNodeIdentifier_string
 } from '@oaklean/profiler-core'
 
 import {
@@ -9,47 +15,22 @@ import {
 	toSourceNodeIdentifier
 } from './EditorFileMethodReferenceMapper'
 
-import { isRecord } from '../../helper/typeGuards'
 import WorkspaceUtils from '../../helper/WorkspaceUtils'
 import { FunctionEntry } from '../../protocols/EditorFileMethodReferenceViewProtocol'
 
-type SourceNodeIndexLike = {
-	identifier?: string
-	pathIndex?: { identifier?: string }
-}
+type CurrentFunctionLike = Partial<
+	Pick<
+		SourceNodeMetaData<SourceNodeMetaDataType_Node>,
+		'id' | 'sourceNodeIndex'
+	>
+>
 
-type GlobalIdentifierLike = {
-	identifier?: string
-	sourceNodeIdentifier?: string
-}
+type SourceGraphNodeLike = SourceNodeMetaData<SourceNodeMetaDataType_Node>
 
-type CurrentFunctionLike = {
-	id?: SourceNodeID_number
-	sourceNodeIndex?: SourceNodeIndexLike
-}
-
-type SourceGraphNodeLike = CurrentFunctionLike & {
-	globalIdentifier?: () => GlobalIdentifierLike | undefined
-}
-
-type SourceNodeMapLike = {
-	entries: () => IterableIterator<[string, SourceGraphNodeLike]>
-	get: (key: string) => SourceGraphNodeLike | undefined
-}
-
-type NeighborNodeMapLike = {
-	keys: () => IterableIterator<string>
-}
-
-type GraphEdgesLike = {
-	get: (key: string) => NeighborNodeMapLike | undefined
-}
-
-export type SourceNodeGraphLike = {
-	sourceNodes: SourceNodeMapLike
-	incomingEdges: GraphEdgesLike
-	outgoingEdges: GraphEdgesLike
-}
+export type SourceNodeGraphLike = SourceNodeGraph
+type SourceNodeGraphNodeID = Parameters<
+	SourceNodeGraph['sourceNodes']['get']
+>[0]
 
 export type CallerEdgeDirection = 'incoming' | 'outgoing'
 
@@ -72,29 +53,26 @@ const SOURCE_NODE_FUNCTION_TYPES: ReadonlySet<ProgramStructureTreeType> =
 	])
 
 function isSourceGraphNodeLike(value: unknown): value is SourceGraphNodeLike {
-	return isRecord(value)
+	return value instanceof SourceNodeMetaData
 }
 
-function isSourceNodeMapLike(value: unknown): value is SourceNodeMapLike {
-	if (!isRecord(value)) {
-		return false
+function toSourceNodeGraphNodeID(
+	value: string | undefined
+): SourceNodeGraphNodeID | undefined {
+	if (value === undefined) {
+		return undefined
 	}
-	return typeof value.entries === 'function' && typeof value.get === 'function'
+	const separatorIndex = value.indexOf(':')
+	if (separatorIndex <= 0 || separatorIndex === value.length - 1) {
+		return undefined
+	}
+	return value as SourceNodeGraphNodeID
 }
 
 export function isSourceNodeGraphLike(
 	value: unknown
 ): value is SourceNodeGraphLike {
-	if (!isRecord(value)) {
-		return false
-	}
-	return (
-		isSourceNodeMapLike(value.sourceNodes) &&
-		isRecord(value.incomingEdges) &&
-		typeof value.incomingEdges.get === 'function' &&
-		isRecord(value.outgoingEdges) &&
-		typeof value.outgoingEdges.get === 'function'
-	)
+	return value instanceof SourceNodeGraph
 }
 
 // Match strategy (in priority order):
@@ -105,9 +83,9 @@ export function isSourceNodeGraphLike(
 export function resolveCurrentFunctionGraphNodeID(
 	sourceNodeGraph: SourceNodeGraphLike | undefined,
 	currentFunction: CurrentFunctionLike,
-	currentScopeIdentifier: string | undefined,
+	currentScopeIdentifier: SourceNodeIdentifier_string | undefined,
 	currentEditorFileName: string | undefined
-): string | undefined {
+): SourceNodeGraphNodeID | undefined {
 	if (sourceNodeGraph === undefined) {
 		return undefined
 	}
@@ -120,8 +98,9 @@ export function resolveCurrentFunctionGraphNodeID(
 	)?.toString()
 
 	// Single scan over graph nodes; collect candidates for both id and identifier dimensions.
-	const idMatches: Array<[string, SourceGraphNodeLike]> = []
-	const identifierMatches: Array<[string, SourceGraphNodeLike]> = []
+	const idMatches: Array<[SourceNodeGraphNodeID, SourceGraphNodeLike]> = []
+	const identifierMatches: Array<[SourceNodeGraphNodeID, SourceGraphNodeLike]> =
+		[]
 
 	for (const [nodeID, node] of sourceNodeGraph.sourceNodes.entries()) {
 		if (!isSourceGraphNodeLike(node)) {
@@ -167,7 +146,7 @@ export function resolveCurrentFunctionGraphNodeID(
 
 export function getCallerNodeIDsForCurrentNode(
 	sourceNodeGraph: SourceNodeGraphLike | undefined,
-	currentNodeID: string | undefined,
+	currentNodeID: SourceNodeGraphNodeID | undefined,
 	callerEdgeDirection: CallerEdgeDirection
 ): string[] {
 	if (sourceNodeGraph === undefined || currentNodeID === undefined) {
@@ -185,9 +164,9 @@ export function getCallerNodeIDsForCurrentNode(
 
 export function buildForeignReferences(
 	sourceNodeGraph: SourceNodeGraphLike | undefined,
-	currentNodeID: string | undefined,
+	currentNodeID: SourceNodeGraphNodeID | undefined,
 	callerNodeIDs: string[],
-	projectReport: unknown
+	projectReport: ProjectReport | undefined
 ): FunctionEntry[] {
 	if (sourceNodeGraph === undefined || currentNodeID === undefined) {
 		return []
@@ -202,7 +181,11 @@ export function buildForeignReferences(
 		if (callerNodeID === currentNodeID) {
 			continue
 		}
-		const callerNode = sourceNodeGraph.sourceNodes.get(callerNodeID)
+		const callerNodeGraphID = toSourceNodeGraphNodeID(callerNodeID)
+		if (callerNodeGraphID === undefined) {
+			continue
+		}
+		const callerNode = sourceNodeGraph.sourceNodes.get(callerNodeGraphID)
 		if (
 			!isSourceGraphNodeLike(callerNode) ||
 			!isFunctionGraphNode(callerNode)
@@ -234,24 +217,24 @@ function isFunctionGraphNode(node: SourceGraphNodeLike): boolean {
 	if (isFunctionLikeIdentifier(localIdentifier)) {
 		return true
 	}
-	const globalIdentifier =
-		typeof node.globalIdentifier === 'function'
-			? node.globalIdentifier()
-			: undefined
+	const globalIdentifier = node.globalIdentifier()
 	return (
-		isFunctionLikeIdentifier(globalIdentifier?.sourceNodeIdentifier) ||
-		isFunctionLikeIdentifier(globalIdentifier?.identifier)
+		isFunctionLikeIdentifier(globalIdentifier.sourceNodeIdentifier) ||
+		isFunctionLikeIdentifier(
+			toSourceNodeIdentifier(globalIdentifier.identifier)
+		)
 	)
 }
 
 // Identifier parser can throw on malformed values; this helper must stay fail-safe.
-function isFunctionLikeIdentifier(identifier: string | undefined): boolean {
-	const sourceNodeIdentifier = toSourceNodeIdentifier(identifier)
-	if (sourceNodeIdentifier === undefined) {
+function isFunctionLikeIdentifier(
+	identifier: SourceNodeIdentifier_string | undefined
+): boolean {
+	if (identifier === undefined) {
 		return false
 	}
 	try {
-		const parts = SourceNodeIdentifierHelper.split(sourceNodeIdentifier)
+		const parts = SourceNodeIdentifierHelper.split(identifier)
 		if (parts.length === 0) {
 			return false
 		}
@@ -269,10 +252,10 @@ function isFunctionLikeIdentifier(identifier: string | undefined): boolean {
 
 // Pick best node candidate with path + identifier disambiguation.
 function pickGraphNodeMatch(
-	candidates: Array<[string, SourceGraphNodeLike]>,
-	identifier: string | undefined,
+	candidates: Array<[SourceNodeGraphNodeID, SourceGraphNodeLike]>,
+	identifier: SourceNodeIdentifier_string | undefined,
 	relativeWorkspacePath: string | undefined
-): string | undefined {
+): SourceNodeGraphNodeID | undefined {
 	if (candidates.length === 0) {
 		return undefined
 	}
@@ -309,17 +292,14 @@ function pickGraphNodeMatch(
 // Accept both local and global identifier formats used by different report versions.
 function graphNodeMatchesIdentifier(
 	node: SourceGraphNodeLike,
-	identifier: string
+	identifier: SourceNodeIdentifier_string
 ): boolean {
 	if (node.sourceNodeIndex?.identifier === identifier) {
 		return true
 	}
-	const globalIdentifier =
-		typeof node.globalIdentifier === 'function'
-			? node.globalIdentifier()
-			: undefined
+	const globalIdentifier = node.globalIdentifier()
 	return (
-		globalIdentifier?.sourceNodeIdentifier === identifier ||
-		globalIdentifier?.identifier === identifier
+		globalIdentifier.sourceNodeIdentifier === identifier ||
+		toSourceNodeIdentifier(globalIdentifier.identifier) === identifier
 	)
 }
