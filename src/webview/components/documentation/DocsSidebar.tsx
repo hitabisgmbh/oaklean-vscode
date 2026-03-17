@@ -155,6 +155,7 @@ export function DocsSidebar({
 					{visibleResults.map((res) => (
 						<button
 							key={`${res.path}:${res.occurrence}`}
+							type="button"
 							className="doc-result-button"
 							onClick={() => onResultSelect(res.path, res.occurrence)}
 						>
