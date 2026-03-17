@@ -48,10 +48,10 @@ export function ReferenceList({
 							onEntryClick !== undefined && entry.isNavigable === true
 
 						return (
-								<div
-									className="reference-first-function__row"
-									key={`${keyPrefix}-${entry.identifier ?? idx}`}
-								>
+							<div
+								className="reference-first-function__row"
+								key={`${keyPrefix}-${entry.identifier ?? idx}`}
+							>
 								<div
 									className={
 										isClickable
