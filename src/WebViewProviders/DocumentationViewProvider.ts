@@ -25,6 +25,7 @@ export class DocumentationViewProvider
 	implements WebviewViewProvider, vscode.Disposable
 {
 	public static readonly viewType = 'oaklean.documentationView'
+	private subscriptions: vscode.Disposable[] = []
 
 	// Input: none. Output: validated max results value.
 	private getSearchMaxResults(): number {
@@ -73,7 +74,10 @@ export class DocumentationViewProvider
 
 	// Input: none. Output: void (Disposable contract).
 	dispose(): void {
-		// Nothing to dispose yet
+		for (const subscription of this.subscriptions) {
+			subscription.dispose()
+		}
+		this.subscriptions = []
 	}
 
 	// Input: webview + extension URI + CSP sources. Output: HTML string.
@@ -141,7 +145,7 @@ export class DocumentationViewProvider
 
 	// Input: webview. Output: registers message handler and sends init.
 	private initializeWebview(webview: vscode.Webview) {
-		webview.onDidReceiveMessage(
+		const subscription = webview.onDidReceiveMessage(
 			async (message: DocumentationView_ChildToParent) => {
 				switch (message?.type) {
 					case DocumentationViewCommands.requestDocs:
@@ -190,6 +194,7 @@ export class DocumentationViewProvider
 				}
 			}
 		)
+		this.subscriptions.push(subscription)
 
 		void this.sendInit(webview)
 	}
