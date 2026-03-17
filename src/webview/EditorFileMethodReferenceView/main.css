@@ -1,0 +1,162 @@
+.reference-view {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.reference-toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 6px 0;
+	background-color: var(--vscode-sideBar-background);
+	border-bottom: 2px solid var(--vscode-editorWidget-border);
+}
+
+.reference-toolbar__file-name {
+	font-weight: 600;
+	color: var(--vscode-foreground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 60%;
+}
+
+.reference-toolbar__function-name {
+	font-weight: 500;
+	color: var(--vscode-foreground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 40%;
+}
+
+.reference-first-function {
+	padding: 8px 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.reference-first-function__label {
+	font-size: 12px;
+	color: var(--vscode-descriptionForeground);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.reference-first-function__label.section {
+	text-transform: none;
+	letter-spacing: 0;
+	margin-top: 6px;
+}
+
+.reference-first-function__section-toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+}
+
+.reference-first-function__section-icon {
+	font-size: 12px;
+}
+
+.reference-first-function__name {
+	font-weight: 600;
+	color: var(--vscode-foreground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.reference-first-function__table {
+	display: grid;
+	grid-template-columns: 1fr repeat(3, minmax(60px, auto));
+	gap: 4px 8px;
+	align-items: center;
+	margin-top: 6px;
+}
+
+.reference-first-function__row {
+	display: contents;
+}
+
+.reference-first-function__row.header > div {
+	font-weight: 600;
+	color: var(--vscode-foreground);
+}
+
+.reference-first-function__row > div {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.reference-first-function__cell--clickable {
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.reference-first-function__cell--clickable:hover {
+	color: var(--vscode-textLink-foreground);
+}
+
+.reference-toolbar__right {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.reference-toolbar__sort-label {
+	font-size: 12px;
+	color: var(--vscode-descriptionForeground);
+}
+
+.reference-toolbar__sort-button {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.reference-toolbar__sort-direction-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	width: 16px;
+	height: 16px;
+	padding: 1px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background: transparent;
+	cursor: pointer;
+}
+
+.reference-toolbar__sort-direction-button:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.reference-toolbar__sort-direction-icon {
+	color: var(--vscode-descriptionForeground);
+	font-size: 10px;
+	line-height: 1;
+}
+
+.reference-toolbar__sort-direction-icon + .reference-toolbar__sort-direction-icon {
+	margin-left: -1px;
+}
+
+.reference-toolbar__sort-direction-icon--active {
+	color: var(--vscode-foreground);
+}

@@ -5,6 +5,7 @@ import SelectReportFromContextMenu from './commands/SelectReportFromContextMenu'
 import EventHandler from './helper/EventHandler'
 import { Storage } from './storage'
 import TextEditorController from './controller/TextEditorController'
+import ScopeChangeController from './controller/ScopeChangeController'
 import TextDocumentController from './controller/TextDocumentController'
 import { SourceFileMetaDataTreeProvider } from './treeviews/SourceFileMetaDataTreeProvider'
 import SelectValueRepresentationCommand from './commands/SelectValueRepresentationCommand'
@@ -23,6 +24,7 @@ import { SortDirection } from './types/sortDirection'
 import { ReportEditorProvider } from './CustomEditorProviders/ReportEditorProvider'
 import { JsonTextDocumentContentProvider } from './TextDocumentContentProvider/JsonTextDocumentContentProvider'
 import { EditorFileMethodViewProvider } from './WebViewProviders/EditorFileMethodViewProvider'
+import { EditorFileMethodReferenceViewProvider } from './WebViewProviders/EditorFileMethodReferenceView/EditorFileMethodReferenceViewProvider'
 import { GraphicalViewProvider } from './WebViewProviders/GraphicalViewProvider'
 import {
 	SensorValueRepresentation,
@@ -159,6 +161,11 @@ export class Container {
 		return this._editorFileMethodViewProvider
 	}
 
+	private readonly _editorFileMethodReferenceViewProvider: EditorFileMethodReferenceViewProvider
+	get editorFileMethodReferenceViewProvider() {
+		return this._editorFileMethodReferenceViewProvider
+	}
+
 	private readonly _graphicalViewProvider: GraphicalViewProvider
 	get graphicalViewProvider() {
 		return this._graphicalViewProvider
@@ -190,6 +197,7 @@ export class Container {
 		this.context.subscriptions.push(
 			(this._textEditorController = new TextEditorController(this))
 		)
+		this.context.subscriptions.push(new ScopeChangeController(this))
 		this.context.subscriptions.push(
 			(this._textDocumentController = new TextDocumentController(this))
 		)
@@ -399,11 +407,23 @@ export class Container {
 		)
 
 		this.context.subscriptions.push(
+			(this._editorFileMethodReferenceViewProvider =
+				new EditorFileMethodReferenceViewProvider(context.extensionUri, this))
+		)
+		this.context.subscriptions.push(
+			vscode.window.registerWebviewViewProvider(
+				EditorFileMethodReferenceViewProvider.viewType,
+				this._editorFileMethodReferenceViewProvider
+			)
+		)
+
+		this.context.subscriptions.push(
 			(this._graphicalViewProvider = new GraphicalViewProvider(
 				context.extensionUri,
 				this
 			))
 		)
+
 		this.context.subscriptions.push(
 			vscode.window.registerWebviewViewProvider(
 				GraphicalViewProvider.viewType,
