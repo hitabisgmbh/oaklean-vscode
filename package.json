@@ -155,6 +155,16 @@
 					"initialSize": 5,
 					"visibility": "visible",
 					"icon": "$(gear)"
+				},
+				{
+					"type": "webview",
+					"id": "editorFileMethodReferenceView",
+					"name": "Reference Measurements",
+					"contextualTitle": "Reference Measurements",
+					"when": "!greendevelopertoolkit:disabled",
+					"initialSize": 5,
+					"visibility": "visible",
+					"icon": "$(gear)"
 				}
 			]
 		},
@@ -323,6 +333,8 @@
 		"publish": "npx vsce publish"
 	},
 	"devDependencies": {
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/react": "^16.3.2",
 		"@electron/rebuild": "^4.0.3",
 		"@eslint/js": "^9.39.2",
 		"@stylistic/eslint-plugin": "^5.7.1",
@@ -345,6 +357,7 @@
 		"eslint-plugin-import": "^2.32.0",
 		"eslint-plugin-prettier": "^5.5.5",
 		"jest": "^30.2.0",
+		"jest-environment-jsdom": "^30.2.0",
 		"mini-css-extract-plugin": "^2.10.0",
 		"sinon": "^15.0.4",
 		"style-loader": "^4.0.0",

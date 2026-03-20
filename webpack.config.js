@@ -98,6 +98,7 @@ const webviewConfig = {
 		ReportEditorView: './src/webview/ReportEditorView/main.tsx',
 		SettingsView: './src/webview/SettingsView/main.tsx',
 		EditorFileMethodView: './src/webview/EditorFileMethodView/main.tsx',
+		EditorFileMethodReferenceView: './src/webview/EditorFileMethodReferenceView/main.tsx',
 		MethodView: './src/webview/MethodView/main.tsx',
 		DocumentationView: './src/webview/DocumentationView/main.tsx', // entry point for Documentation View
 		ThemeColorViewer: './src/webview/ThemeColorViewer/main.tsx' // Entry point for Theme Color Viewer
