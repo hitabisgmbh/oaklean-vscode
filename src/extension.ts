@@ -2,6 +2,7 @@ import vscode, { ExtensionContext } from 'vscode'
 
 import { Container } from './container'
 import { Storage } from './storage'
+import { DocumentationViewPanel } from './panels/DocumentationViewPanel'
 import { SettingsViewPanel } from './panels/SettingsViewPanel'
 import { ThemeColorViewerPanel } from './panels/ThemeColorViewerPanel'
 
@@ -23,6 +24,14 @@ export function activate(context: ExtensionContext) {
 			{
 				async deserializeWebviewPanel(panel) {
 					await ThemeColorViewerPanel.revive(panel, container)
+				}
+			}
+		),
+		vscode.window.registerWebviewPanelSerializer(
+			DocumentationViewPanel.viewType,
+			{
+				async deserializeWebviewPanel(panel) {
+					DocumentationViewPanel.revive(panel, container)
 				}
 			}
 		)

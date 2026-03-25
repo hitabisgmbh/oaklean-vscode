@@ -73,6 +73,7 @@ export default defineConfig(
 	},
 	prettierConfig, // Must come AFTER other configs to properly disable conflicting rules
 	globalIgnores([
+		'scripts/**/*',
 		'**/*.d.ts',
 		'**/node_modules/**',
 		'**/coverage/**/*',

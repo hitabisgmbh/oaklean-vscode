@@ -35,6 +35,9 @@ import WorkspaceUtils from './helper/WorkspaceUtils'
 import OpenSourceLocationCommand from './commands/OpenSourceLocationCommand'
 import { SensorValueHoverProvider } from './hover/SensorValueHoverProvider'
 import { MigrationHandler } from './helper/MigrationHandler'
+import OpenDocumentationCommand from './commands/OpenDocumentationCommand'
+import DocumentationController from './controller/DocumentationController'
+import { DocumentationViewProvider } from './WebViewProviders/DocumentationViewProvider'
 
 export class Container {
 	static #instance: Container | undefined
@@ -65,6 +68,16 @@ export class Container {
 	private readonly _migrationHandler: MigrationHandler
 	get migrationHandler() {
 		return this._migrationHandler
+	}
+
+	private readonly _documentationController: DocumentationController
+	get documentationController() {
+		return this._documentationController
+	}
+
+	private readonly _documentationViewProvider: DocumentationViewProvider
+	get documentationViewProvider() {
+		return this._documentationViewProvider
 	}
 
 	private readonly _textEditorController: TextEditorController
@@ -186,6 +199,12 @@ export class Container {
 		return this._jsonTextDocumentContentProvider
 	}
 
+	// openDocsWebview command integration
+	private readonly _openDocumentationCommand: OpenDocumentationCommand
+	get openDocumentationCommand() {
+		return this._openDocumentationCommand
+	}
+
 	private constructor(context: ExtensionContext, storage: Storage) {
 		this._context = context
 		this.context.subscriptions.push((this._storage = storage))
@@ -194,6 +213,7 @@ export class Container {
 		)
 
 		// Controllers
+
 		this.context.subscriptions.push(
 			(this._textEditorController = new TextEditorController(this))
 		)
@@ -207,6 +227,19 @@ export class Container {
 		this.context.subscriptions.push(
 			(this._reportBackendStorageController =
 				new ReportBackendStorageController(this))
+		)
+		this.context.subscriptions.push(
+			(this._documentationController = new DocumentationController(this))
+		)
+		this._documentationViewProvider = new DocumentationViewProvider(
+			this.context.extensionUri,
+			this
+		)
+		this.context.subscriptions.push(
+			vscode.window.registerWebviewViewProvider(
+				DocumentationViewProvider.viewType,
+				this._documentationViewProvider
+			)
 		)
 
 		// Migration Handler
@@ -252,6 +285,12 @@ export class Container {
 			(this._openSourceLocationCommand = new OpenSourceLocationCommand(this))
 		)
 		this.context.subscriptions.push(this._openSourceLocationCommand.register())
+
+		// New Documentation Command
+		this.context.subscriptions.push(
+			(this._openDocumentationCommand = new OpenDocumentationCommand(this))
+		)
+		this.context.subscriptions.push(this._openDocumentationCommand.register())
 
 		this.context.subscriptions.push(
 			(this._selectReportFromContextMenuCommand =

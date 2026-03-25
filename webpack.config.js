@@ -23,7 +23,7 @@ const watchOptions = {
 
 const baseConfig = {
 	plugins: [new webpack.ProgressPlugin()],
-	devtool: 'source-map',
+	devtool: 'inline-source-map',
 	infrastructureLogging: {
 		level: 'info'
 	},
@@ -55,6 +55,21 @@ const extensionConfig = {
 			}
 		]
 	},
+	plugins: [
+		...baseConfig.plugins,
+		new CopyWebpackPlugin({
+			patterns: [
+				{
+					from: path.resolve(__dirname, 'docs'),
+					to: path.resolve(__dirname, 'dist', 'extension', 'docs')
+				},
+				{
+					from: path.resolve(__dirname, 'images'),
+					to: path.resolve(__dirname, 'dist', 'extension', 'images')
+				}
+			]
+		})
+	],
 	externals:
 		mode === 'production'
 			? {
@@ -85,6 +100,7 @@ const webviewConfig = {
 		EditorFileMethodView: './src/webview/EditorFileMethodView/main.tsx',
 		EditorFileMethodReferenceView: './src/webview/EditorFileMethodReferenceView/main.tsx',
 		MethodView: './src/webview/MethodView/main.tsx',
+		DocumentationView: './src/webview/DocumentationView/main.tsx', // entry point for Documentation View
 		ThemeColorViewer: './src/webview/ThemeColorViewer/main.tsx' // Entry point for Theme Color Viewer
 	},
 	output: {
