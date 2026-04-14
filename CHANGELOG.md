@@ -2,6 +2,11 @@
 
 All notable changes to the "Oaklean" extension will be documented in this file.
 
+# 0.1.5
+### Added
+- Added the new Documentation View for browsing Oaklean docs directly inside VS Code.
+- Added the new Reference Measurements view for the active file, which follows the currently selected function and groups related measurements into language-internal, internal, external, and foreign references. 
+
 # 0.1.4
 ### Added
 - Support for Oaklean Profiler v0.1.7
