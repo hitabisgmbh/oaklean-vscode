@@ -9,7 +9,7 @@
 	"homepage": "https://www.oaklean.io/",
 	"icon": "./media/app_icon512x512.png",
 	"description": "Software suite to measure the energy consumption of your javascript and typescript applications.",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"author": "Hitabis GmbH",
 	"publisher": "HitabisGmbH",
 	"license": "MIT",
@@ -43,7 +43,8 @@
 		"onLanguage:javascript",
 		"workspaceContains:**/.oaklean",
 		"onWebviewPanel:oaklean.settingsViewPanel",
-		"onWebviewPanel:oaklean.themeColorViewerPanel"
+		"onWebviewPanel:oaklean.themeColorViewerPanel",
+		"onWebviewPanel:oaklean.documentationViewPanel"
 	],
 	"main": "./dist/extension/extension.js",
 	"browser": "./dist/extension/extension.js",
@@ -80,6 +81,30 @@
 						}
 					},
 					"description": "Enter your profiles manually or through the UI with the command 'Oaklean: Settings'."
+				},
+				"oaklean.docs.imageWhitelist": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"https://github.com/hitabisgmbh",
+						"http(s)://*.hitabis.de",
+						"http(s)://*.oaklean.io"
+					],
+					"description": "Allowed URL prefixes for external images in documentation."
+				},
+				"oaklean.docs.searchMaxResults": {
+					"type": "number",
+					"default": 50,
+					"minimum": 1,
+					"description": "Maximum number of documentation search results to return."
+				},
+				"oaklean.docs.searchPageSize": {
+					"type": "number",
+					"default": 10,
+					"minimum": 1,
+					"description": "Number of documentation search results to reveal when using Show more."
 				}
 			}
 		},
@@ -110,12 +135,14 @@
 				{
 					"type": "webview",
 					"id": "methodView",
-					"name": "Methods"
+					"name": "Methods",
+					"icon": "$(symbol-method)"
 				},
 				{
 					"type": "webview",
 					"id": "filterView",
-					"name": "Filter"
+					"name": "Filter",
+					"icon": "$(filter)"
 				}
 			],
 			"measurementsPanel": [
@@ -124,6 +151,16 @@
 					"id": "editorFileMethodView",
 					"name": "Methods",
 					"contextualTitle": "Measurements",
+					"when": "!greendevelopertoolkit:disabled",
+					"initialSize": 5,
+					"visibility": "visible",
+					"icon": "$(gear)"
+				},
+				{
+					"type": "webview",
+					"id": "editorFileMethodReferenceView",
+					"name": "Reference Measurements",
+					"contextualTitle": "Reference Measurements",
 					"when": "!greendevelopertoolkit:disabled",
 					"initialSize": 5,
 					"visibility": "visible",
@@ -184,6 +221,11 @@
 					"command": "oaklean.selectProfiles",
 					"when": "view == SourceFileMetaDataTree",
 					"group": "navigation@5"
+				},
+				{
+					"command": "oaklean.showDocs",
+					"when": "view == SourceFileMetaDataTree",
+					"group": "navigation@6"
 				}
 			],
 			"explorer/context": [
@@ -216,6 +258,12 @@
 			{
 				"command": "oaklean.themeColorViewer.show",
 				"title": "[DEV] Oaklean: Show Theme Colors"
+			},
+			{
+				"command": "oaklean.showDocs",
+				"category": "Oaklean",
+				"title": "Show Documentation",
+				"icon": "$(book)"
 			},
 			{
 				"command": "oaklean.settings",
@@ -285,11 +333,15 @@
 		"publish": "npx vsce publish"
 	},
 	"devDependencies": {
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/react": "^16.3.2",
 		"@electron/rebuild": "^4.0.3",
 		"@eslint/js": "^9.39.2",
 		"@stylistic/eslint-plugin": "^5.7.1",
+		"@types/flexsearch": "^0.7.6",
 		"@types/glob-to-regexp": "^0.4.4",
 		"@types/jest": "^30.0.0",
+		"@types/markdown-it": "^14.1.2",
 		"@types/node": "^25.1.0",
 		"@types/react": "^19.2.10",
 		"@types/react-dom": "^19.2.3",
@@ -305,6 +357,7 @@
 		"eslint-plugin-import": "^2.32.0",
 		"eslint-plugin-prettier": "^5.5.5",
 		"jest": "^30.2.0",
+		"jest-environment-jsdom": "^30.2.0",
 		"mini-css-extract-plugin": "^2.10.0",
 		"sinon": "^15.0.4",
 		"style-loader": "^4.0.0",
@@ -321,9 +374,12 @@
 		"@oaklean/profiler-core": "^0.1.7",
 		"@vscode/codicons": "^0.0.44",
 		"@vscode/webview-ui-toolkit": "^1.4.0",
+		"flexsearch": "^0.8.212",
 		"glob": "^13.0.1",
 		"glob-to-regexp": "^0.4.1",
 		"jsonc-parser": "^3.3.1",
+		"markdown-it": "^14.1.0",
+		"markdown-to-txt": "^2.0.1",
 		"mathjs": "^15.1.0",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4"
